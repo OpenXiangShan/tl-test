@@ -5,30 +5,86 @@
 #ifndef TLC_TEST_PORT_H
 #define TLC_TEST_PORT_H
 
-#include "cstddef"
+#include <cstddef>
+#include <cstdint>
+#include <array>
 
 namespace tl_agent {
 
-    template<class Usr>
-    class ChnA {};
+    class Decoupled {
+    public:
+        uint8_t *valid;
+        uint8_t *ready;
 
-    class ChnB {};
+        bool fire() const{
+            return *valid && *ready;
+        }
+    };
 
-    template<class Usr, std::size_t N>
-    class ChnC {};
+    template<class Usr, class Echo>
+    class ChnA : public Decoupled {
+    public:
+        uint8_t *opcode;
+        uint8_t *param;
+        uint8_t *size;
+        uint8_t *source;
+        uint64_t *address;
+        Usr *usr;
+        Echo *echo;
+        uint8_t *corrupt;
+    };
 
-    template<class Echo, std::size_t N>
-    class ChnD {};
-
-    class ChnE {};
+    class ChnB : public Decoupled {
+    public:
+        uint8_t *opcode;
+        uint8_t *param;
+        uint8_t *size;
+        uint8_t *source;
+        uint64_t *address;
+        uint8_t *corrupt;
+    };
 
     template<class Usr, class Echo, std::size_t N>
+    class ChnC : public Decoupled {
+    public:
+        uint8_t *opcode;
+        uint8_t *param;
+        uint8_t *size;
+        uint8_t *source;
+        uint64_t *address;
+        Usr *usr;
+        Echo *echo;
+        std::array<uint8_t, N> *data;
+        uint8_t *corrupt;
+    };
+
+    template<class Usr, class Echo, std::size_t N>
+    class ChnD : public Decoupled {
+    public:
+        uint8_t *opcode;
+        uint8_t *param;
+        uint8_t *size;
+        uint8_t *source;
+        uint8_t *sink;
+        uint8_t *denied;
+        Usr *usr;
+        Echo *echo;
+        std::array<uint8_t, N> *data;
+        uint8_t *corrupt;
+    };
+
+    class ChnE : public Decoupled {
+    public:
+        uint8_t *sink;
+    };
+
+    template<class ReqField, class RespField, class EchoField, std::size_t N>
     class Port {
     public:
-        ChnA<Usr> a;
+        ChnA<ReqField, EchoField> a;
         ChnB b;
-        ChnC<Usr, N> c;
-        ChnD<Echo, N> d;
+        ChnC<ReqField, EchoField, N> c;
+        ChnD<RespField, EchoField, N> d;
         ChnE e;
     };
 
