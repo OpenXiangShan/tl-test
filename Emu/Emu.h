@@ -46,4 +46,6 @@ inline void Emu::update_cycles(uint64_t inc) {
     cycles += inc;
 }
 
+double sc_time_stamp() { return 0; }
+
 #endif //TLC_TEST_EMU_H
