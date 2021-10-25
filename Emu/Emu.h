@@ -7,6 +7,7 @@
 
 #include "verilated.h"
 #include "VTestTop.h"
+#include "../Utils/ScoreBoard.h"
 
 class Emu {
 private:
@@ -22,7 +23,7 @@ public:
 };
 
 inline void Emu::reset(uint64_t n) {
-    for(uint64_t i = 0; i < n; i++){
+    for (uint64_t i = 0; i < n; i++) {
         dut_ptr->reset = 1;
         dut_ptr->clock = 0;
         dut_ptr->eval();
