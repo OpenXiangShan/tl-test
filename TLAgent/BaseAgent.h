@@ -29,7 +29,7 @@ namespace tl_agent {
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class BaseAgent {
-    private:
+    protected:
         Port<ReqField, RespField, EchoField, N> *port;
         ScoreBoard<std::array<uint8_t, N>> *globalBoard;
 

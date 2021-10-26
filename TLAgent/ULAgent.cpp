@@ -11,8 +11,6 @@ namespace tl_agent{
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class ULAgent : public BaseAgent<ReqField, RespField, EchoField, N> {
     private:
-        Port<ReqField, RespField, EchoField, N> *port;
-        ScoreBoard<std::array<uint8_t, N>> *globalBoard;
         //coreBoard<T> localBoard; TODO
 
     public:
@@ -26,9 +24,6 @@ namespace tl_agent{
         void fire_e();
         ULAgent(ScoreBoard<std::array<uint8_t, N>> * const gb);
         ~ULAgent() = default;
-
-    private:
-
     };
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
@@ -73,7 +68,7 @@ namespace tl_agent{
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     ULAgent<ReqField, RespField, EchoField, N>::ULAgent(ScoreBoard<std::array<uint8_t, N>> *gb) {
-        globalBoard = gb;
+        this->globalBoard = gb;
     }
 
 }
