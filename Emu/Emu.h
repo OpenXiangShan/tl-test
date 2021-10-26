@@ -10,14 +10,15 @@
 #include "../Utils/ScoreBoard.h"
 #include "../TLAgent/ULAgent.cpp"
 
+enum {
+    DATASIZE = 64, // Cache line is 64B
+    NR_ULAGENTS = 1,
+    NR_CAGENTS = 0,
+};
+
 class Emu {
 private:
     // TODO: move out following parameters into a monolithic config
-    enum {
-        DATASIZE = 64, // Cache line is 64B
-        NR_ULAGENTS = 1,
-        NR_CAGENTS = 0,
-    };
     typedef tl_agent::BaseAgent<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, DATASIZE> BaseAgent_t;
     typedef tl_agent::ULAgent<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, DATASIZE> ULAgent_t;
 
@@ -35,6 +36,7 @@ public:
     inline void pos_edge();
     inline void update_cycles(uint64_t inc);
     void execute(uint64_t nr_cycle);
+    Port<ReqField, RespField, EchoField, DATASIZE>* naive_gen_port();
 };
 
 inline void Emu::reset(uint64_t n) {
