@@ -5,6 +5,7 @@
 #include <map>
 #include <array>
 #include <string>
+#include <assert.h>
 
 #ifndef TLC_TEST_SCOREBOARD_H
 #define TLC_TEST_SCOREBOARD_H
