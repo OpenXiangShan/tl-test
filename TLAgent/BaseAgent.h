@@ -6,15 +6,32 @@
 #define TLC_TEST_BASEAGENT_H
 
 #include "Port.h"
+#include "../Utils/ScoreBoard.h"
 
 namespace tl_agent {
 
     enum Resp {OK, FAIL};
 
+    class ReqField {
+    public:
+        uint8_t value;
+    };
+
+    class RespField {
+    public:
+        uint8_t value;
+    };
+
+    class EchoField {
+    public:
+        uint8_t value;
+    };
+
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class BaseAgent {
     private:
         Port<ReqField, RespField, EchoField, N> *port;
+        ScoreBoard<std::array<uint8_t, N>> *globalBoard;
 
     public:
         virtual Resp send_a(ChnA<ReqField, EchoField> &a) = 0;

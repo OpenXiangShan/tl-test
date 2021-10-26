@@ -9,18 +9,19 @@
 #ifndef TLC_TEST_SCOREBOARD_H
 #define TLC_TEST_SCOREBOARD_H
 
-#define ERR_NOTFOUND 1
-#define ERR_MISMATCH 2
+const int ERR_NOTFOUND = 1;
+const int ERR_MISMATCH = 2;
 
 template<typename T>
 class ScoreBoard {
 private:
-    std::map<uint64_t, T> *mapping;
+    std::map<uint64_t, T> mapping;
 public:
     ScoreBoard();
     ~ScoreBoard();
-    void update(const uint64_t *address, T *data);
-    int verify(const uint64_t *address, T *data);
+    void update(const uint64_t& address, const T& data);
+    void erase(const uint64_t& address);
+    int verify(const uint64_t& address, const T& data) const;
 };
 
 
@@ -28,7 +29,7 @@ public:
 
 template<typename T>
 ScoreBoard<T>::ScoreBoard() {
-    mapping = new std::map<uint64_t, T>();
+    mapping.clear();
 }
 
 template<typename T>
@@ -37,14 +38,20 @@ ScoreBoard<T>::~ScoreBoard() {
 }
 
 template<typename T>
-void ScoreBoard<T>::update(const uint64_t *address, T *data) {
-    mapping->insert(std::make_pair(*address, *data));
+void ScoreBoard<T>::update(const uint64_t& address, const T& data) {
+    mapping.insert(std::make_pair(address, data));
 }
 
 template<typename T>
-int ScoreBoard<T>::verify(const uint64_t *address, T *data) {
-    if (mapping->count(*address) > 0) {
-        if (mapping[address] != &data) {
+void ScoreBoard<T>::erase(const uint64_t& address) {
+    int num = mapping.erase(address);
+    assert(num == 1);
+}
+
+template<typename T>
+int ScoreBoard<T>::verify(const uint64_t& address, const T& data) const {
+    if (mapping.count(address) > 0) {
+        if (mapping[address] != data) {
             return ERR_MISMATCH;
         }
         return 0;
