@@ -108,9 +108,9 @@ namespace tl_agent {
         IDPool idpool;
 
     public:
-        virtual Resp send_a(ChnA<ReqField, EchoField, BEATSIZE> &a) = 0;
+        virtual Resp send_a(ChnA<ReqField, EchoField, N> &a) = 0;
         virtual void handle_b() = 0;
-        virtual Resp send_c(ChnC<ReqField, EchoField, BEATSIZE> &c) = 0;
+        virtual Resp send_c(ChnC<ReqField, EchoField, N> &c) = 0;
         virtual void handle_d() = 0;
         virtual void fire_a() = 0;
         virtual void fire_b() = 0;

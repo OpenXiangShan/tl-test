@@ -86,7 +86,7 @@ namespace tl_agent {
         uint8_t *source;
         uint32_t *mask;
         uint16_t *address;
-        std::array<uint8_t, N> *data;
+        uint8_t* data;
         Usr *usr;
         Echo *echo;
         uint8_t *corrupt;
@@ -127,7 +127,7 @@ namespace tl_agent {
         uint8_t *denied;
         Usr *usr;
         Echo *echo;
-        std::array<uint8_t, N> *data;
+        uint8_t *data;
         uint8_t *corrupt;
     };
 

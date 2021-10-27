@@ -30,8 +30,8 @@ namespace tl_agent{
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class ULAgent : public BaseAgent<ReqField, RespField, EchoField, N> {
     private:
-        PendingTrans<ChnA<ReqField, EchoField, BEATSIZE>> pendingA;
-        PendingTrans<ChnD<RespField, EchoField, BEATSIZE>> pendingD;
+        PendingTrans<ChnA<ReqField, EchoField, N>> pendingA;
+        PendingTrans<ChnD<RespField, EchoField, N>> pendingD;
         /* We only need a localBoard recording SourceID -> UL_SBEntry
          * because UL agent needn't store data.
          */
@@ -40,9 +40,9 @@ namespace tl_agent{
     public:
         ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> * const gb);
         ~ULAgent() = default;
-        Resp send_a(ChnA<ReqField, EchoField, BEATSIZE> &a);
+        Resp send_a(ChnA<ReqField, EchoField, N> &a);
         void handle_b();
-        Resp send_c(ChnC<ReqField, EchoField, BEATSIZE> &c);
+        Resp send_c(ChnC<ReqField, EchoField, N> &c);
         void handle_d();
         void fire_a();
         void fire_b();
@@ -51,21 +51,30 @@ namespace tl_agent{
         void fire_e();
         void update();
         bool do_get(uint16_t address);
+        bool do_putfulldata(uint16_t address, uint8_t data[]);
     };
 
     /************************** Implementation **************************/
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField, BEATSIZE> &a) {
+    Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField, N> &a) {
         UL_SBEntry* entry;
         switch (*a.opcode) {
-            case Get:
+            case Get: {
                 entry = new UL_SBEntry(*a.source, Get, S_SENDING_A);
                 localBoard->update(*a.source, entry);
                 break;
-            case PutFullData:
-                entry = new UL_SBEntry(0, PutFullData, S_SENDING_A); // TODO
+            }
+            case PutFullData: {
+                entry = new UL_SBEntry(*a.source, PutFullData, S_SENDING_A);
+                localBoard->update(*a.source, entry);
+                uint8_t beat_data[BEATSIZE];
+                int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
+                for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
+                    this->port->a.data[i - BEATSIZE * beat_num] = a.data[i];
+                }
                 break;
+            }
             default:
                 tlc_assert(false, "Unknown opcode for channel A!");
         }
@@ -75,12 +84,11 @@ namespace tl_agent{
         *this->port->a.mask = *a.mask;
         *this->port->a.source = *a.source;
         *this->port->a.valid = true;
-
         return OK;
     }
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    Resp ULAgent<ReqField, RespField, EchoField, N>::send_c(ChnC<ReqField, EchoField, BEATSIZE> &c) {
+    Resp ULAgent<ReqField, RespField, EchoField, N>::send_c(ChnC<ReqField, EchoField, N> &c) {
         return OK;
     }
 
@@ -123,7 +131,7 @@ namespace tl_agent{
                     this->idpool.freeid(*this->port->d.source);
                 }
             } else { // new D resp
-                auto resp_d = new ChnD<RespField, EchoField, BEATSIZE>();
+                auto resp_d = new ChnD<RespField, EchoField, N>();
                 resp_d->opcode = new uint8_t(*this->port->d.opcode);
                 resp_d->param = new uint8_t(*this->port->d.param);
                 resp_d->source = new uint8_t(*this->port->d.source);
@@ -174,13 +182,28 @@ namespace tl_agent{
     bool ULAgent<ReqField, RespField, EchoField, N>::do_get(uint16_t address) {
         if (pendingA.is_pending())
             return false;
-        auto req_a = new ChnA<ReqField, EchoField, BEATSIZE>();
+        auto req_a = new ChnA<ReqField, EchoField, N>();
         req_a->opcode = new uint8_t(Get);
         req_a->address = new uint16_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
         pendingA.init(req_a, 1);
+        return true;
+    }
+
+    template<class ReqField, class RespField, class EchoField, std::size_t N>
+    bool ULAgent<ReqField, RespField, EchoField, N>::do_putfulldata(uint16_t address, uint8_t data[]) {
+        if (pendingA.is_pending())
+            return false;
+        auto req_a = new ChnA<ReqField, EchoField, N>();
+        req_a->opcode = new uint8_t(PutFullData);
+        req_a->address = new uint16_t(address);
+        req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
+        req_a->mask = new uint32_t(0xffffffffUL);
+        req_a->source = new uint8_t(this->idpool.getid());
+        req_a->data = data;
+        pendingA.init(req_a, DATASIZE / BEATSIZE);
         return true;
     }
 }
