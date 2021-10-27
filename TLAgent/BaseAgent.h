@@ -103,14 +103,14 @@ namespace tl_agent {
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class BaseAgent {
     protected:
-        Port<ReqField, RespField, EchoField, N> *port;
+        Port<ReqField, RespField, EchoField, BEATSIZE> *port;
         ScoreBoard<uint64_t, std::array<uint8_t, N>> *globalBoard;
         IDPool idpool;
 
     public:
-        virtual Resp send_a(ChnA<ReqField, EchoField, N> &a) = 0;
+        virtual Resp send_a(ChnA<ReqField, EchoField, BEATSIZE> &a) = 0;
         virtual void handle_b() = 0;
-        virtual Resp send_c(ChnC<ReqField, EchoField, N> &c) = 0;
+        virtual Resp send_c(ChnC<ReqField, EchoField, BEATSIZE> &c) = 0;
         virtual void handle_d() = 0;
         virtual void fire_a() = 0;
         virtual void fire_b() = 0;
@@ -121,7 +121,7 @@ namespace tl_agent {
         BaseAgent(): idpool() {};
         virtual ~BaseAgent() = default;
 
-        void connect(Port<ReqField, RespField, EchoField, N> *p){ this->port = p; }
+        void connect(Port<ReqField, RespField, EchoField, BEATSIZE> *p){ this->port = p; }
     };
 
 }

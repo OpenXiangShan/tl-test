@@ -30,8 +30,8 @@ namespace tl_agent{
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class ULAgent : public BaseAgent<ReqField, RespField, EchoField, N> {
     private:
-        PendingTrans<ChnA<ReqField, EchoField, N>> pendingA;
-        PendingTrans<ChnD<RespField, EchoField, N>> pendingD;
+        PendingTrans<ChnA<ReqField, EchoField, BEATSIZE>> pendingA;
+        PendingTrans<ChnD<RespField, EchoField, BEATSIZE>> pendingD;
         /* We only need a localBoard recording SourceID -> UL_SBEntry
          * because UL agent needn't store data.
          */
@@ -40,9 +40,9 @@ namespace tl_agent{
     public:
         ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> * const gb);
         ~ULAgent() = default;
-        Resp send_a(ChnA<ReqField, EchoField, N> &a);
+        Resp send_a(ChnA<ReqField, EchoField, BEATSIZE> &a);
         void handle_b();
-        Resp send_c(ChnC<ReqField, EchoField, N> &c);
+        Resp send_c(ChnC<ReqField, EchoField, BEATSIZE> &c);
         void handle_d();
         void fire_a();
         void fire_b();
@@ -56,7 +56,7 @@ namespace tl_agent{
     /************************** Implementation **************************/
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField, N> &a) {
+    Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField, BEATSIZE> &a) {
         UL_SBEntry* entry;
         switch (*a.opcode) {
             case Get:
@@ -80,7 +80,7 @@ namespace tl_agent{
     }
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    Resp ULAgent<ReqField, RespField, EchoField, N>::send_c(ChnC<ReqField, EchoField, N> &c) {
+    Resp ULAgent<ReqField, RespField, EchoField, N>::send_c(ChnC<ReqField, EchoField, BEATSIZE> &c) {
         return OK;
     }
 
@@ -123,7 +123,7 @@ namespace tl_agent{
                     this->idpool.freeid(*this->port->d.source);
                 }
             } else { // new D resp
-                auto resp_d = new ChnD<RespField, EchoField, N>();
+                auto resp_d = new ChnD<RespField, EchoField, BEATSIZE>();
                 resp_d->opcode = new uint8_t(*this->port->d.opcode);
                 resp_d->param = new uint8_t(*this->port->d.param);
                 resp_d->source = new uint8_t(*this->port->d.source);
@@ -174,7 +174,7 @@ namespace tl_agent{
     bool ULAgent<ReqField, RespField, EchoField, N>::do_get(uint16_t address) {
         if (pendingA.is_pending())
             return false;
-        auto req_a = new ChnA<ReqField, EchoField, DATASIZE>();
+        auto req_a = new ChnA<ReqField, EchoField, BEATSIZE>();
         req_a->opcode = new uint8_t(Get);
         req_a->address = new uint16_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));

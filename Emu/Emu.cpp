@@ -57,8 +57,8 @@ void Emu::execute(uint64_t nr_cycle) {
 }
 
 // the following code is to be replaced soon, only for test
-Port<ReqField, RespField, EchoField, DATASIZE>* Emu::naive_gen_port() {
-    auto port = new Port<ReqField, RespField, EchoField, DATASIZE>();
+Port<ReqField, RespField, EchoField, BEATSIZE>* Emu::naive_gen_port() {
+    auto port = new Port<ReqField, RespField, EchoField, BEATSIZE>();
     port->a.ready = &(dut_ptr->master_port_0_0_a_ready);
     port->a.valid = &(dut_ptr->master_port_0_0_a_valid);
     port->a.opcode = &(dut_ptr->master_port_0_0_a_bits_opcode);

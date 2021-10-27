@@ -35,7 +35,7 @@ public:
     inline void pos_edge();
     inline void update_cycles(uint64_t inc);
     void execute(uint64_t nr_cycle);
-    Port<ReqField, RespField, EchoField, DATASIZE>* naive_gen_port();
+    Port<ReqField, RespField, EchoField, BEATSIZE>* naive_gen_port();
 };
 
 inline void Emu::reset(uint64_t n) {
