@@ -13,46 +13,56 @@
 const int ERR_NOTFOUND = 1;
 const int ERR_MISMATCH = 2;
 
-template<typename T>
+template<typename Tk, typename Tv>
 class ScoreBoard {
 private:
-    std::map<uint64_t, T> mapping;
+    std::map<Tk, Tv*> mapping;
 public:
     ScoreBoard();
     ~ScoreBoard();
-    void update(const uint64_t& address, const T& data);
-    void erase(const uint64_t& address);
-    int verify(const uint64_t& address, const T& data) const;
+    void update(const Tk& key, Tv* data);
+    Tv* get(const Tk& key);
+    void erase(const Tk& key);
+    int verify(const Tk& key, const Tv& data) const;
 };
 
 
 /************************** Implementation **************************/
 
-template<typename T>
-ScoreBoard<T>::ScoreBoard() {
+template<typename Tk, typename Tv>
+ScoreBoard<Tk, Tv>::ScoreBoard() {
     mapping.clear();
 }
 
-template<typename T>
-ScoreBoard<T>::~ScoreBoard() {
+template<typename Tk, typename Tv>
+ScoreBoard<Tk, Tv>::~ScoreBoard() {
     delete mapping;
 }
 
-template<typename T>
-void ScoreBoard<T>::update(const uint64_t& address, const T& data) {
-    mapping.insert(std::make_pair(address, data));
+template<typename Tk, typename Tv>
+void ScoreBoard<Tk, Tv>::update(const Tk& key, Tv* data) {
+    mapping.insert(std::make_pair(key, data));
 }
 
-template<typename T>
-void ScoreBoard<T>::erase(const uint64_t& address) {
-    int num = mapping.erase(address);
+template<typename Tk, typename Tv>
+Tv* ScoreBoard<Tk, Tv>::get(const Tk& key) {
+    if (mapping.count(key) > 0) {
+        return mapping[key];
+    } else {
+        assert(false);
+    }
+}
+
+template<typename Tk, typename Tv>
+void ScoreBoard<Tk, Tv>::erase(const Tk& key) {
+    int num = mapping.erase(key);
     assert(num == 1);
 }
 
-template<typename T>
-int ScoreBoard<T>::verify(const uint64_t& address, const T& data) const {
-    if (mapping.count(address) > 0) {
-        if (mapping[address] != data) {
+template<typename Tk, typename Tv>
+int ScoreBoard<Tk, Tv>::verify(const Tk& key, const Tv& data) const {
+    if (mapping.count(key) > 0) {
+        if (*mapping[key] != data) {
             return ERR_MISMATCH;
         }
         return 0;

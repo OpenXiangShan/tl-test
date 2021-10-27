@@ -6,6 +6,7 @@
 #define TLC_TEST_ULAGENT_H
 
 #include "BaseAgent.h"
+#include "../Utils/Config.h"
 #include "../Utils/ScoreBoard.h"
 
 namespace tl_agent {

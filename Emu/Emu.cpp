@@ -8,7 +8,7 @@ Emu::Emu(int argc, char **argv) {
     Verilated::commandArgs(argc, argv);
     cycles = 0;
     dut_ptr = new VTestTop();
-    globalBoard = new ScoreBoard<std::array<uint8_t, 64>>();
+    globalBoard = new ScoreBoard<uint64_t, std::array<uint8_t, 64>>(); // address -> data
 
     // Init agents
     for (int i = 0; i < NR_ULAGENTS; i++) {
@@ -39,12 +39,14 @@ Emu::~Emu() {
 
 void Emu::execute(uint64_t nr_cycle) {
     while (cycles < nr_cycle) {
-        for (int i = 0; i < NR_AGENTS; i++) {
-            agents[i]->fire_a();
-            agents[i]->fire_b();
-            agents[i]->fire_c();
-            agents[i]->fire_e();
+        // TODO: to be removed
+        if (cycles == 100) {
+            dynamic_cast<ULAgent_t*>(agents[0])->do_get(0x1000);
         }
+        for (int i = 0; i < NR_AGENTS; i++) {
+            agents[i]->update();
+        }
+
         this->neg_edge();
 #if VM_TRACE == 1
         this->tfp->dump((vluint64_t)cycles);
@@ -54,13 +56,22 @@ void Emu::execute(uint64_t nr_cycle) {
     }
 }
 
+// the following code is to be replaced soon, only for test
 Port<ReqField, RespField, EchoField, DATASIZE>* Emu::naive_gen_port() {
     auto port = new Port<ReqField, RespField, EchoField, DATASIZE>();
     port->a.ready = &(dut_ptr->master_port_0_0_a_ready);
     port->a.valid = &(dut_ptr->master_port_0_0_a_valid);
-    port->c.ready = &(dut_ptr->master_port_0_0_c_ready);
-    port->c.valid = &(dut_ptr->master_port_0_0_c_valid);
+    port->a.opcode = &(dut_ptr->master_port_0_0_a_bits_opcode);
+    port->a.address = &(dut_ptr->master_port_0_0_a_bits_address);
+    port->a.size = &(dut_ptr->master_port_0_0_a_bits_size);
+    port->a.source = &(dut_ptr->master_port_0_0_a_bits_source);
+    port->a.mask = &(dut_ptr->master_port_0_0_a_bits_mask);
+    port->a.source = &(dut_ptr->master_port_0_0_a_bits_source);
     port->d.ready = &(dut_ptr->master_port_0_0_d_ready);
     port->d.valid = &(dut_ptr->master_port_0_0_d_valid);
+    port->d.opcode = &(dut_ptr->master_port_0_0_d_bits_opcode);
+    port->d.param = &(dut_ptr->master_port_0_0_d_bits_param);
+    port->d.size = &(dut_ptr->master_port_0_0_d_bits_size);
+    port->d.source = &(dut_ptr->master_port_0_0_d_bits_source);
     return port;
 }
