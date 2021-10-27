@@ -32,6 +32,9 @@ namespace tl_agent{
     private:
         PendingTrans<ChnA<ReqField, EchoField, N>> pendingA;
         PendingTrans<ChnD<RespField, EchoField, N>> pendingD;
+        /* We only need a localBoard recording SourceID -> UL_SBEntry
+         * because UL agent needn't store data.
+         */
         ScoreBoard<int, UL_SBEntry> *localBoard; // SourceID -> UL_SBEntry
 
     public:
@@ -50,6 +53,8 @@ namespace tl_agent{
         bool do_get(uint16_t address);
     };
 
+    /************************** Implementation **************************/
+
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField, N> &a) {
         srand( (unsigned)time( NULL ) );
@@ -63,8 +68,7 @@ namespace tl_agent{
                 entry = new UL_SBEntry(0, PutFullData, S_SENDING_A); // TODO
                 break;
             default:
-                printf("Unknown opcode for channel A\n");
-                assert(false);
+                tlc_assert(false, "Unknown opcode for channel A!");
         }
         *this->port->a.opcode = *a.opcode;
         *this->port->a.address = *a.address;
@@ -85,7 +89,7 @@ namespace tl_agent{
     void ULAgent<ReqField, RespField, EchoField, N>::fire_a() {
         if (this->port->a.fire()) {
             *this->port->a.valid = false;
-            assert(pendingA.is_pending());
+            tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
             pendingA.update();
             if (!pendingA.is_pending()) { // req A finished
                 localBoard->get(*pendingA.info->source)->status = S_WAITING_D;
@@ -106,13 +110,16 @@ namespace tl_agent{
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     void ULAgent<ReqField, RespField, EchoField, N>::fire_d() {
         if (this->port->d.fire()) {
+            auto info = localBoard->get(*this->port->d.source);
+            tlc_assert(info->status == S_WAITING_D, "Status error!");
             if (pendingD.is_pending()) { // following beats
-                assert(*this->port->d.opcode == *pendingD.info->opcode);
-                assert(*this->port->d.param == *pendingD.info->param);
-                assert(*this->port->d.source == *pendingD.info->source);
+                // TODO: wrap the following assertions into a function
+                tlc_assert(*this->port->d.opcode == *pendingD.info->opcode, "Opcode mismatch among beats!");
+                tlc_assert(*this->port->d.param == *pendingD.info->param, "Param mismatch among beats!");
+                tlc_assert(*this->port->d.source == *pendingD.info->source, "Source mismatch among beats!");
                 pendingD.update();
                 if (!pendingD.is_pending()) { // resp D finished
-                    localBoard->get(*pendingD.info->source)->status = S_VALID;
+                    info->status = S_VALID;
                 }
             } else { // new D resp
                 auto resp_d = new ChnD<RespField, EchoField, N>();

@@ -4,8 +4,7 @@
 
 #include <map>
 #include <array>
-#include <string>
-#include <assert.h>
+#include "Common.h"
 
 #ifndef TLC_TEST_SCOREBOARD_H
 #define TLC_TEST_SCOREBOARD_H
@@ -49,14 +48,14 @@ Tv* ScoreBoard<Tk, Tv>::get(const Tk& key) {
     if (mapping.count(key) > 0) {
         return mapping[key];
     } else {
-        assert(false);
+        tlc_assert(false, "Key no found!");
     }
 }
 
 template<typename Tk, typename Tv>
 void ScoreBoard<Tk, Tv>::erase(const Tk& key) {
     int num = mapping.erase(key);
-    assert(num == 1);
+    tlc_assert(num == 1, "Multiple value mapped to one key!");
 }
 
 template<typename Tk, typename Tv>

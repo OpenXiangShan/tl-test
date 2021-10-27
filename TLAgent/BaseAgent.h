@@ -60,7 +60,7 @@ namespace tl_agent {
         }
         void update() {
             beat_cnt--;
-            assert(beat_cnt >= 0);
+            tlc_assert(beat_cnt >= 0, "More beats received than expected!");
             if (beat_cnt == 0) {
                 delete info;
             }
