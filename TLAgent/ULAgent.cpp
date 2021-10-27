@@ -57,7 +57,6 @@ namespace tl_agent{
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField, N> &a) {
-        srand( (unsigned)time( NULL ) );
         UL_SBEntry* entry;
         switch (*a.opcode) {
             case Get:
@@ -119,7 +118,9 @@ namespace tl_agent{
                 tlc_assert(*this->port->d.source == *pendingD.info->source, "Source mismatch among beats!");
                 pendingD.update();
                 if (!pendingD.is_pending()) { // resp D finished
-                    info->status = S_VALID;
+                    // ULAgent needn't care about endurance
+                    localBoard->erase(*this->port->d.source);
+                    this->idpool.freeid(*this->port->d.source);
                 }
             } else { // new D resp
                 auto resp_d = new ChnD<RespField, EchoField, N>();
@@ -150,7 +151,7 @@ namespace tl_agent{
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     ULAgent<ReqField, RespField, EchoField, N>::ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> *gb):
-        pendingA(), pendingD()
+        BaseAgent<ReqField, RespField, EchoField, N>(), pendingA(), pendingD()
     {
         this->globalBoard = gb;
         localBoard = new ScoreBoard<int, UL_SBEntry>();
@@ -178,7 +179,7 @@ namespace tl_agent{
         req_a->address = new uint16_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_a->mask = new uint32_t(0xffffffffUL);
-        req_a->source = new uint8_t(0U);
+        req_a->source = new uint8_t(this->idpool.getid());
         pendingA.init(req_a, 1);
         return true;
     }

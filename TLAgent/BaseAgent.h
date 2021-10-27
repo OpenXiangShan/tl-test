@@ -5,8 +5,9 @@
 #ifndef TLC_TEST_BASEAGENT_H
 #define TLC_TEST_BASEAGENT_H
 
+#include <set>
 #include "Port.h"
-#include "assert.h"
+#include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
 
 namespace tl_agent {
@@ -67,11 +68,44 @@ namespace tl_agent {
         }
     };
 
+    class IDPool {
+    private:
+        std::set<int> *idle_ids;
+        std::set<int> *used_ids;
+    public:
+        IDPool() {
+            idle_ids = new std::set<int>();
+            used_ids = new std::set<int>();
+            for (int i = 0; i < NR_SOURCEID; i++) {
+                idle_ids->insert(i);
+            }
+            used_ids->clear();
+        }
+        ~IDPool() {
+            delete idle_ids;
+            delete used_ids;
+        }
+        int getid() {
+            if (idle_ids->size() == 0)
+                return -1;
+            int ret = *idle_ids->begin();
+            used_ids->insert(ret);
+            idle_ids->erase(ret);
+            return ret;
+        }
+        void freeid(int id) {
+            tlc_assert(used_ids->count(id) > 0, "Try to free unused SourceID!");
+            used_ids->erase(id);
+            idle_ids->insert(id);
+        }
+    };
+
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class BaseAgent {
     protected:
         Port<ReqField, RespField, EchoField, N> *port;
         ScoreBoard<uint64_t, std::array<uint8_t, N>> *globalBoard;
+        IDPool idpool;
 
     public:
         virtual Resp send_a(ChnA<ReqField, EchoField, N> &a) = 0;
@@ -84,6 +118,7 @@ namespace tl_agent {
         virtual void fire_d() = 0;
         virtual void fire_e() = 0;
         virtual void update() = 0;
+        BaseAgent(): idpool() {};
         virtual ~BaseAgent() = default;
 
         void connect(Port<ReqField, RespField, EchoField, N> *p){ this->port = p; }
