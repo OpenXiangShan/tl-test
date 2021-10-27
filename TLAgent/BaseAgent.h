@@ -44,7 +44,7 @@ namespace tl_agent {
     public:
         int beat_cnt;
         int nr_beat;
-        T* info;
+        std::shared_ptr<T> info;
 
         PendingTrans() {
             nr_beat = 0;
@@ -54,7 +54,7 @@ namespace tl_agent {
 
         bool is_multiBeat() { return (this->nr_beat != 1); };
         bool is_pending() { return (beat_cnt != 0); }
-        void init(T* info, int nr_beat) {
+        void init(std::shared_ptr<T> &info, int nr_beat) {
             this->info = info;
             this->nr_beat = nr_beat;
             beat_cnt = nr_beat;
@@ -62,9 +62,6 @@ namespace tl_agent {
         void update() {
             beat_cnt--;
             tlc_assert(beat_cnt >= 0, "More beats received than expected!");
-            if (beat_cnt == 0) {
-                delete info;
-            }
         }
     };
 
@@ -108,9 +105,9 @@ namespace tl_agent {
         IDPool idpool;
 
     public:
-        virtual Resp send_a(ChnA<ReqField, EchoField, N> &a) = 0;
+        virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, N>> &a) = 0;
         virtual void handle_b() = 0;
-        virtual Resp send_c(ChnC<ReqField, EchoField, N> &c) = 0;
+        virtual Resp send_c(std::shared_ptr<ChnA<ReqField, EchoField, N>> &c) = 0;
         virtual void handle_d() = 0;
         virtual void fire_a() = 0;
         virtual void fire_b() = 0;

@@ -15,12 +15,12 @@ const int ERR_MISMATCH = 2;
 template<typename Tk, typename Tv>
 class ScoreBoard {
 private:
-    std::map<Tk, Tv*> mapping;
+    std::map<Tk, std::shared_ptr<Tv>> mapping;
 public:
     ScoreBoard();
     ~ScoreBoard();
-    void update(const Tk& key, Tv* data);
-    Tv* get(const Tk& key);
+    void update(const Tk& key, std::shared_ptr<Tv>& data);
+    std::shared_ptr<Tv> get(const Tk& key);
     void erase(const Tk& key);
     int verify(const Tk& key, const Tv& data) const;
 };
@@ -39,12 +39,12 @@ ScoreBoard<Tk, Tv>::~ScoreBoard() {
 }
 
 template<typename Tk, typename Tv>
-void ScoreBoard<Tk, Tv>::update(const Tk& key, Tv* data) {
+void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
     mapping.insert(std::make_pair(key, data));
 }
 
 template<typename Tk, typename Tv>
-Tv* ScoreBoard<Tk, Tv>::get(const Tk& key) {
+std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::get(const Tk& key) {
     if (mapping.count(key) > 0) {
         return mapping[key];
     } else {

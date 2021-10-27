@@ -40,9 +40,9 @@ namespace tl_agent{
     public:
         ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> * const gb);
         ~ULAgent() = default;
-        Resp send_a(ChnA<ReqField, EchoField, N> &a);
+        Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, N>> &a);
         void handle_b();
-        Resp send_c(ChnC<ReqField, EchoField, N> &c);
+        Resp send_c(std::shared_ptr<ChnA<ReqField, EchoField, N>> &c);
         void handle_d();
         void fire_a();
         void fire_b();
@@ -57,38 +57,38 @@ namespace tl_agent{
     /************************** Implementation **************************/
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField, N> &a) {
+    Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(std::shared_ptr<ChnA<ReqField, EchoField, N>> &a) {
         UL_SBEntry* entry;
-        switch (*a.opcode) {
+        switch (*a->opcode) {
             case Get: {
-                entry = new UL_SBEntry(*a.source, Get, S_SENDING_A);
-                localBoard->update(*a.source, entry);
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, Get, S_SENDING_A));
+                localBoard->update(*a->source, entry);
                 break;
             }
             case PutFullData: {
-                entry = new UL_SBEntry(*a.source, PutFullData, S_SENDING_A);
-                localBoard->update(*a.source, entry);
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, PutFullData, S_SENDING_A));
+                localBoard->update(*a->source, entry);
                 uint8_t beat_data[BEATSIZE];
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
-                    this->port->a.data[i - BEATSIZE * beat_num] = a.data[i];
+                    this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
                 }
                 break;
             }
             default:
                 tlc_assert(false, "Unknown opcode for channel A!");
         }
-        *this->port->a.opcode = *a.opcode;
-        *this->port->a.address = *a.address;
-        *this->port->a.size = *a.size;
-        *this->port->a.mask = *a.mask;
-        *this->port->a.source = *a.source;
+        *this->port->a.opcode = *a->opcode;
+        *this->port->a.address = *a->address;
+        *this->port->a.size = *a->size;
+        *this->port->a.mask = *a->mask;
+        *this->port->a.source = *a->source;
         *this->port->a.valid = true;
         return OK;
     }
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    Resp ULAgent<ReqField, RespField, EchoField, N>::send_c(ChnC<ReqField, EchoField, N> &c) {
+    Resp ULAgent<ReqField, RespField, EchoField, N>::send_c(std::shared_ptr<ChnA<ReqField, EchoField, N>> &c) {
         return OK;
     }
 
@@ -131,7 +131,7 @@ namespace tl_agent{
                     this->idpool.freeid(*this->port->d.source);
                 }
             } else { // new D resp
-                auto resp_d = new ChnD<RespField, EchoField, N>();
+                std::shared_ptr<ChnD<RespField, EchoField, N>> resp_d(new ChnD<RespField, EchoField, N>());
                 resp_d->opcode = new uint8_t(*this->port->d.opcode);
                 resp_d->param = new uint8_t(*this->port->d.param);
                 resp_d->source = new uint8_t(*this->port->d.source);
@@ -174,7 +174,7 @@ namespace tl_agent{
 
         if (pendingA.is_pending()) {
             // TODO: do delay here
-            send_a(*pendingA.info);
+            send_a(pendingA.info);
         }
     }
 
@@ -182,7 +182,7 @@ namespace tl_agent{
     bool ULAgent<ReqField, RespField, EchoField, N>::do_get(uint16_t address) {
         if (pendingA.is_pending())
             return false;
-        auto req_a = new ChnA<ReqField, EchoField, N>();
+        std::shared_ptr<ChnA<ReqField, EchoField, N>> req_a(new ChnA<ReqField, EchoField, N>());
         req_a->opcode = new uint8_t(Get);
         req_a->address = new uint16_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
@@ -196,7 +196,7 @@ namespace tl_agent{
     bool ULAgent<ReqField, RespField, EchoField, N>::do_putfulldata(uint16_t address, uint8_t data[]) {
         if (pendingA.is_pending())
             return false;
-        auto req_a = new ChnA<ReqField, EchoField, N>();
+        std::shared_ptr<ChnA<ReqField, EchoField, N>> req_a(new ChnA<ReqField, EchoField, N>());
         req_a->opcode = new uint8_t(PutFullData);
         req_a->address = new uint16_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));

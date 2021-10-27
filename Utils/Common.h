@@ -13,6 +13,7 @@ enum {
     NR_SOURCEID = 16
 };
 
+#include <memory>
 #include <cmath>
 #include <string>
 #include <assert.h>
