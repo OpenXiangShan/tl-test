@@ -19,10 +19,22 @@ Emu::Emu(int argc, char **argv) {
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
         // TODO: init tl-c agents
     }
+
+#if VM_TRACE == 1
+    Verilated::traceEverOn(true);	// Verilator must compute traced signals
+    tfp = new VerilatedVcdC;
+    dut_ptr->trace(tfp, 99);	// Trace 99 levels of hierarchy
+    time_t now = time(NULL);
+    tfp->open(cycle_wavefile(cycles, now));
+#endif
+
 }
 
 Emu::~Emu() {
     delete dut_ptr;
+#if VM_TRACE == 1
+    this->tfp->close();
+#endif
 }
 
 void Emu::execute(uint64_t nr_cycle) {
@@ -34,6 +46,9 @@ void Emu::execute(uint64_t nr_cycle) {
             agents[i]->fire_e();
         }
         this->neg_edge();
+#if VM_TRACE == 1
+        this->tfp->dump((vluint64_t)cycles);
+#endif
         this->pos_edge();
         this->update_cycles(1);
     }

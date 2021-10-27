@@ -7,14 +7,11 @@
 
 #include "verilated.h"
 #include "VTestTop.h"
+#if VM_TRACE == 1
+#include "verilated_vcd_c.h"
+#endif
 #include "../Utils/ScoreBoard.h"
 #include "../TLAgent/ULAgent.cpp"
-
-enum {
-    DATASIZE = 64, // Cache line is 64B
-    NR_ULAGENTS = 1,
-    NR_CAGENTS = 0,
-};
 
 class Emu {
 private:
@@ -24,9 +21,11 @@ private:
 
     const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
     VTestTop *dut_ptr;
+    VerilatedVcdC* tfp;
     ScoreBoard<std::array<uint8_t, DATASIZE>> *globalBoard;
     BaseAgent_t ** const agents = new BaseAgent_t*[NR_AGENTS];
     uint64_t cycles;
+    inline char* cycle_wavefile(uint64_t cycles, time_t t);
 
 public:
     Emu(int argc, char **argv);
@@ -62,6 +61,18 @@ inline void Emu::pos_edge() {
 
 inline void Emu::update_cycles(uint64_t inc) {
     cycles += inc;
+}
+
+inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
+    static char buf[1024];
+    char buf_time[64];
+    strftime(buf_time, sizeof(buf_time), "%F@%T", localtime(&t));
+    char *pwd = getcwd(NULL, 0);
+    assert(pwd != NULL);
+    int len = snprintf(buf, 1024, "%s/%s_%lld", pwd, buf_time, cycles);
+    strcpy(buf + len, ".vcd");
+    printf("dump wave to %s...\n", buf);
+    return buf;
 }
 
 double sc_time_stamp() { return 0; }
