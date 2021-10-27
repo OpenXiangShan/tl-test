@@ -8,26 +8,71 @@ using namespace tl_agent;
 
 namespace tl_agent{
 
+    class UL_SBEntry {
+    public:
+        uint8_t id;
+        int req_type;
+        int status;
+        std::array<uint8_t, DATASIZE> data;
+        UL_SBEntry(uint8_t id, int req_type, int status) {
+            this->id = id;
+            this->req_type = req_type;
+            this->status = status;
+        }
+        UL_SBEntry(uint8_t id, int req_type, int status, std::array<uint8_t, DATASIZE> data) {
+            this->id = id;
+            this->req_type = req_type;
+            this->status = status;
+            this->data = data;
+        }
+    };
+
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class ULAgent : public BaseAgent<ReqField, RespField, EchoField, N> {
     private:
-        //coreBoard<T> localBoard; TODO
+        PendingTrans<ChnA<ReqField, EchoField, N>> pendingA;
+        PendingTrans<ChnD<RespField, EchoField, N>> pendingD;
+        ScoreBoard<int, UL_SBEntry> *localBoard; // SourceID -> UL_SBEntry
 
     public:
-        Resp send_a(ChnA<ReqField, EchoField> &a);
+        ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> * const gb);
+        ~ULAgent() = default;
+        Resp send_a(ChnA<ReqField, EchoField, N> &a);
         void handle_b();
         Resp send_c(ChnC<ReqField, EchoField, N> &c);
         void handle_d();
         void fire_a();
         void fire_b();
         void fire_c();
+        void fire_d();
         void fire_e();
-        ULAgent(ScoreBoard<std::array<uint8_t, N>> * const gb);
-        ~ULAgent() = default;
+        void update();
+        bool do_get(uint16_t address);
     };
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField> &a) {
+    Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(ChnA<ReqField, EchoField, N> &a) {
+        srand( (unsigned)time( NULL ) );
+        UL_SBEntry* entry;
+        switch (*a.opcode) {
+            case Get:
+                entry = new UL_SBEntry(*a.source, Get, S_SENDING_A);
+                localBoard->update(*a.source, entry);
+                break;
+            case PutFullData:
+                entry = new UL_SBEntry(0, PutFullData, S_SENDING_A); // TODO
+                break;
+            default:
+                printf("Unknown opcode for channel A\n");
+                assert(false);
+        }
+        *this->port->a.opcode = *a.opcode;
+        *this->port->a.address = *a.address;
+        *this->port->a.size = *a.size;
+        *this->port->a.mask = *a.mask;
+        *this->port->a.source = *a.source;
+        *this->port->a.valid = true;
+
         return OK;
     }
 
@@ -38,7 +83,14 @@ namespace tl_agent{
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     void ULAgent<ReqField, RespField, EchoField, N>::fire_a() {
-
+        if (this->port->a.fire()) {
+            *this->port->a.valid = false;
+            assert(pendingA.is_pending());
+            pendingA.update();
+            if (!pendingA.is_pending()) { // req A finished
+                localBoard->get(*pendingA.info->source)->status = S_WAITING_D;
+            }
+        }
     }
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
@@ -49,6 +101,29 @@ namespace tl_agent{
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     void ULAgent<ReqField, RespField, EchoField, N>::fire_c() {
 
+    }
+
+    template<class ReqField, class RespField, class EchoField, std::size_t N>
+    void ULAgent<ReqField, RespField, EchoField, N>::fire_d() {
+        if (this->port->d.fire()) {
+            if (pendingD.is_pending()) { // following beats
+                assert(*this->port->d.opcode == *pendingD.info->opcode);
+                assert(*this->port->d.param == *pendingD.info->param);
+                assert(*this->port->d.source == *pendingD.info->source);
+                pendingD.update();
+                if (!pendingD.is_pending()) { // resp D finished
+                    localBoard->get(*pendingD.info->source)->status = S_VALID;
+                }
+            } else { // new D resp
+                auto resp_d = new ChnD<RespField, EchoField, N>();
+                resp_d->opcode = new uint8_t(*this->port->d.opcode);
+                resp_d->param = new uint8_t(*this->port->d.param);
+                resp_d->source = new uint8_t(*this->port->d.source);
+                resp_d->data = nullptr; // we do not care about data in PendingTrans
+                int nr_beat = (*this->port->d.opcode == Grant) ? 0 : 1; // TODO: parameterize it
+                pendingD.init(resp_d, nr_beat);
+            }
+        }
     }
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
@@ -67,8 +142,37 @@ namespace tl_agent{
     }
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    ULAgent<ReqField, RespField, EchoField, N>::ULAgent(ScoreBoard<std::array<uint8_t, N>> *gb) {
+    ULAgent<ReqField, RespField, EchoField, N>::ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> *gb):
+        pendingA(), pendingD()
+    {
         this->globalBoard = gb;
+        localBoard = new ScoreBoard<int, UL_SBEntry>();
     }
 
+    template<class ReqField, class RespField, class EchoField, std::size_t N>
+    void ULAgent<ReqField, RespField, EchoField, N>::update() {
+        fire_a();
+        fire_d();
+
+        *this->port->d.ready = true; // TODO: do random here
+
+        if (pendingA.is_pending()) {
+            // TODO: do delay here
+            send_a(*pendingA.info);
+        }
+    }
+
+    template<class ReqField, class RespField, class EchoField, std::size_t N>
+    bool ULAgent<ReqField, RespField, EchoField, N>::do_get(uint16_t address) {
+        if (pendingA.is_pending())
+            return false;
+        auto req_a = new ChnA<ReqField, EchoField, DATASIZE>();
+        req_a->opcode = new uint8_t(Get);
+        req_a->address = new uint16_t(address);
+        req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
+        req_a->mask = new uint32_t(0xffffffffUL);
+        req_a->source = new uint8_t(0U);
+        pendingA.init(req_a, 1);
+        return true;
+    }
 }

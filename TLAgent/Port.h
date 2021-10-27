@@ -77,14 +77,16 @@ namespace tl_agent {
         }
     };
 
-    template<class Usr, class Echo>
+    template<class Usr, class Echo, std::size_t N>
     class ChnA : public Decoupled {
     public:
         uint8_t *opcode;
         uint8_t *param;
         uint8_t *size;
         uint8_t *source;
-        uint64_t *address;
+        uint32_t *mask;
+        uint16_t *address;
+        std::array<uint8_t, N> *data;
         Usr *usr;
         Echo *echo;
         uint8_t *corrupt;
@@ -137,7 +139,7 @@ namespace tl_agent {
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class Port {
     public:
-        ChnA<ReqField, EchoField> a;
+        ChnA<ReqField, EchoField, N> a;
         ChnB b;
         ChnC<ReqField, EchoField, N> c;
         ChnD<RespField, EchoField, N> d;
