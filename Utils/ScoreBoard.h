@@ -101,10 +101,10 @@ int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref, std::stri
 
 template<typename T>
 int GlobalBoard<T>::verify(const T& key, const uint8_t* data) {
-    if (this->mapping.template count(key) == 0) { // we assume data is all zero initially
+    if (this->mapping.count(key) == 0) { // we assume data is all zero initially
         return this->data_check(data, init_zeros, "Init data is non-zero!");
     }
-    tlc_assert(this->mapping.template count(key) == 1, "Duplicate records found in GlobalBoard!");
+    tlc_assert(this->mapping.count(key) == 1, "Duplicate records found in GlobalBoard!");
 
     Global_SBEntry value = *this->mapping.at(key).get();
     if (value.status == Global_SBEntry::SB_VALID) {
@@ -141,7 +141,7 @@ int GlobalBoard<T>::verify(const T& key, const uint8_t* data) {
 
 template<typename T>
 void GlobalBoard<T>::unpending(const T& key) {
-    tlc_assert(this->mapping.template count(key) == 1, "Un-pending non-exist entry in GlobalBoard!");
+    tlc_assert(this->mapping.count(key) == 1, "Un-pending non-exist entry in GlobalBoard!");
     Global_SBEntry* value = this->mapping.at(key).get();
     tlc_assert(value->pending_data != nullptr, "Un-pending entry with NULL ptr in GlobalBoard!");
     value->data = value->pending_data;
