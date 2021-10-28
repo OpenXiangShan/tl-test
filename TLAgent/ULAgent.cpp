@@ -67,7 +67,6 @@ namespace tl_agent{
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     Resp ULAgent<ReqField, RespField, EchoField, N>::send_a(std::shared_ptr<ChnA<ReqField, EchoField, N>> &a) {
-        UL_SBEntry* entry;
         switch (*a->opcode) {
             case Get: {
                 std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, Get, S_SENDING_A, *this->cycles));
@@ -77,7 +76,6 @@ namespace tl_agent{
             case PutFullData: {
                 std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, PutFullData, S_SENDING_A, *this->cycles));
                 localBoard->update(*a->source, entry);
-                uint8_t beat_data[BEATSIZE];
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
                     this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
@@ -230,8 +228,8 @@ namespace tl_agent{
             auto value = it->second;
             if (value->status != S_INVALID && value->status != S_VALID) {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
-                    printf("Now time:   %llu\n", *this->cycles);
-                    printf("Last stamp: %llu\n", value->time_stamp);
+                    printf("Now time:   %lu\n", *this->cycles);
+                    printf("Last stamp: %lu\n", value->time_stamp);
                     printf("Status:     %d\n", value->status);
                     tlc_assert(false,  "Transaction time out");
                 }

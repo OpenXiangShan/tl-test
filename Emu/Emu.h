@@ -69,7 +69,7 @@ inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
     strftime(buf_time, sizeof(buf_time), "%F@%T", localtime(&t));
     char *pwd = getcwd(NULL, 0);
     assert(pwd != NULL);
-    int len = snprintf(buf, 1024, "%s/%s_%lld", pwd, buf_time, cycles);
+    int len = snprintf(buf, 1024, "%s/%s_%lu", pwd, buf_time, cycles);
     strcpy(buf + len, ".vcd");
     printf("dump wave to %s...\n", buf);
     return buf;
