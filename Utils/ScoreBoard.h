@@ -24,6 +24,17 @@ public:
     int verify(const Tk& key, const Tv& data) const;
 };
 
+class Global_SBEntry {
+public:
+    enum {
+        SB_INVALID = 0,
+        SB_VALID,
+        SB_PENDING
+    };
+    int status;
+    uint8_t* data;
+    uint8_t* pending_data; // used for put&release
+};
 
 /************************** Implementation **************************/
 
@@ -34,7 +45,6 @@ ScoreBoard<Tk, Tv>::ScoreBoard() {
 
 template<typename Tk, typename Tv>
 ScoreBoard<Tk, Tv>::~ScoreBoard() {
-    delete mapping;
 }
 
 template<typename Tk, typename Tv>
@@ -66,6 +76,77 @@ int ScoreBoard<Tk, Tv>::verify(const Tk& key, const Tv& data) const {
         return 0;
     }
     return ERR_NOTFOUND;
+}
+
+template<typename T>
+class GlobalBoard : public ScoreBoard<T, Global_SBEntry> {
+private:
+    int data_check(const uint8_t* dut, const uint8_t* ref, std::string assert_info);
+    uint8_t init_zeros[DATASIZE];
+public:
+    int verify(const T& key, const uint8_t* data);
+    void unpending(const T& key);
+};
+
+template<typename T>
+int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref, std::string assert_info) {
+    for (int i = 0; i < DATASIZE; i++) {
+        if (dut[i] != ref[i]) {
+            printf("%u\n", dut[i]);
+            tlc_assert(false, assert_info.data());
+        }
+    }
+    return 0;
+}
+
+template<typename T>
+int GlobalBoard<T>::verify(const T& key, const uint8_t* data) {
+    if (this->mapping.template count(key) == 0) { // we assume data is all zero initially
+        return this->data_check(data, init_zeros, "Init data is non-zero!");
+    }
+    tlc_assert(this->mapping.template count(key) == 1, "Duplicate records found in GlobalBoard!");
+
+    Global_SBEntry value = *this->mapping.at(key).get();
+    if (value.status == Global_SBEntry::SB_VALID) {
+        tlc_assert(value.data != nullptr, "NULL occured in valid entry of GlobalBoard!");
+        return this->data_check(data, value.data, "Data mismatch!");
+    } else if (value.status == Global_SBEntry::SB_PENDING) {
+        bool flag = true;
+        if (value.data != nullptr) {
+            for (int i = 0; i < DATASIZE; i++) {
+                if (data[i] != value.data[i]) {
+                    flag = false;
+                    break;
+                }
+            }
+            if (flag) return 0;
+        } else {
+            for (int i = 0; i < DATASIZE; i++) {
+                if (data[i] != init_zeros[i]) {
+                    flag = false;
+                    break;
+                }
+            }
+            if (flag) return 0;
+        }
+        tlc_assert(value.pending_data != nullptr, "NULL occured in pending entry of GlobalBoard!");
+        this->data_check(data, value.pending_data, "Data mismatch!");
+        return 0;
+    } else {
+        // TODO: handle other status
+        tlc_assert(false, "Unknown GlobalBoard entry status!");
+        return -1;
+    }
+}
+
+template<typename T>
+void GlobalBoard<T>::unpending(const T& key) {
+    tlc_assert(this->mapping.template count(key) == 1, "Un-pending non-exist entry in GlobalBoard!");
+    Global_SBEntry* value = this->mapping.at(key).get();
+    tlc_assert(value->pending_data != nullptr, "Un-pending entry with NULL ptr in GlobalBoard!");
+    value->data = value->pending_data;
+    value->pending_data = nullptr;
+    value->status = Global_SBEntry::SB_VALID;
 }
 
 #endif // TLC_TEST_SCOREBOARD_H

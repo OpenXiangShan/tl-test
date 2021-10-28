@@ -8,7 +8,7 @@ Emu::Emu(int argc, char **argv) {
     Verilated::commandArgs(argc, argv);
     cycles = 0;
     dut_ptr = new VTestTop();
-    globalBoard = new ScoreBoard<uint64_t, std::array<uint8_t, 64>>(); // address -> data
+    globalBoard = new GlobalBoard<uint64_t>(); // address -> data
 
     // Init agents
     for (int i = 0; i < NR_ULAGENTS; i++) {
@@ -40,7 +40,9 @@ Emu::~Emu() {
 void Emu::execute(uint64_t nr_cycle) {
     srand((unsigned)time(0));
     while (cycles < nr_cycle) {
-        // TODO: to be removed
+        for (int i = 0; i < NR_AGENTS; i++) {
+            agents[i]->handle_channel();
+        }
         if (cycles == 100) {
             dynamic_cast<ULAgent_t*>(agents[0])->do_get(0x1000);
         }
@@ -51,8 +53,12 @@ void Emu::execute(uint64_t nr_cycle) {
             }
             dynamic_cast<ULAgent_t*>(agents[0])->do_putfulldata(0x2000, putdata);
         }
+        if (cycles == 202) {
+            dynamic_cast<ULAgent_t*>(agents[0])->do_get(0x2000);
+        }
+
         for (int i = 0; i < NR_AGENTS; i++) {
-            agents[i]->update();
+            agents[i]->update_signal();
         }
 
         this->neg_edge();

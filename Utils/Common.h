@@ -27,4 +27,10 @@ enum {
         } \
     } while (0)
 
+#define Log(...) \
+ do { \
+   printf(__VA_ARGS__); \
+ } while(0)
+
+
 #endif //TLC_TEST_COMMON_H

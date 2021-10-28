@@ -101,7 +101,7 @@ namespace tl_agent {
     class BaseAgent {
     protected:
         Port<ReqField, RespField, EchoField, BEATSIZE> *port;
-        ScoreBoard<uint64_t, std::array<uint8_t, N>> *globalBoard;
+        GlobalBoard<uint64_t> *globalBoard;
         IDPool idpool;
         virtual void timeout_check() = 0;
 
@@ -115,7 +115,8 @@ namespace tl_agent {
         virtual void fire_c() = 0;
         virtual void fire_d() = 0;
         virtual void fire_e() = 0;
-        virtual void update() = 0;
+        virtual void handle_channel() = 0;
+        virtual void update_signal() = 0;
         BaseAgent(): idpool() {};
         virtual ~BaseAgent() = default;
 
