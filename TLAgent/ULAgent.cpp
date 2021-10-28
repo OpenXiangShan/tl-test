@@ -13,32 +13,41 @@ namespace tl_agent{
         uint8_t id;
         int req_type;
         int status;
+        uint64_t time_stamp;
         std::array<uint8_t, DATASIZE> data;
-        UL_SBEntry(uint8_t id, int req_type, int status) {
+        UL_SBEntry(uint8_t id, int req_type, int status, uint64_t& time) {
             this->id = id;
             this->req_type = req_type;
             this->status = status;
+            this->time_stamp = time;
         }
-        UL_SBEntry(uint8_t id, int req_type, int status, std::array<uint8_t, DATASIZE> data) {
+        UL_SBEntry(uint8_t id, int req_type, int status, uint64_t time, std::array<uint8_t, DATASIZE> data) {
             this->id = id;
             this->req_type = req_type;
             this->status = status;
+            this->time_stamp = time;
             this->data = data;
+        }
+        void update_status(int status, uint64_t& time) {
+            this->status = status;
+            this->time_stamp = time;
         }
     };
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
     class ULAgent : public BaseAgent<ReqField, RespField, EchoField, N> {
     private:
+        uint64_t* cycles;
         PendingTrans<ChnA<ReqField, EchoField, N>> pendingA;
         PendingTrans<ChnD<RespField, EchoField, N>> pendingD;
         /* We only need a localBoard recording SourceID -> UL_SBEntry
          * because UL agent needn't store data.
          */
         ScoreBoard<int, UL_SBEntry> *localBoard; // SourceID -> UL_SBEntry
+        void timeout_check();
 
     public:
-        ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> * const gb);
+        ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> * const gb, uint64_t* cycles);
         ~ULAgent() = default;
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, N>> &a);
         void handle_b();
@@ -61,12 +70,12 @@ namespace tl_agent{
         UL_SBEntry* entry;
         switch (*a->opcode) {
             case Get: {
-                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, Get, S_SENDING_A));
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, Get, S_SENDING_A, *this->cycles));
                 localBoard->update(*a->source, entry);
                 break;
             }
             case PutFullData: {
-                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, PutFullData, S_SENDING_A));
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, PutFullData, S_SENDING_A, *this->cycles));
                 localBoard->update(*a->source, entry);
                 uint8_t beat_data[BEATSIZE];
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
@@ -99,7 +108,7 @@ namespace tl_agent{
             tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
             pendingA.update();
             if (!pendingA.is_pending()) { // req A finished
-                localBoard->get(*pendingA.info->source)->status = S_WAITING_D;
+                localBoard->get(*pendingA.info->source)->update_status(S_WAITING_D, *cycles);
             }
         }
     }
@@ -125,11 +134,6 @@ namespace tl_agent{
                 tlc_assert(*this->port->d.param == *pendingD.info->param, "Param mismatch among beats!");
                 tlc_assert(*this->port->d.source == *pendingD.info->source, "Source mismatch among beats!");
                 pendingD.update();
-                if (!pendingD.is_pending()) { // resp D finished
-                    // ULAgent needn't care about endurance
-                    localBoard->erase(*this->port->d.source);
-                    this->idpool.freeid(*this->port->d.source);
-                }
             } else { // new D resp
                 std::shared_ptr<ChnD<RespField, EchoField, N>> resp_d(new ChnD<RespField, EchoField, N>());
                 resp_d->opcode = new uint8_t(*this->port->d.opcode);
@@ -138,6 +142,11 @@ namespace tl_agent{
                 resp_d->data = nullptr; // we do not care about data in PendingTrans
                 int nr_beat = (*this->port->d.opcode == Grant || *this->port->d.opcode == AccessAck) ? 0 : 1; // TODO: parameterize it
                 pendingD.init(resp_d, nr_beat);
+            }
+            if (!pendingD.is_pending()) {
+                // ULAgent needn't care about endurance
+                localBoard->erase(*this->port->d.source);
+                this->idpool.freeid(*this->port->d.source);
             }
         }
     }
@@ -158,10 +167,11 @@ namespace tl_agent{
     }
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
-    ULAgent<ReqField, RespField, EchoField, N>::ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> *gb):
+    ULAgent<ReqField, RespField, EchoField, N>::ULAgent(ScoreBoard<uint64_t, std::array<uint8_t, N>> *gb, uint64_t* cycles):
         BaseAgent<ReqField, RespField, EchoField, N>(), pendingA(), pendingD()
     {
         this->globalBoard = gb;
+        this->cycles = cycles;
         localBoard = new ScoreBoard<int, UL_SBEntry>();
     }
 
@@ -175,6 +185,10 @@ namespace tl_agent{
         if (pendingA.is_pending()) {
             // TODO: do delay here
             send_a(pendingA.info);
+        }
+        // do timeout check lazily
+        if (*this->cycles % TIMEOUT_INTERVAL == 0) {
+            this->timeout_check();
         }
     }
 
@@ -205,5 +219,23 @@ namespace tl_agent{
         req_a->data = data;
         pendingA.init(req_a, DATASIZE / BEATSIZE);
         return true;
+    }
+
+    template<class ReqField, class RespField, class EchoField, std::size_t N>
+    void ULAgent<ReqField, RespField, EchoField, N>::timeout_check() {
+        if (localBoard->mapping.empty()) {
+            return;
+        }
+        for (auto it = this->localBoard->mapping.begin(); it != this->localBoard->mapping.end(); it++) {
+            auto value = it->second;
+            if (value->status != S_INVALID && value->status != S_VALID) {
+                if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
+                    printf("Now time:   %llu\n", *this->cycles);
+                    printf("Last stamp: %llu\n", value->time_stamp);
+                    printf("Status:     %d\n", value->status);
+                    tlc_assert(false,  "Transaction time out");
+                }
+            }
+        }
     }
 }

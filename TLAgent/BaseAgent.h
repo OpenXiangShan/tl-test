@@ -103,6 +103,7 @@ namespace tl_agent {
         Port<ReqField, RespField, EchoField, BEATSIZE> *port;
         ScoreBoard<uint64_t, std::array<uint8_t, N>> *globalBoard;
         IDPool idpool;
+        virtual void timeout_check() = 0;
 
     public:
         virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, N>> &a) = 0;

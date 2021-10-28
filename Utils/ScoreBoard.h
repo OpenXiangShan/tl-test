@@ -14,9 +14,8 @@ const int ERR_MISMATCH = 2;
 
 template<typename Tk, typename Tv>
 class ScoreBoard {
-private:
-    std::map<Tk, std::shared_ptr<Tv>> mapping;
 public:
+    std::map<Tk, std::shared_ptr<Tv>> mapping;
     ScoreBoard();
     ~ScoreBoard();
     void update(const Tk& key, std::shared_ptr<Tv>& data);

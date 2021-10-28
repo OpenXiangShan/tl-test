@@ -12,7 +12,7 @@ Emu::Emu(int argc, char **argv) {
 
     // Init agents
     for (int i = 0; i < NR_ULAGENTS; i++) {
-        agents[i] = new ULAgent_t(globalBoard);
+        agents[i] = new ULAgent_t(globalBoard, &cycles);
         auto port = naive_gen_port();
         agents[i]->connect(port);
     }
