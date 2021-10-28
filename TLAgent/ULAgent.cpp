@@ -136,7 +136,7 @@ namespace tl_agent{
                 resp_d->param = new uint8_t(*this->port->d.param);
                 resp_d->source = new uint8_t(*this->port->d.source);
                 resp_d->data = nullptr; // we do not care about data in PendingTrans
-                int nr_beat = (*this->port->d.opcode == Grant) ? 0 : 1; // TODO: parameterize it
+                int nr_beat = (*this->port->d.opcode == Grant || *this->port->d.opcode == AccessAck) ? 0 : 1; // TODO: parameterize it
                 pendingD.init(resp_d, nr_beat);
             }
         }
