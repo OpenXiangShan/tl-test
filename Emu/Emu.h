@@ -22,7 +22,7 @@ private:
     const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
     VTestTop *dut_ptr;
     VerilatedVcdC* tfp;
-    ScoreBoard<uint64_t, std::array<uint8_t, DATASIZE>> *globalBoard;
+    GlobalBoard<uint64_t> *globalBoard;
     BaseAgent_t ** const agents = new BaseAgent_t*[NR_AGENTS];
     uint64_t cycles;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
