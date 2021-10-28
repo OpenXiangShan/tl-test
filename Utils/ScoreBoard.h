@@ -4,8 +4,7 @@
 
 #include <map>
 #include <array>
-#include <string>
-#include <assert.h>
+#include "Common.h"
 
 #ifndef TLC_TEST_SCOREBOARD_H
 #define TLC_TEST_SCOREBOARD_H
@@ -15,13 +14,12 @@ const int ERR_MISMATCH = 2;
 
 template<typename Tk, typename Tv>
 class ScoreBoard {
-private:
-    std::map<Tk, Tv*> mapping;
 public:
+    std::map<Tk, std::shared_ptr<Tv>> mapping;
     ScoreBoard();
     ~ScoreBoard();
-    void update(const Tk& key, Tv* data);
-    Tv* get(const Tk& key);
+    void update(const Tk& key, std::shared_ptr<Tv>& data);
+    std::shared_ptr<Tv> get(const Tk& key);
     void erase(const Tk& key);
     int verify(const Tk& key, const Tv& data) const;
 };
@@ -40,23 +38,23 @@ ScoreBoard<Tk, Tv>::~ScoreBoard() {
 }
 
 template<typename Tk, typename Tv>
-void ScoreBoard<Tk, Tv>::update(const Tk& key, Tv* data) {
+void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
     mapping.insert(std::make_pair(key, data));
 }
 
 template<typename Tk, typename Tv>
-Tv* ScoreBoard<Tk, Tv>::get(const Tk& key) {
+std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::get(const Tk& key) {
     if (mapping.count(key) > 0) {
         return mapping[key];
     } else {
-        assert(false);
+        tlc_assert(false, "Key no found!");
     }
 }
 
 template<typename Tk, typename Tv>
 void ScoreBoard<Tk, Tv>::erase(const Tk& key) {
     int num = mapping.erase(key);
-    assert(num == 1);
+    tlc_assert(num == 1, "Multiple value mapped to one key!");
 }
 
 template<typename Tk, typename Tv>

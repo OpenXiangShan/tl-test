@@ -11,12 +11,11 @@
 #include "verilated_vcd_c.h"
 #endif
 #include "../Utils/ScoreBoard.h"
-#include "../Utils/Config.h"
+#include "../Utils/Common.h"
 #include "../TLAgent/ULAgent.cpp"
 
 class Emu {
 private:
-    // TODO: move out following parameters into a monolithic config
     typedef tl_agent::BaseAgent<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, DATASIZE> BaseAgent_t;
     typedef tl_agent::ULAgent<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, DATASIZE> ULAgent_t;
 
@@ -36,7 +35,7 @@ public:
     inline void pos_edge();
     inline void update_cycles(uint64_t inc);
     void execute(uint64_t nr_cycle);
-    Port<ReqField, RespField, EchoField, DATASIZE>* naive_gen_port();
+    Port<ReqField, RespField, EchoField, BEATSIZE>* naive_gen_port();
 };
 
 inline void Emu::reset(uint64_t n) {

@@ -12,7 +12,7 @@ Emu::Emu(int argc, char **argv) {
 
     // Init agents
     for (int i = 0; i < NR_ULAGENTS; i++) {
-        agents[i] = new ULAgent_t(globalBoard);
+        agents[i] = new ULAgent_t(globalBoard, &cycles);
         auto port = naive_gen_port();
         agents[i]->connect(port);
     }
@@ -38,10 +38,18 @@ Emu::~Emu() {
 }
 
 void Emu::execute(uint64_t nr_cycle) {
+    srand((unsigned)time(0));
     while (cycles < nr_cycle) {
         // TODO: to be removed
         if (cycles == 100) {
             dynamic_cast<ULAgent_t*>(agents[0])->do_get(0x1000);
+        }
+        if (cycles == 200) {
+            uint8_t* putdata = new uint8_t[DATASIZE];
+            for (int i = 0; i < DATASIZE; i++) {
+                putdata[i] = (uint8_t)rand();
+            }
+            dynamic_cast<ULAgent_t*>(agents[0])->do_putfulldata(0x2000, putdata);
         }
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->update();
@@ -57,8 +65,8 @@ void Emu::execute(uint64_t nr_cycle) {
 }
 
 // the following code is to be replaced soon, only for test
-Port<ReqField, RespField, EchoField, DATASIZE>* Emu::naive_gen_port() {
-    auto port = new Port<ReqField, RespField, EchoField, DATASIZE>();
+Port<ReqField, RespField, EchoField, BEATSIZE>* Emu::naive_gen_port() {
+    auto port = new Port<ReqField, RespField, EchoField, BEATSIZE>();
     port->a.ready = &(dut_ptr->master_port_0_0_a_ready);
     port->a.valid = &(dut_ptr->master_port_0_0_a_valid);
     port->a.opcode = &(dut_ptr->master_port_0_0_a_bits_opcode);
@@ -67,11 +75,13 @@ Port<ReqField, RespField, EchoField, DATASIZE>* Emu::naive_gen_port() {
     port->a.source = &(dut_ptr->master_port_0_0_a_bits_source);
     port->a.mask = &(dut_ptr->master_port_0_0_a_bits_mask);
     port->a.source = &(dut_ptr->master_port_0_0_a_bits_source);
+    port->a.data = (uint8_t*)&(dut_ptr->master_port_0_0_a_bits_data);
     port->d.ready = &(dut_ptr->master_port_0_0_d_ready);
     port->d.valid = &(dut_ptr->master_port_0_0_d_valid);
     port->d.opcode = &(dut_ptr->master_port_0_0_d_bits_opcode);
     port->d.param = &(dut_ptr->master_port_0_0_d_bits_param);
     port->d.size = &(dut_ptr->master_port_0_0_d_bits_size);
     port->d.source = &(dut_ptr->master_port_0_0_d_bits_source);
+    port->d.data = (uint8_t*)&(dut_ptr->master_port_0_0_d_bits_data);
     return port;
 }
