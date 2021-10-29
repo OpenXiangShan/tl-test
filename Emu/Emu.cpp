@@ -71,8 +71,8 @@ void Emu::execute(uint64_t nr_cycle) {
 }
 
 // the following code is to be replaced soon, only for test
-Port<ReqField, RespField, EchoField, BEATSIZE>* Emu::naive_gen_port() {
-    auto port = new Port<ReqField, RespField, EchoField, BEATSIZE>();
+tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEATSIZE>* Emu::naive_gen_port() {
+    auto port = new tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEATSIZE>();
     port->a.ready = &(dut_ptr->master_port_0_0_a_ready);
     port->a.valid = &(dut_ptr->master_port_0_0_a_valid);
     port->a.opcode = &(dut_ptr->master_port_0_0_a_bits_opcode);

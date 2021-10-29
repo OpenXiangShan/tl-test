@@ -97,7 +97,6 @@ namespace tl_agent {
         }
     };
 
-    template<class ReqField, class RespField, class EchoField, std::size_t N>
     class BaseAgent {
     protected:
         Port<ReqField, RespField, EchoField, BEATSIZE> *port;
@@ -106,9 +105,9 @@ namespace tl_agent {
         virtual void timeout_check() = 0;
 
     public:
-        virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, N>> &a) = 0;
+        virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a) = 0;
         virtual void handle_b() = 0;
-        virtual Resp send_c(std::shared_ptr<ChnA<ReqField, EchoField, N>> &c) = 0;
+        virtual Resp send_c(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &c) = 0;
         virtual void handle_d() = 0;
         virtual void fire_a() = 0;
         virtual void fire_b() = 0;
