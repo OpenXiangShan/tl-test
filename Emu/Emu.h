@@ -13,6 +13,7 @@
 #include "../Utils/ScoreBoard.h"
 #include "../Utils/Common.h"
 #include "../TLAgent/ULAgent.h"
+#include "../Fuzzer/Fuzzer.h"
 
 class Emu {
 private:
@@ -24,6 +25,7 @@ private:
     VerilatedVcdC* tfp;
     GlobalBoard<uint64_t> *globalBoard;
     BaseAgent_t ** const agents = new BaseAgent_t*[NR_AGENTS];
+    Fuzzer ** const fuzzers = new Fuzzer*[NR_AGENTS];
     uint64_t cycles;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
 

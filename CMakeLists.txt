@@ -11,6 +11,7 @@ find_package(verilator)
 
 add_subdirectory(Emu)
 add_subdirectory(TLAgent)
+add_subdirectory(Fuzzer)
 
 add_executable(tlc_test main.cpp)
-target_link_libraries(tlc_test Emu TLAgent)
+target_link_libraries(tlc_test Emu TLAgent Fuzzer)

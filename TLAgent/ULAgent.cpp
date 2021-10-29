@@ -150,6 +150,7 @@ namespace tl_agent {
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
         pendingA.init(req_a, 1);
+        Log("[Get] addr: %x\n", address);
         return true;
     }
     
@@ -164,6 +165,11 @@ namespace tl_agent {
         req_a->source = new uint8_t(this->idpool.getid());
         req_a->data = data;
         pendingA.init(req_a, DATASIZE / BEATSIZE);
+        Log("[PutFullData] addr: %x data: ", address);
+        for(int i = 0; i < DATASIZE; i++) {
+            Log("%hhx", data[i]);
+        }
+        Log("\n");
         return true;
     }
     

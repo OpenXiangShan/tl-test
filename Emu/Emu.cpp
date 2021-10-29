@@ -15,6 +15,8 @@ Emu::Emu(int argc, char **argv) {
         agents[i] = new ULAgent_t(globalBoard, &cycles);
         auto port = naive_gen_port();
         agents[i]->connect(port);
+        fuzzers[i] = new ULFuzzer(static_cast<ULAgent_t*>(agents[i]));
+        fuzzers[i]->set_cycles(&cycles);
     }
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
         // TODO: init tl-c agents
@@ -43,18 +45,9 @@ void Emu::execute(uint64_t nr_cycle) {
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
-        if (cycles == 100) {
-            dynamic_cast<ULAgent_t*>(agents[0])->do_get(0x1000);
-        }
-        if (cycles == 200) {
-            uint8_t* putdata = new uint8_t[DATASIZE];
-            for (int i = 0; i < DATASIZE; i++) {
-                putdata[i] = (uint8_t)rand();
-            }
-            dynamic_cast<ULAgent_t*>(agents[0])->do_putfulldata(0x2000, putdata);
-        }
-        if (cycles == 202) {
-            dynamic_cast<ULAgent_t*>(agents[0])->do_get(0x2000);
+
+        for (int i = 0; i < NR_AGENTS; i++) {
+            fuzzers[i]->tick();
         }
 
         for (int i = 0; i < NR_AGENTS; i++) {
