@@ -58,6 +58,11 @@ namespace tl_agent {
                 if (hasData) {
                     std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
                     global_SBEntry->pending_data = pendingA.info->data;
+                    if (this->globalBoard->mapping.count(*pendingA.info->address) == 0) {
+                        global_SBEntry->data = nullptr;
+                    } else {
+                        global_SBEntry->data = this->globalBoard->mapping[*pendingA.info->address]->data;
+                    }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
                     this->globalBoard->update(*pendingA.info->address, global_SBEntry);
                 }
@@ -104,9 +109,14 @@ namespace tl_agent {
             if (!pendingD.is_pending()) {
                 // ULAgent needn't care about endurance
                 if (hasData) {
-                    this->globalBoard->verify(localBoard->get(*chnD.source)->address, pendingD.info->data);
+                    Log("[AccessAckData] addr: %lx data: ", info->address);
+                    for(int i = 0; i < DATASIZE; i++) {
+                        Log("%02hhx", pendingD.info->data[i]);
+                    }
+                    Log("\n");
+                    this->globalBoard->verify(info->address, pendingD.info->data);
                 } else if (*chnD.opcode == AccessAck) { // finish pending status in GlobalBoard
-                    this->globalBoard->unpending(localBoard->get(*chnD.source)->address);
+                    this->globalBoard->unpending(info->address);
                 }
                 localBoard->erase(*chnD.source);
                 this->idpool.freeid(*chnD.source);
@@ -133,15 +143,18 @@ namespace tl_agent {
         if (pendingA.is_pending()) {
             // TODO: do delay here
             send_a(pendingA.info);
+        } else {
+            *this->port->a.valid = false;
         }
         // do timeout check lazily
         if (*this->cycles % TIMEOUT_INTERVAL == 0) {
             this->timeout_check();
         }
+        idpool.update();
     }
     
     bool ULAgent::do_get(uint16_t address) {
-        if (pendingA.is_pending())
+        if (pendingA.is_pending() || idpool.full())
             return false;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(Get);
@@ -155,7 +168,9 @@ namespace tl_agent {
     }
     
     bool ULAgent::do_putfulldata(uint16_t address, uint8_t data[]) {
-        if (pendingA.is_pending())
+        if (pendingA.is_pending() || idpool.full())
+            return false;
+        if (this->globalBoard->mapping.count(address) != 0 && this->globalBoard->get(address)->status == Global_SBEntry::SB_PENDING)
             return false;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(PutFullData);
@@ -167,7 +182,7 @@ namespace tl_agent {
         pendingA.init(req_a, DATASIZE / BEATSIZE);
         Log("[PutFullData] addr: %x data: ", address);
         for(int i = 0; i < DATASIZE; i++) {
-            Log("%hhx", data[i]);
+            Log("%02hhx", data[i]);
         }
         Log("\n");
         return true;

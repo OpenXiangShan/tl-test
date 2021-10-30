@@ -4,7 +4,7 @@
 int main(int argc, char **argv) {
     Emu emu(argc, argv);
     emu.reset(10);
-    emu.execute(1000);
-    std::cout << "Hello, World!" << std::endl;
+    emu.execute(1000000);
+    std::cout << "Finished" << std::endl;
     return 0;
 }

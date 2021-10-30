@@ -49,7 +49,11 @@ ScoreBoard<Tk, Tv>::~ScoreBoard() {
 
 template<typename Tk, typename Tv>
 void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
-    mapping.insert(std::make_pair(key, data));
+    if (mapping.count(key) != 0) {
+        mapping[key]= data;
+    } else {
+        mapping.insert(std::make_pair(key, data));
+    }
 }
 
 template<typename Tk, typename Tv>
@@ -92,8 +96,17 @@ template<typename T>
 int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref, std::string assert_info) {
     for (int i = 0; i < DATASIZE; i++) {
         if (dut[i] != ref[i]) {
-            printf("%u\n", dut[i]);
+            printf("dut: ");
+            for (int j = 0; j < DATASIZE; j++) {
+                printf("%02hhx", dut[j]);
+            }
+            printf("\nref: ");
+            for (int j = 0; j < DATASIZE; j++) {
+                printf("%02hhx", ref[j]);
+            }
+            printf("\n");
             tlc_assert(false, assert_info.data());
+            return -1;
         }
     }
     return 0;

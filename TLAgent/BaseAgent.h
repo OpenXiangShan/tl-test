@@ -69,6 +69,7 @@ namespace tl_agent {
     private:
         std::set<int> *idle_ids;
         std::set<int> *used_ids;
+        int pending_freeid;
     public:
         IDPool() {
             idle_ids = new std::set<int>();
@@ -77,6 +78,7 @@ namespace tl_agent {
                 idle_ids->insert(i);
             }
             used_ids->clear();
+            pending_freeid = -1;
         }
         ~IDPool() {
             delete idle_ids;
@@ -91,9 +93,18 @@ namespace tl_agent {
             return ret;
         }
         void freeid(int id) {
-            tlc_assert(used_ids->count(id) > 0, "Try to free unused SourceID!");
-            used_ids->erase(id);
-            idle_ids->insert(id);
+            this->pending_freeid = id;
+        }
+        void update() {
+            if (pending_freeid != -1) {
+                tlc_assert(used_ids->count(pending_freeid) > 0, "Try to free unused SourceID!");
+                used_ids->erase(pending_freeid);
+                idle_ids->insert(pending_freeid);
+                pending_freeid = -1;
+            }
+        }
+        bool full() {
+            return idle_ids->empty();
         }
     };
 

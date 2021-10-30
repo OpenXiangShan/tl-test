@@ -1,6 +1,12 @@
 add_library(Emu Emu.h Emu.cpp)
+
 if(DEFINED TRACE)
-    verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" "${DUT_DIR}/plusarg_reader.v" TRACE)
-else()
-    verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" "${DUT_DIR}/plusarg_reader.v")
+    set(ARG_TRACE TRACE)
 endif()
+if(DEFINED THREAD)
+    set(ARG_THREAD ${THREAD})
+else()
+    set(ARG_THREAD 1)
+endif()
+
+verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" "${DUT_DIR}/plusarg_reader.v" ${ARG_TRACE} THREADS ${ARG_THREAD})
