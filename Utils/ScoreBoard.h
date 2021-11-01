@@ -14,12 +14,14 @@ const int ERR_MISMATCH = 2;
 
 template<typename Tk, typename Tv>
 class ScoreBoard {
-public:
+protected:
     std::map<Tk, std::shared_ptr<Tv>> mapping;
+public:
     ScoreBoard();
     ~ScoreBoard();
+    std::map<Tk, std::shared_ptr<Tv>>& get();
     void update(const Tk& key, std::shared_ptr<Tv>& data);
-    std::shared_ptr<Tv> get(const Tk& key);
+    std::shared_ptr<Tv> query(const Tk& key);
     void erase(const Tk& key);
     int verify(const Tk& key, const Tv& data) const;
 };
@@ -36,6 +38,16 @@ public:
     uint8_t* pending_data; // used for put&release
 };
 
+template<typename T>
+class GlobalBoard : public ScoreBoard<T, Global_SBEntry> {
+private:
+    int data_check(const uint8_t* dut, const uint8_t* ref, std::string assert_info);
+    uint8_t init_zeros[DATASIZE];
+public:
+    int verify(const T& key, const uint8_t* data);
+    void unpending(const T& key);
+};
+
 /************************** Implementation **************************/
 
 template<typename Tk, typename Tv>
@@ -48,6 +60,11 @@ ScoreBoard<Tk, Tv>::~ScoreBoard() {
 }
 
 template<typename Tk, typename Tv>
+std::map<Tk, std::shared_ptr<Tv>>& ScoreBoard<Tk, Tv>::get() {
+    return this->mapping;
+}
+
+template<typename Tk, typename Tv>
 void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
     if (mapping.count(key) != 0) {
         mapping[key]= data;
@@ -57,7 +74,7 @@ void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
 }
 
 template<typename Tk, typename Tv>
-std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::get(const Tk& key) {
+std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::query(const Tk& key) {
     if (mapping.count(key) > 0) {
         return mapping[key];
     } else {
@@ -81,16 +98,6 @@ int ScoreBoard<Tk, Tv>::verify(const Tk& key, const Tv& data) const {
     }
     return ERR_NOTFOUND;
 }
-
-template<typename T>
-class GlobalBoard : public ScoreBoard<T, Global_SBEntry> {
-private:
-    int data_check(const uint8_t* dut, const uint8_t* ref, std::string assert_info);
-    uint8_t init_zeros[DATASIZE];
-public:
-    int verify(const T& key, const uint8_t* data);
-    void unpending(const T& key);
-};
 
 template<typename T>
 int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref, std::string assert_info) {
