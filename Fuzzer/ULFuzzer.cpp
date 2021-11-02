@@ -10,7 +10,7 @@ ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) {
 }
 
 void ULFuzzer::tick() {
-    uint16_t addr = (rand() % 10) * 0x100;
+    paddr_t addr = (rand() % 10) * 0x100;
     if (rand() % 2) {  // Get
         ulAgent->do_get(addr);
     } else { // Put

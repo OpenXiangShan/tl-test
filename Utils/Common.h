@@ -19,6 +19,8 @@ enum {
 #include <string>
 #include <assert.h>
 
+typedef uint16_t paddr_t;
+
 #define tlc_assert(cond, info) \
     do { \
         if (!(cond)) { \

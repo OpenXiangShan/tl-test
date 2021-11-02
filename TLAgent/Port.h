@@ -5,6 +5,7 @@
 #ifndef TLC_TEST_PORT_H
 #define TLC_TEST_PORT_H
 
+#include "../Utils/Common.h"
 #include <cstddef>
 #include <cstdint>
 #include <array>
@@ -85,7 +86,7 @@ namespace tl_agent {
         uint8_t *size;
         uint8_t *source;
         uint32_t *mask;
-        uint16_t *address;
+        paddr_t *address;
         uint8_t *data;
         Usr *usr;
         Echo *echo;
@@ -98,7 +99,7 @@ namespace tl_agent {
         uint8_t *param;
         uint8_t *size;
         uint8_t *source;
-        uint64_t *address;
+        paddr_t *address;
         uint8_t *corrupt;
     };
 
@@ -109,7 +110,7 @@ namespace tl_agent {
         uint8_t *param;
         uint8_t *size;
         uint8_t *source;
-        uint64_t *address;
+        paddr_t *address;
         Usr *usr;
         Echo *echo;
         std::array <uint8_t, N> *data;

@@ -153,12 +153,12 @@ namespace tl_agent {
         idpool.update();
     }
     
-    bool ULAgent::do_get(uint16_t address) {
+    bool ULAgent::do_get(paddr_t address) {
         if (pendingA.is_pending() || idpool.full())
             return false;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(Get);
-        req_a->address = new uint16_t(address);
+        req_a->address = new paddr_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
@@ -174,7 +174,7 @@ namespace tl_agent {
             return false;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(PutFullData);
-        req_a->address = new uint16_t(address);
+        req_a->address = new paddr_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
