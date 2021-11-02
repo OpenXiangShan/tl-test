@@ -13,17 +13,19 @@
 #include "../Utils/ScoreBoard.h"
 #include "../Utils/Common.h"
 #include "../TLAgent/ULAgent.h"
+#include "../TLAgent/CAgent.h"
 #include "../Fuzzer/Fuzzer.h"
 
 class Emu {
 private:
     typedef tl_agent::BaseAgent BaseAgent_t;
     typedef tl_agent::ULAgent ULAgent_t;
+    typedef tl_agent::CAgent CAgent_t;
 
     const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
     VTestTop *dut_ptr;
     VerilatedVcdC* tfp;
-    GlobalBoard<uint64_t> *globalBoard;
+    GlobalBoard<paddr_t> *globalBoard;
     BaseAgent_t ** const agents = new BaseAgent_t*[NR_AGENTS];
     Fuzzer ** const fuzzers = new Fuzzer*[NR_AGENTS];
     uint64_t cycles;

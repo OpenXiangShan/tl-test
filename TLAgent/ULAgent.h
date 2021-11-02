@@ -13,21 +13,18 @@ namespace tl_agent {
 
     class UL_SBEntry {
     public:
-        uint8_t id;
-        uint64_t address;
+        paddr_t address;
         int req_type;
         int status;
         uint64_t time_stamp;
         std::array<uint8_t, DATASIZE> data;
-        UL_SBEntry(uint8_t id, int req_type, int status, uint64_t address, uint64_t& time) {
-            this->id = id;
+        UL_SBEntry(int req_type, int status, paddr_t address, uint64_t& time) {
             this->req_type = req_type;
             this->status = status;
             this->address = address;
             this->time_stamp = time;
         }
-        UL_SBEntry(uint8_t id, int req_type, int status, uint64_t address, uint64_t time, std::array<uint8_t, DATASIZE> data) {
-            this->id = id;
+        UL_SBEntry(int req_type, int status, paddr_t address, uint64_t time, std::array<uint8_t, DATASIZE> data) {
             this->req_type = req_type;
             this->status = status;
             this->address = address;
@@ -52,7 +49,7 @@ namespace tl_agent {
         void timeout_check();
 
     public:
-        ULAgent(GlobalBoard<uint64_t> * const gb, uint64_t* cycles);
+        ULAgent(GlobalBoard<paddr_t> * const gb, uint64_t* cycles);
         ~ULAgent() = default;
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
         void handle_b();
@@ -65,8 +62,8 @@ namespace tl_agent {
         void fire_e();
         void handle_channel();
         void update_signal();
-        bool do_get(uint16_t address);
-        bool do_putfulldata(uint16_t address, uint8_t data[]);
+        bool do_get(paddr_t address);
+        bool do_putfulldata(paddr_t address, uint8_t data[]);
     };
 
 }

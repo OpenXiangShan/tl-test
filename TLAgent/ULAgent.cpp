@@ -6,7 +6,7 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(GlobalBoard<uint64_t> *gb, uint64_t* cycles):
+    ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, uint64_t* cycles):
             BaseAgent(), pendingA(), pendingD()
     {
         this->globalBoard = gb;
@@ -17,12 +17,12 @@ namespace tl_agent {
     Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a) {
         switch (*a->opcode) {
             case Get: {
-                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, Get, S_SENDING_A, *a->address, *this->cycles));
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(Get, S_SENDING_A, *a->address, *this->cycles));
                 localBoard->update(*a->source, entry);
                 break;
             }
             case PutFullData: {
-                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(*a->source, PutFullData, S_SENDING_A, *a->address, *this->cycles));
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(PutFullData, S_SENDING_A, *a->address, *this->cycles));
                 localBoard->update(*a->source, entry);
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {

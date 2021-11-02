@@ -8,7 +8,7 @@ Emu::Emu(int argc, char **argv) {
     Verilated::commandArgs(argc, argv);
     cycles = 0;
     dut_ptr = new VTestTop();
-    globalBoard = new GlobalBoard<uint64_t>(); // address -> data
+    globalBoard = new GlobalBoard<paddr_t>(); // address -> data
 
     // Init agents
     for (int i = 0; i < NR_ULAGENTS; i++) {
@@ -19,7 +19,7 @@ Emu::Emu(int argc, char **argv) {
         fuzzers[i]->set_cycles(&cycles);
     }
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
-        // TODO: init tl-c agents
+        agents[i] = new CAgent_t(globalBoard, &cycles);
     }
 
 #if VM_TRACE == 1

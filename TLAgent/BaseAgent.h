@@ -111,7 +111,7 @@ namespace tl_agent {
     class BaseAgent {
     protected:
         Port<ReqField, RespField, EchoField, BEATSIZE> *port;
-        GlobalBoard<uint64_t> *globalBoard;
+        GlobalBoard<paddr_t> *globalBoard;
         IDPool idpool;
         virtual void timeout_check() = 0;
 
