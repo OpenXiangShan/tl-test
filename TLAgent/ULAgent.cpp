@@ -54,14 +54,14 @@ namespace tl_agent {
             tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
             pendingA.update();
             if (!pendingA.is_pending()) { // req A finished
-                this->localBoard->get(*pendingA.info->source)->update_status(S_WAITING_D, *cycles);
+                this->localBoard->query(*pendingA.info->source)->update_status(S_WAITING_D, *cycles);
                 if (hasData) {
                     std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
                     global_SBEntry->pending_data = pendingA.info->data;
-                    if (this->globalBoard->mapping.count(*pendingA.info->address) == 0) {
+                    if (this->globalBoard->get().count(*pendingA.info->address) == 0) {
                         global_SBEntry->data = nullptr;
                     } else {
-                        global_SBEntry->data = this->globalBoard->mapping[*pendingA.info->address]->data;
+                        global_SBEntry->data = this->globalBoard->get()[*pendingA.info->address]->data;
                     }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
                     this->globalBoard->update(*pendingA.info->address, global_SBEntry);
@@ -81,7 +81,7 @@ namespace tl_agent {
     void ULAgent::fire_d() {
         if (this->port->d.fire()) {
             auto chnD = this->port->d;
-            auto info = localBoard->get(*chnD.source);
+            auto info = localBoard->query(*chnD.source);
             bool hasData = *chnD.opcode == GrantData || *chnD.opcode == AccessAckData;
             tlc_assert(info->status == S_WAITING_D, "Status error!");
             if (pendingD.is_pending()) { // following beats
@@ -170,7 +170,7 @@ namespace tl_agent {
     bool ULAgent::do_putfulldata(uint16_t address, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
-        if (this->globalBoard->mapping.count(address) != 0 && this->globalBoard->get(address)->status == Global_SBEntry::SB_PENDING)
+        if (this->globalBoard->get().count(address) != 0 && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
             return false;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(PutFullData);
@@ -189,10 +189,10 @@ namespace tl_agent {
     }
     
     void ULAgent::timeout_check() {
-        if (localBoard->mapping.empty()) {
+        if (localBoard->get().empty()) {
             return;
         }
-        for (auto it = this->localBoard->mapping.begin(); it != this->localBoard->mapping.end(); it++) {
+        for (auto it = this->localBoard->get().begin(); it != this->localBoard->get().end(); it++) {
             auto value = it->second;
             if (value->status != S_INVALID && value->status != S_VALID) {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
