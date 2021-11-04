@@ -20,6 +20,10 @@ Emu::Emu(int argc, char **argv) {
     }
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
         agents[i] = new CAgent_t(globalBoard, &cycles);
+        auto port = naive_gen_port();
+        agents[i]->connect(port);
+        fuzzers[i] = new CFuzzer(static_cast<CAgent_t*>(agents[i]));
+        fuzzers[i]->set_cycles(&cycles);
     }
 
 #if VM_TRACE == 1
@@ -69,6 +73,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->a.ready = &(dut_ptr->master_port_0_0_a_ready);
     port->a.valid = &(dut_ptr->master_port_0_0_a_valid);
     port->a.opcode = &(dut_ptr->master_port_0_0_a_bits_opcode);
+    port->a.param = &(dut_ptr->master_port_0_0_a_bits_param);
     port->a.address = &(dut_ptr->master_port_0_0_a_bits_address);
     port->a.size = &(dut_ptr->master_port_0_0_a_bits_size);
     port->a.source = &(dut_ptr->master_port_0_0_a_bits_source);
@@ -80,7 +85,11 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->d.opcode = &(dut_ptr->master_port_0_0_d_bits_opcode);
     port->d.param = &(dut_ptr->master_port_0_0_d_bits_param);
     port->d.size = &(dut_ptr->master_port_0_0_d_bits_size);
+    port->d.sink = &(dut_ptr->master_port_0_0_d_bits_sink);
     port->d.source = &(dut_ptr->master_port_0_0_d_bits_source);
     port->d.data = (uint8_t*)&(dut_ptr->master_port_0_0_d_bits_data);
+    port->e.ready = &(dut_ptr->master_port_0_0_e_ready);
+    port->e.valid = &(dut_ptr->master_port_0_0_e_valid);
+    port->e.sink = &(dut_ptr->master_port_0_0_e_bits_sink);
     return port;
 }

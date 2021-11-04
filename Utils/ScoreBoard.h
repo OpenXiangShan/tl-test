@@ -24,6 +24,7 @@ public:
     std::shared_ptr<Tv> query(const Tk& key);
     void erase(const Tk& key);
     int verify(const Tk& key, const Tv& data) const;
+    bool haskey(const Tk& key);
 };
 
 class Global_SBEntry {
@@ -97,6 +98,11 @@ int ScoreBoard<Tk, Tv>::verify(const Tk& key, const Tv& data) const {
         return 0;
     }
     return ERR_NOTFOUND;
+}
+
+template<typename Tk, typename Tv>
+bool ScoreBoard<Tk, Tv>::haskey(const Tk &key) {
+    return mapping.count(key) > 0;
 }
 
 template<typename T>

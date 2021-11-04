@@ -14,6 +14,29 @@ namespace tl_agent {
     class C_SBEntry {
     public:
         uint64_t time_stamp;
+        int status;
+        int privilege;
+        C_SBEntry(int status, int privilege, uint64_t& time) {
+            this->time_stamp = time;
+            this->privilege = privilege;
+            this->status = status;
+        }
+        void update_status(int status, uint64_t& time) {
+            this->status = status;
+            this->time_stamp = time;
+        }
+        void update_priviledge(int priv, uint64_t& time) {
+            this->privilege = priv;
+            this->time_stamp = time;
+        }
+    };
+
+    class C_IDEntry {
+    public:
+        paddr_t address;
+        C_IDEntry(paddr_t &addr) {
+            this->address = addr;
+        }
     };
 
     class CAgent : public BaseAgent {
@@ -21,8 +44,12 @@ namespace tl_agent {
         uint64_t *cycles;
         PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA;
         PendingTrans<ChnD<RespField, EchoField, DATASIZE>> pendingD;
-        /* Here we need a scoreboard maintaining address-> info */
+        PendingTrans<ChnE> pendingE;
+        /* Here we need a scoreboard maintaining address->info
+         * For convenience, an idMap(id->addr) is also maintained
+         */
         ScoreBoard<paddr_t , C_SBEntry> *localBoard;
+        ScoreBoard<int, C_IDEntry> *idMap;
         void timeout_check();
 
     public:
@@ -32,6 +59,7 @@ namespace tl_agent {
         void handle_b();
         Resp send_c(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &c);
         void handle_d();
+        Resp send_e(std::shared_ptr<ChnE> &e);
         void fire_a();
         void fire_b();
         void fire_c();
@@ -39,6 +67,8 @@ namespace tl_agent {
         void fire_e();
         void handle_channel();
         void update_signal();
+
+        bool do_acquireBlock(paddr_t address, int param);
     };
 
 }

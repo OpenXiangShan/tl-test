@@ -170,7 +170,7 @@ namespace tl_agent {
     bool ULAgent::do_putfulldata(uint16_t address, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
-        if (this->globalBoard->get().count(address) != 0 && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
+        if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
             return false;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(PutFullData);

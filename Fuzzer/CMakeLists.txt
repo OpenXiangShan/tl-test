@@ -1,3 +1,4 @@
 add_library(Fuzzer
         Fuzzer.h
-        ULFuzzer.cpp)
+        ULFuzzer.cpp
+        CFuzzer.cpp)

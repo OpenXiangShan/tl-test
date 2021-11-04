@@ -6,6 +6,7 @@
 #define TLC_TEST_FUZZER_H
 
 #include "../TLAgent/ULAgent.h"
+#include "../TLAgent/CAgent.h"
 
 class Fuzzer {
 protected:
@@ -29,8 +30,10 @@ public:
 
 class CFuzzer: public Fuzzer {
 private:
+    tl_agent::CAgent *cAgent;
 public:
-    void tick() = 0;
+    CFuzzer(tl_agent::CAgent *cAgent);
+    void tick();
 };
 
 #endif //TLC_TEST_FUZZER_H
