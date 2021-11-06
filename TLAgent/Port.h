@@ -135,6 +135,7 @@ namespace tl_agent {
     class ChnE : public Decoupled {
     public:
         uint8_t *sink;
+        paddr_t *addr;  // used for index scoreboard
     };
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>

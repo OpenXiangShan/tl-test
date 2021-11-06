@@ -129,6 +129,7 @@ namespace tl_agent {
                 if (*chnD.opcode == GrantData || *chnD.opcode == Grant) {
                     std::shared_ptr<ChnE> req_e(new ChnE());
                     req_e->sink = new uint8_t(*chnD.sink);
+                    req_e->addr = new paddr_t(addr);
                     pendingE.init(req_e, 1);
                     info->update_status(S_SENDING_E, *cycles);
                     info->update_priviledge(genPriv(*chnD.param), *cycles);
@@ -144,6 +145,8 @@ namespace tl_agent {
             auto chnE = this->port->e;
             *chnE.valid = false;
             tlc_assert(pendingE.is_pending(), "No pending A but A fired!");
+            auto info = localBoard->query(*pendingE.info->addr);
+            info->update_status(S_VALID, *cycles);
             pendingE.update();
         }
     }
@@ -198,7 +201,24 @@ namespace tl_agent {
         return true;
     }
 
-    void CAgent::timeout_check() {
+    bool CAgent::do_releaseData(paddr_t address, int param) {
 
+    }
+
+    void CAgent::timeout_check() {
+        if (localBoard->get().empty()) {
+            return;
+        }
+        for (auto it = this->localBoard->get().begin(); it != this->localBoard->get().end(); it++) {
+            auto value = it->second;
+            if (value->status != S_INVALID && value->status != S_VALID) {
+                if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
+                    printf("Now time:   %lu\n", *this->cycles);
+                    printf("Last stamp: %lu\n", value->time_stamp);
+                    printf("Status:     %d\n", value->status);
+                    tlc_assert(false,  "Transaction time out");
+                }
+            }
+        }
     }
 }
