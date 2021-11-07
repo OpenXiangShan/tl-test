@@ -16,4 +16,11 @@ void CFuzzer::tick() {
     if (*cycles == 201) {
         this->cAgent->do_acquireBlock(0x2000, tl_agent::NtoT);
     }
+    if (*cycles == 300) {
+        uint8_t* putdata = new uint8_t[DATASIZE];
+        for (int i = 0; i < DATASIZE; i++) {
+            putdata[i] = (uint8_t)rand();
+        }
+        this->cAgent->do_releaseData(0x2000, tl_agent::TtoN, putdata);
+    }
 }

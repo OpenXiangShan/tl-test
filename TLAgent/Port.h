@@ -113,7 +113,7 @@ namespace tl_agent {
         paddr_t *address;
         Usr *usr;
         Echo *echo;
-        std::array <uint8_t, N> *data;
+        uint8_t *data;
         uint8_t *corrupt;
     };
 

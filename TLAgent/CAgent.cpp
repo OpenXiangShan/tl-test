@@ -6,7 +6,7 @@
 
 namespace tl_agent {
 
-    int genPriv(int param) {
+    int capGenPriv(int param) {
         switch (param) {
             case toT: return TIP;
             case toB: return BRANCH;
@@ -16,8 +16,18 @@ namespace tl_agent {
         }
     }
 
+    int shrinkGenPriv(int param) {
+        switch (param) {
+            case TtoB: return BRANCH;
+            case TtoN: return INVALID;
+            case BtoN: return INVALID;
+            default:
+                tlc_assert(false, "Invalid param!");
+        }
+    }
+
     CAgent::CAgent(GlobalBoard<paddr_t> *const gb, uint64_t *cycles):
-        BaseAgent(), pendingA(), pendingD(), pendingE()
+        BaseAgent(), pendingA(), pendingC(), pendingD(), pendingE()
     {
         this->globalBoard = gb;
         this->cycles = cycles;
@@ -55,8 +65,32 @@ namespace tl_agent {
 
     }
 
-    Resp CAgent::send_c(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &c) {
+    Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c) {
+        switch (*c->opcode) {
+            case ReleaseData: {
+                std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*c->address));
+                idMap->update(*c->source, idmap_entry);
 
+                if (localBoard->haskey(*c->address)) {
+                    localBoard->query(*c->address)->update_status(S_SENDING_A, *cycles);
+                } else {
+                    tlc_assert(false, "Localboard key not found!");
+                }
+                int beat_num = pendingC.nr_beat - pendingC.beat_cnt;
+                for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
+                    this->port->c.data[i - BEATSIZE * beat_num] = c->data[i];
+                }
+                break;
+            }
+            default:
+                tlc_assert(false, "Unknown opcode for channel C!");
+        }
+        *this->port->c.opcode = *c->opcode;
+        *this->port->c.address = *c->address;
+        *this->port->c.size = *c->size;
+        *this->port->c.source = *c->source;
+        *this->port->c.valid = true;
+        return OK;
     }
 
     void CAgent::handle_d() {
@@ -86,7 +120,27 @@ namespace tl_agent {
     }
 
     void CAgent::fire_c() {
-
+        if (this->port->c.fire()) {
+            auto chnC = this->port->c;
+            bool hasData = *chnC.opcode == ReleaseData;
+            *chnC.valid = false;
+            tlc_assert(pendingC.is_pending(), "No pending C but C fired!");
+            pendingC.update();
+            if (!pendingC.is_pending()) { // req C finished
+                this->localBoard->query(*pendingC.info->address)->update_status(S_WAITING_D, *cycles);
+                if (hasData) {
+                    std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
+                    global_SBEntry->pending_data = pendingC.info->data;
+                    if (this->globalBoard->get().count(*pendingC.info->address) == 0) {
+                        global_SBEntry->data = nullptr;
+                    } else {
+                        global_SBEntry->data = this->globalBoard->get()[*pendingC.info->address]->data;
+                    }
+                    global_SBEntry->status = Global_SBEntry::SB_PENDING;
+                    this->globalBoard->update(*pendingC.info->address, global_SBEntry);
+                }
+            }
+        }
     }
 
     void CAgent::fire_d() {
@@ -117,7 +171,6 @@ namespace tl_agent {
                 }
             }
             if (!pendingD.is_pending()) {
-                // ULAgent needn't care about endurance
                 if (hasData) {
                     Log("[GrantData] addr: %hx data: ", addr);
                     for(int i = 0; i < DATASIZE; i++) {
@@ -132,7 +185,11 @@ namespace tl_agent {
                     req_e->addr = new paddr_t(addr);
                     pendingE.init(req_e, 1);
                     info->update_status(S_SENDING_E, *cycles);
-                    info->update_priviledge(genPriv(*chnD.param), *cycles);
+                    info->update_priviledge(capGenPriv(*chnD.param), *cycles);
+                }
+                if (*chnD.opcode == ReleaseAck) {
+                    info->update_status(S_VALID, *cycles);
+                    info->update_priviledge(shrinkGenPriv(*chnD.param), *cycles);
                 }
                 idMap->erase(*chnD.source);
                 this->idpool.freeid(*chnD.source);
@@ -153,6 +210,7 @@ namespace tl_agent {
 
     void CAgent::handle_channel() {
         fire_a();
+        fire_c();
         fire_d();
         fire_e();
     }
@@ -164,6 +222,11 @@ namespace tl_agent {
             send_a(pendingA.info);
         } else {
             *this->port->a.valid = false;
+        }
+        if (pendingC.is_pending()) {
+            send_c(pendingC.info);
+        } else {
+            *this->port->c.valid = false;
         }
         if (pendingE.is_pending()) {
             send_e(pendingE.info);
@@ -201,8 +264,33 @@ namespace tl_agent {
         return true;
     }
 
-    bool CAgent::do_releaseData(paddr_t address, int param) {
+    bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[]) {
+        if (pendingC.is_pending() || idpool.full() || !localBoard->haskey(address))
+            return false;
+        // TODO: checkout pendingA
+        auto entry = localBoard->query(address);
+        auto privilege = entry->privilege;
+        auto status = entry->status;
+        if (status != S_VALID && status != S_INVALID) {
+            return false;
+        }
+        if (privilege == INVALID) return false;
+        if (privilege == BRANCH && param != BtoN) return false;
+        if (privilege == TIP && param == BtoN) return false;
 
+        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
+        req_c->opcode = new uint8_t(ReleaseData);
+        req_c->address = new paddr_t(address);
+        req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
+        req_c->source = new uint8_t(this->idpool.getid());
+        req_c->data = data;
+        pendingC.init(req_c, DATASIZE / BEATSIZE);
+        Log("[Release] addr: %x data: ", address);
+        for(int i = 0; i < DATASIZE; i++) {
+            Log("%02hhx", data[i]);
+        }
+        Log("\n");
+        return true;
     }
 
     void CAgent::timeout_check() {
