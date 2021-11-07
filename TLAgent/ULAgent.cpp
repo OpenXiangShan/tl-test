@@ -42,7 +42,7 @@ namespace tl_agent {
         return OK;
     }
 
-    Resp ULAgent::send_c(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &c) {
+    Resp ULAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c) {
         return OK;
     }
 

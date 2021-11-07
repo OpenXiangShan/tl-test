@@ -53,7 +53,7 @@ namespace tl_agent {
         ~ULAgent() = default;
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
         void handle_b();
-        Resp send_c(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &c);
+        Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c);
         void handle_d();
         void fire_a();
         void fire_b();

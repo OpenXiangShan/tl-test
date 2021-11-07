@@ -43,6 +43,7 @@ namespace tl_agent {
     private:
         uint64_t *cycles;
         PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA;
+        PendingTrans<ChnC<ReqField, EchoField, DATASIZE>> pendingC;
         PendingTrans<ChnD<RespField, EchoField, DATASIZE>> pendingD;
         PendingTrans<ChnE> pendingE;
         /* Here we need a scoreboard maintaining address->info
@@ -57,7 +58,7 @@ namespace tl_agent {
         ~CAgent() = default;
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
         void handle_b();
-        Resp send_c(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &c);
+        Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c);
         void handle_d();
         Resp send_e(std::shared_ptr<ChnE> &e);
         void fire_a();
@@ -69,7 +70,7 @@ namespace tl_agent {
         void update_signal();
 
         bool do_acquireBlock(paddr_t address, int param);
-        bool do_releaseData(paddr_t address, int param);
+        bool do_releaseData(paddr_t address, int param, uint8_t data[]);
     };
 
 }
