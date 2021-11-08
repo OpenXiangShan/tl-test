@@ -123,11 +123,13 @@ namespace tl_agent {
         if (this->port->c.fire()) {
             auto chnC = this->port->c;
             bool hasData = *chnC.opcode == ReleaseData;
+            // TODO: consider when to disable chnC
             *chnC.valid = false;
             tlc_assert(pendingC.is_pending(), "No pending C but C fired!");
             pendingC.update();
             if (!pendingC.is_pending()) { // req C finished
-                this->localBoard->query(*pendingC.info->address)->update_status(S_WAITING_D, *cycles);
+                auto info = this->localBoard->query(*pendingC.info->address);
+                info->update_status(S_WAITING_D, *cycles);
                 if (hasData) {
                     std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
                     global_SBEntry->pending_data = pendingC.info->data;
@@ -138,6 +140,9 @@ namespace tl_agent {
                     }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
                     this->globalBoard->update(*pendingC.info->address, global_SBEntry);
+                }
+                if (*chnC.opcode == ReleaseData || *chnC.opcode == Release) {
+                    info->update_pending_priviledge(shrinkGenPriv(*pendingC.info->param), *cycles);
                 }
             }
         }
@@ -188,8 +193,9 @@ namespace tl_agent {
                     info->update_priviledge(capGenPriv(*chnD.param), *cycles);
                 }
                 if (*chnD.opcode == ReleaseAck) {
+                    Log("[ReleaseAck] addr: %hx\n", addr);
                     info->update_status(S_VALID, *cycles);
-                    info->update_priviledge(shrinkGenPriv(*chnD.param), *cycles);
+                    info->unpending_priviledge(*cycles);
                 }
                 idMap->erase(*chnD.source);
                 this->idpool.freeid(*chnD.source);
@@ -221,11 +227,13 @@ namespace tl_agent {
             // TODO: do delay here
             send_a(pendingA.info);
         } else {
+            // TODO: is this necessary?
             *this->port->a.valid = false;
         }
         if (pendingC.is_pending()) {
             send_c(pendingC.info);
         } else {
+            // TODO: is this necessary?
             *this->port->c.valid = false;
         }
         if (pendingE.is_pending()) {
@@ -281,11 +289,12 @@ namespace tl_agent {
         std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
         req_c->opcode = new uint8_t(ReleaseData);
         req_c->address = new paddr_t(address);
+        req_c->param = new uint8_t(param);
         req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_c->source = new uint8_t(this->idpool.getid());
         req_c->data = data;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
-        Log("[Release] addr: %x data: ", address);
+        Log("[ReleaseData] addr: %x data: ", address);
         for(int i = 0; i < DATASIZE; i++) {
             Log("%02hhx", data[i]);
         }

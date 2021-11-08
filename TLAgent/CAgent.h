@@ -16,6 +16,7 @@ namespace tl_agent {
         uint64_t time_stamp;
         int status;
         int privilege;
+        int pending_privilege;
         C_SBEntry(int status, int privilege, uint64_t& time) {
             this->time_stamp = time;
             this->privilege = privilege;
@@ -27,6 +28,15 @@ namespace tl_agent {
         }
         void update_priviledge(int priv, uint64_t& time) {
             this->privilege = priv;
+            this->time_stamp = time;
+        }
+        void update_pending_priviledge(int priv, uint64_t& time) {
+            this->pending_privilege = priv;
+            this->time_stamp = time;
+        }
+        void unpending_priviledge(uint64_t& time) {
+            this->privilege = this->pending_privilege;
+            this->pending_privilege = -1;
             this->time_stamp = time;
         }
     };
