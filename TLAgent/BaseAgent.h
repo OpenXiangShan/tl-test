@@ -117,7 +117,7 @@ namespace tl_agent {
 
     public:
         virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a) = 0;
-        virtual void handle_b() = 0;
+        virtual void handle_b(std::shared_ptr<ChnB> &b) = 0;
         virtual Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c) = 0;
         virtual void handle_d() = 0;
         virtual void fire_a() = 0;

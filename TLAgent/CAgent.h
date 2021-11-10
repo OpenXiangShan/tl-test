@@ -53,6 +53,7 @@ namespace tl_agent {
     private:
         uint64_t *cycles;
         PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA;
+        PendingTrans<ChnB> pendingB;
         PendingTrans<ChnC<ReqField, EchoField, DATASIZE>> pendingC;
         PendingTrans<ChnD<RespField, EchoField, DATASIZE>> pendingD;
         PendingTrans<ChnE> pendingE;
@@ -67,7 +68,7 @@ namespace tl_agent {
         CAgent(GlobalBoard<paddr_t> * const gb, uint64_t* cycles);
         ~CAgent() = default;
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
-        void handle_b();
+        void handle_b(std::shared_ptr<ChnB> &b);
         Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c);
         void handle_d();
         Resp send_e(std::shared_ptr<ChnE> &e);

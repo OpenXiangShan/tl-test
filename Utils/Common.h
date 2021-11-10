@@ -11,7 +11,7 @@ enum {
     NR_ULAGENTS = 0,
     NR_CAGENTS = 1,
     NR_SOURCEID = 16,
-    TIMEOUT_INTERVAL = 200
+    TIMEOUT_INTERVAL = 1000
 };
 
 #include <memory>

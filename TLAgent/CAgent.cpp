@@ -27,7 +27,7 @@ namespace tl_agent {
     }
 
     CAgent::CAgent(GlobalBoard<paddr_t> *const gb, uint64_t *cycles):
-        BaseAgent(), pendingA(), pendingC(), pendingD(), pendingE()
+        BaseAgent(), pendingA(), pendingB(), pendingC(), pendingD(), pendingE()
     {
         this->globalBoard = gb;
         this->cycles = cycles;
@@ -55,14 +55,16 @@ namespace tl_agent {
         *this->port->a.opcode = *a->opcode;
         *this->port->a.address = *a->address;
         *this->port->a.size = *a->size;
+        *this->port->a.param = *a->param;
         *this->port->a.mask = *a->mask;
         *this->port->a.source = *a->source;
         *this->port->a.valid = true;
         return OK;
     }
 
-    void CAgent::handle_b() {
-
+    void CAgent::handle_b(std::shared_ptr<ChnB> &b) {
+        // TODO
+        printf("handle B\n");
     }
 
     Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c) {
@@ -116,18 +118,26 @@ namespace tl_agent {
     }
 
     void CAgent::fire_b() {
-
+        if (this->port->b.fire()) {
+            auto chnB = this->port->b;
+            std::shared_ptr<ChnB> req_b(new ChnB());
+            req_b->opcode = new uint8_t(*chnB.opcode);
+            req_b->address = new paddr_t(*chnB.address);
+            req_b->param = new uint8_t(*chnB.param);
+            req_b->size = new uint8_t(*chnB.size);
+            req_b->source = new uint8_t(*chnB.source);
+            pendingB.init(req_b, 1);
+        }
     }
 
     void CAgent::fire_c() {
         if (this->port->c.fire()) {
             auto chnC = this->port->c;
             bool hasData = *chnC.opcode == ReleaseData;
-            // TODO: consider when to disable chnC
-            *chnC.valid = false;
             tlc_assert(pendingC.is_pending(), "No pending C but C fired!");
             pendingC.update();
             if (!pendingC.is_pending()) { // req C finished
+                *chnC.valid = false;
                 auto info = this->localBoard->query(*pendingC.info->address);
                 info->update_status(S_WAITING_D, *cycles);
                 if (hasData) {
@@ -177,7 +187,7 @@ namespace tl_agent {
             }
             if (!pendingD.is_pending()) {
                 if (hasData) {
-                    Log("[GrantData] addr: %hx data: ", addr);
+                    Log("[%ld] [GrantData] addr: %hx data: ", *cycles, addr);
                     for(int i = 0; i < DATASIZE; i++) {
                         Log("%02hhx", pendingD.info->data[i]);
                     }
@@ -193,7 +203,7 @@ namespace tl_agent {
                     info->update_priviledge(capGenPriv(*chnD.param), *cycles);
                 }
                 if (*chnD.opcode == ReleaseAck) {
-                    Log("[ReleaseAck] addr: %hx\n", addr);
+                    Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
                     info->update_status(S_VALID, *cycles);
                     info->unpending_priviledge(*cycles);
                 }
@@ -216,6 +226,7 @@ namespace tl_agent {
 
     void CAgent::handle_channel() {
         fire_a();
+        fire_b();
         fire_c();
         fire_d();
         fire_e();
@@ -223,18 +234,16 @@ namespace tl_agent {
 
     void CAgent::update_signal() {
         *this->port->d.ready = true; // TODO: do random here
+        *this->port->b.ready = true; // TODO: do random here
         if (pendingA.is_pending()) {
             // TODO: do delay here
             send_a(pendingA.info);
-        } else {
-            // TODO: is this necessary?
-            *this->port->a.valid = false;
+        }
+        if (pendingB.is_pending()) {
+            handle_b(pendingB.info);
         }
         if (pendingC.is_pending()) {
             send_c(pendingC.info);
-        } else {
-            // TODO: is this necessary?
-            *this->port->c.valid = false;
         }
         if (pendingE.is_pending()) {
             send_e(pendingE.info);
@@ -268,7 +277,7 @@ namespace tl_agent {
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
         pendingA.init(req_a, 1);
-        Log("[AcquireData] addr: %x\n", address);
+        Log("[%ld] [AcquireData] addr: %x\n", *cycles, address);
         return true;
     }
 
@@ -276,6 +285,7 @@ namespace tl_agent {
         if (pendingC.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
         // TODO: checkout pendingA
+        // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
         auto privilege = entry->privilege;
         auto status = entry->status;
@@ -294,7 +304,7 @@ namespace tl_agent {
         req_c->source = new uint8_t(this->idpool.getid());
         req_c->data = data;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
-        Log("[ReleaseData] addr: %x data: ", address);
+        Log("[%ld] [ReleaseData] addr: %x data: ", *cycles, address);
         for(int i = 0; i < DATASIZE; i++) {
             Log("%02hhx", data[i]);
         }

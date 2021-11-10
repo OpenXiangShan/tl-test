@@ -127,7 +127,7 @@ namespace tl_agent {
     void ULAgent::fire_e() {
     }
 
-    void ULAgent::handle_b() {
+    void ULAgent::handle_b(std::shared_ptr<ChnB> &b) {
     }
 
     void ULAgent::handle_d() {
