@@ -24,7 +24,7 @@ void CFuzzer::tick() {
 //        this->cAgent->do_releaseData(0x2000, tl_agent::TtoN, putdata);
 //    }
 
-    paddr_t addr = (rand() % 0x10) * 0x1000;
+    paddr_t addr = (rand() % 0x100) * 0x100;
     if (rand() % 2) {  // AcquireBlock
         cAgent->do_acquireBlock(addr, tl_agent::NtoT);
     } else { // ReleaseData

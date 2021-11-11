@@ -27,7 +27,7 @@ namespace tl_agent {
     }
 
     CAgent::CAgent(GlobalBoard<paddr_t> *const gb, uint64_t *cycles):
-        BaseAgent(), pendingA(), pendingB(), pendingC(), pendingD(), pendingE()
+        BaseAgent(), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
     {
         this->globalBoard = gb;
         this->cycles = cycles;
@@ -63,8 +63,44 @@ namespace tl_agent {
     }
 
     void CAgent::handle_b(std::shared_ptr<ChnB> &b) {
-        // TODO
-        printf("handle B\n");
+        if (pendingC.is_pending()) {
+            Log("[info] B wanna pendingC\n");
+            return;
+        }
+        if (this->probeIDpool.full()) {
+            Log("[info] id pool full\n");
+            return;
+        }
+        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
+
+        req_c->address = new paddr_t(*pendingB.info->address);
+        req_c->size = new uint8_t(*pendingB.info->size);
+        req_c->source = new uint8_t(this->probeIDpool.getid());
+        Log("== id == handleB %d\n", *req_c->source);
+        if (globalBoard->haskey(*pendingB.info->address) && globalBoard->query(*pendingB.info->address)->status == Global_SBEntry::SB_PENDING) {
+            Log("Probe a release-pendingBlock\n");
+            req_c->opcode = new uint8_t(ProbeAck);
+            req_c->param = new uint8_t(NtoN);
+            pendingC.init(req_c, 1);
+            Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *pendingB.info->address);
+        } else {
+            req_c->opcode = new uint8_t(ProbeAckData); // TODO: no need to always probeackData
+            req_c->param = new uint8_t(TtoN); // TODO
+            if (!globalBoard->haskey(*pendingB.info->address)) {
+                // want to probe an all-zero block which does not exist in global board
+                uint8_t *all_zero = new uint8_t[DATASIZE];
+                req_c->data = all_zero;
+            } else {
+                req_c->data = globalBoard->query(*pendingB.info->address)->pending_data;
+            }
+            pendingC.init(req_c, DATASIZE / BEATSIZE);
+            Log("[%ld] [ProbeAckData] addr: %x data: ", *cycles, *pendingB.info->address);
+            for(int i = 0; i < DATASIZE; i++) {
+                Log("%02hhx", req_c->data[i]);
+            }
+            Log("\n");
+        }
+        pendingB.update();
     }
 
     Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c) {
@@ -74,13 +110,45 @@ namespace tl_agent {
                 idMap->update(*c->source, idmap_entry);
 
                 if (localBoard->haskey(*c->address)) {
-                    localBoard->query(*c->address)->update_status(S_SENDING_A, *cycles);
+                    localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles);
                 } else {
                     tlc_assert(false, "Localboard key not found!");
                 }
                 int beat_num = pendingC.nr_beat - pendingC.beat_cnt;
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
                     this->port->c.data[i - BEATSIZE * beat_num] = c->data[i];
+                }
+                break;
+            }
+            case ProbeAckData: {
+                std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*c->address));
+                idMap->update(*c->source, idmap_entry);
+
+                if (localBoard->haskey(*c->address)) {
+                    localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles);
+                } else {
+                    tlc_assert(false, "Localboard key not found!");
+                }
+                int beat_num = pendingC.nr_beat - pendingC.beat_cnt;
+                for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
+                    this->port->c.data[i - BEATSIZE * beat_num] = c->data[i];
+                }
+                break;
+            }
+            case ProbeAck: {
+                std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*c->address));
+                idMap->update(*c->source, idmap_entry);
+                tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
+
+                if (localBoard->haskey(*c->address)) {
+                    if (localBoard->query(*c->address)->status == S_WAITING_D) {
+                        localBoard->query(*c->address)->update_status(S_WAITING_D_INTR, *cycles);
+                    } else {
+                        tlc_assert(localBoard->query(*c->address)->status == S_VALID, "SendingC without S_VALID!");
+                        localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles);
+                    }
+                } else {
+                    tlc_assert(false, "Localboard key not found!");
                 }
                 break;
             }
@@ -127,6 +195,7 @@ namespace tl_agent {
             req_b->size = new uint8_t(*chnB.size);
             req_b->source = new uint8_t(*chnB.source);
             pendingB.init(req_b, 1);
+            Log("[%ld] [Probe] addr: %hx\n", *cycles, *chnB.address);
         }
     }
 
@@ -134,12 +203,21 @@ namespace tl_agent {
         if (this->port->c.fire()) {
             auto chnC = this->port->c;
             bool hasData = *chnC.opcode == ReleaseData;
+            bool needAck = *chnC.opcode == ReleaseData || *chnC.opcode == Release;
             tlc_assert(pendingC.is_pending(), "No pending C but C fired!");
             pendingC.update();
             if (!pendingC.is_pending()) { // req C finished
                 *chnC.valid = false;
                 auto info = this->localBoard->query(*pendingC.info->address);
-                info->update_status(S_WAITING_D, *cycles);
+                if (needAck) {
+                    info->update_status(S_WAITING_D, *cycles);
+                } else {
+                    if (info->status == S_WAITING_D_INTR) {
+                        info->update_status(S_WAITING_D, *cycles);
+                    } else {
+                        info->update_status(S_INVALID, *cycles);
+                    }
+                }
                 if (hasData) {
                     std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
                     global_SBEntry->pending_data = pendingC.info->data;
@@ -153,6 +231,9 @@ namespace tl_agent {
                 }
                 if (*chnC.opcode == ReleaseData || *chnC.opcode == Release) {
                     info->update_pending_priviledge(shrinkGenPriv(*pendingC.info->param), *cycles);
+                } else {
+                    Log("== free == fireC %d\n", *chnC.source);
+                    this->probeIDpool.freeid(*chnC.source);
                 }
             }
         }
@@ -164,7 +245,7 @@ namespace tl_agent {
             bool hasData = *chnD.opcode == GrantData;
             auto addr = idMap->query(*chnD.source)->address;
             auto info = localBoard->query(addr);
-            tlc_assert(info->status == S_WAITING_D, "Status error!");
+            tlc_assert(info->status == S_WAITING_D || info->status == S_WAITING_D_INTR, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 tlc_assert(*chnD.opcode == *pendingD.info->opcode, "Opcode mismatch among beats!");
                 tlc_assert(*chnD.param == *pendingD.info->param, "Param mismatch among beats!");
@@ -204,10 +285,15 @@ namespace tl_agent {
                 }
                 if (*chnD.opcode == ReleaseAck) {
                     Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
-                    info->update_status(S_VALID, *cycles);
+                    if (info->status == S_WAITING_D) {
+                        info->update_status(S_VALID, *cycles);
+                    } else {
+                        info->update_status(S_SENDING_C, *cycles);
+                    }
                     info->unpending_priviledge(*cycles);
                 }
                 idMap->erase(*chnD.source);
+                Log("== free == fireD %d\n", *chnD.source);
                 this->idpool.freeid(*chnD.source);
             }
         }
@@ -253,10 +339,11 @@ namespace tl_agent {
             this->timeout_check();
         }
         idpool.update();
+        probeIDpool.update();
     }
 
     bool CAgent::do_acquireBlock(paddr_t address, int param) {
-        if (pendingA.is_pending() || idpool.full())
+        if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(address);
@@ -276,20 +363,21 @@ namespace tl_agent {
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
+        Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
         Log("[%ld] [AcquireData] addr: %x\n", *cycles, address);
         return true;
     }
 
     bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[]) {
-        if (pendingC.is_pending() || idpool.full() || !localBoard->haskey(address))
+        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
         auto privilege = entry->privilege;
         auto status = entry->status;
-        if (status != S_VALID && status != S_INVALID) {
+        if (status != S_VALID) {
             return false;
         }
         if (privilege == INVALID) return false;
@@ -302,6 +390,7 @@ namespace tl_agent {
         req_c->param = new uint8_t(param);
         req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_c->source = new uint8_t(this->idpool.getid());
+        Log("== id == release %d\n", *req_c->source);
         req_c->data = data;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
         Log("[%ld] [ReleaseData] addr: %x data: ", *cycles, address);

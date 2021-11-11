@@ -62,6 +62,7 @@ namespace tl_agent {
          */
         ScoreBoard<paddr_t , C_SBEntry> *localBoard;
         ScoreBoard<int, C_IDEntry> *idMap;
+        IDPool probeIDpool;
         void timeout_check();
 
     public:

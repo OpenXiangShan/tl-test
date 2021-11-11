@@ -21,6 +21,7 @@ namespace tl_agent {
         S_REACTING_B, // ready to react B request actively
         S_SENDING_C,  // ready to send C request actively
         S_WAITING_D,  // wait for D response
+        S_WAITING_D_INTR, // wait for D response while probe interrupted
         S_SENDING_E,  // ready to send E request actively
     };
 
@@ -71,10 +72,10 @@ namespace tl_agent {
         std::set<int> *used_ids;
         int pending_freeid;
     public:
-        IDPool() {
+        IDPool(int start, int end) {
             idle_ids = new std::set<int>();
             used_ids = new std::set<int>();
-            for (int i = 0; i < NR_SOURCEID; i++) {
+            for (int i = start; i < end; i++) {
                 idle_ids->insert(i);
             }
             used_ids->clear();
@@ -127,7 +128,7 @@ namespace tl_agent {
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
-        BaseAgent(): idpool() {};
+        BaseAgent(): idpool(0, NR_SOURCEID) {};
         virtual ~BaseAgent() = default;
 
         void connect(Port<ReqField, RespField, EchoField, BEATSIZE> *p){ this->port = p; }
