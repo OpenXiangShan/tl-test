@@ -109,13 +109,14 @@ namespace tl_agent {
             if (!pendingD.is_pending()) {
                 // ULAgent needn't care about endurance
                 if (hasData) {
-                    Log("[AccessAckData] addr: %lx data: ", info->address);
+                    Log("[%ld] [AccessAckData] addr: %hx data: ", *cycles, info->address);
                     for(int i = 0; i < DATASIZE; i++) {
                         Log("%02hhx", pendingD.info->data[i]);
                     }
                     Log("\n");
                     this->globalBoard->verify(info->address, pendingD.info->data);
                 } else if (*chnD.opcode == AccessAck) { // finish pending status in GlobalBoard
+                    Log("[%ld] [AccessAck] addr: %hx\n", *cycles, info->address);
                     this->globalBoard->unpending(info->address);
                 }
                 localBoard->erase(*chnD.source);
@@ -163,7 +164,7 @@ namespace tl_agent {
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
         pendingA.init(req_a, 1);
-        Log("[Get] addr: %x\n", address);
+        Log("[%ld] [Get] addr: %x\n", *cycles, address);
         return true;
     }
     
@@ -180,7 +181,29 @@ namespace tl_agent {
         req_a->source = new uint8_t(this->idpool.getid());
         req_a->data = data;
         pendingA.init(req_a, DATASIZE / BEATSIZE);
-        Log("[PutFullData] addr: %x data: ", address);
+        Log("[%ld] [PutFullData] addr: %x data: ", *cycles, address);
+        for(int i = 0; i < DATASIZE; i++) {
+            Log("%02hhx", data[i]);
+        }
+        Log("\n");
+        return true;
+    }
+
+    bool ULAgent::do_putpartialdata(uint16_t address, uint8_t size, uint8_t mask, uint8_t data[]) {
+        if (pendingA.is_pending() || idpool.full())
+            return false;
+        if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
+            return false;
+        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        req_a->opcode = new uint8_t(PutPartialData);
+        req_a->address = new paddr_t(address);
+        req_a->size = new uint8_t(size);
+        req_a->mask = new uint32_t(mask);
+        req_a->source = new uint8_t(this->idpool.getid());
+        req_a->data = data;
+        int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
+        pendingA.init(req_a, nrBeat);
+        Log("[%ld] [PutFullData] addr: %x data: ", *cycles, address);
         for(int i = 0; i < DATASIZE; i++) {
             Log("%02hhx", data[i]);
         }
