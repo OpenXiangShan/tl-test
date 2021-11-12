@@ -25,6 +25,8 @@ private:
     tl_agent::ULAgent *ulAgent;
 public:
     ULFuzzer(tl_agent::ULAgent *ulAgent);
+    void randomTest();
+    void caseTest();
     void tick();
 };
 
@@ -33,6 +35,8 @@ private:
     tl_agent::CAgent *cAgent;
 public:
     CFuzzer(tl_agent::CAgent *cAgent);
+    void randomTest();
+    void caseTest();
     void tick();
 };
 
