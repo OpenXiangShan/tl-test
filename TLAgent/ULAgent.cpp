@@ -30,6 +30,15 @@ namespace tl_agent {
                 }
                 break;
             }
+            case PutPartialData: {
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(PutPartialData, S_SENDING_A, *a->address, *this->cycles));
+                localBoard->update(*a->source, entry);
+                int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
+                for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
+                    this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
+                }
+                break;
+            }
             default:
                 tlc_assert(false, "Unknown opcode for channel A!");
         }
@@ -54,7 +63,7 @@ namespace tl_agent {
             tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
             pendingA.update();
             if (!pendingA.is_pending()) { // req A finished
-                this->localBoard->query(*pendingA.info->source)->update_status(S_WAITING_D, *cycles);
+                this->localBoard->query(*pendingA.info->source)->update_status(S_A_WAITING_D, *cycles);
                 if (hasData) {
                     std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
                     global_SBEntry->pending_data = pendingA.info->data;
@@ -83,7 +92,7 @@ namespace tl_agent {
             auto chnD = this->port->d;
             auto info = localBoard->query(*chnD.source);
             bool hasData = *chnD.opcode == GrantData || *chnD.opcode == AccessAckData;
-            tlc_assert(info->status == S_WAITING_D, "Status error!");
+            tlc_assert(info->status == S_A_WAITING_D, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 // TODO: wrap the following assertions into a function
                 tlc_assert(*chnD.opcode == *pendingD.info->opcode, "Opcode mismatch among beats!");
@@ -171,8 +180,9 @@ namespace tl_agent {
     bool ULAgent::do_putfulldata(uint16_t address, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
-        if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
+        if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
             return false;
+        }
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(PutFullData);
         req_a->address = new paddr_t(address);
@@ -189,7 +199,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_putpartialdata(uint16_t address, uint8_t size, uint8_t mask, uint8_t data[]) {
+    bool ULAgent::do_putpartialdata(uint16_t address, uint8_t size, uint32_t mask, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
@@ -203,7 +213,7 @@ namespace tl_agent {
         req_a->data = data;
         int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
         pendingA.init(req_a, nrBeat);
-        Log("[%ld] [PutFullData] addr: %x data: ", *cycles, address);
+        Log("[%ld] [PutPartialData] addr: %x data: ", *cycles, address);
         for(int i = 0; i < DATASIZE; i++) {
             Log("%02hhx", data[i]);
         }

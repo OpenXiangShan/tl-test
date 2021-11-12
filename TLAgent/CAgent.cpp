@@ -71,30 +71,34 @@ namespace tl_agent {
             Log("[info] id pool full\n");
             return;
         }
-        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
 
-        req_c->address = new paddr_t(*pendingB.info->address);
-        req_c->size = new uint8_t(*pendingB.info->size);
+        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
+        req_c->address = new paddr_t(*b->address);
+        req_c->size = new uint8_t(*b->size);
         req_c->source = new uint8_t(this->probeIDpool.getid());
         Log("== id == handleB %d\n", *req_c->source);
-        if (globalBoard->haskey(*pendingB.info->address) && globalBoard->query(*pendingB.info->address)->status == Global_SBEntry::SB_PENDING) {
-            Log("Probe a release-pendingBlock\n");
+        tlc_assert(localBoard->haskey(*b->address), "Probe an non-exist block!");
+        auto info = localBoard->query(*b->address);
+        tlc_assert(info->status != S_SENDING_C, "handle_b should be mutual exclusive with pendingC!");
+        tlc_assert(info->status == S_VALID || info->status == S_C_WAITING_D, "Invalid status when receiving probe!");
+        if (info->status == S_C_WAITING_D) {
+            Log("Probe an non-exist block\n");
             req_c->opcode = new uint8_t(ProbeAck);
             req_c->param = new uint8_t(NtoN);
             pendingC.init(req_c, 1);
-            Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *pendingB.info->address);
+            Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *b->address);
         } else {
             req_c->opcode = new uint8_t(ProbeAckData); // TODO: no need to always probeackData
             req_c->param = new uint8_t(TtoN); // TODO
-            if (!globalBoard->haskey(*pendingB.info->address)) {
+            if (!globalBoard->haskey(*b->address)) {
                 // want to probe an all-zero block which does not exist in global board
                 uint8_t *all_zero = new uint8_t[DATASIZE];
                 req_c->data = all_zero;
             } else {
-                req_c->data = globalBoard->query(*pendingB.info->address)->pending_data;
+                req_c->data = globalBoard->query(*b->address)->data;
             }
             pendingC.init(req_c, DATASIZE / BEATSIZE);
-            Log("[%ld] [ProbeAckData] addr: %x data: ", *cycles, *pendingB.info->address);
+            Log("[%ld] [ProbeAckData] addr: %x data: ", *cycles, *b->address);
             for(int i = 0; i < DATASIZE; i++) {
                 Log("%02hhx", req_c->data[i]);
             }
@@ -141,7 +145,7 @@ namespace tl_agent {
                 tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
 
                 if (localBoard->haskey(*c->address)) {
-                    if (localBoard->query(*c->address)->status == S_WAITING_D) {
+                    if (localBoard->query(*c->address)->status == S_C_WAITING_D) {
                         localBoard->query(*c->address)->update_status(S_WAITING_D_INTR, *cycles);
                     } else {
                         tlc_assert(localBoard->query(*c->address)->status == S_VALID, "SendingC without S_VALID!");
@@ -156,6 +160,7 @@ namespace tl_agent {
                 tlc_assert(false, "Unknown opcode for channel C!");
         }
         *this->port->c.opcode = *c->opcode;
+        *this->port->c.param = *c->param;
         *this->port->c.address = *c->address;
         *this->port->c.size = *c->size;
         *this->port->c.source = *c->source;
@@ -180,7 +185,7 @@ namespace tl_agent {
             tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
             pendingA.update();
             if (!pendingA.is_pending()) { // req A finished
-                this->localBoard->query(*pendingA.info->address)->update_status(S_WAITING_D, *cycles);
+                this->localBoard->query(*pendingA.info->address)->update_status(S_A_WAITING_D, *cycles);
             }
         }
     }
@@ -210,10 +215,10 @@ namespace tl_agent {
                 *chnC.valid = false;
                 auto info = this->localBoard->query(*pendingC.info->address);
                 if (needAck) {
-                    info->update_status(S_WAITING_D, *cycles);
+                    info->update_status(S_C_WAITING_D, *cycles);
                 } else {
                     if (info->status == S_WAITING_D_INTR) {
-                        info->update_status(S_WAITING_D, *cycles);
+                        info->update_status(S_C_WAITING_D, *cycles);
                     } else {
                         info->update_status(S_INVALID, *cycles);
                     }
@@ -245,7 +250,7 @@ namespace tl_agent {
             bool hasData = *chnD.opcode == GrantData;
             auto addr = idMap->query(*chnD.source)->address;
             auto info = localBoard->query(addr);
-            tlc_assert(info->status == S_WAITING_D || info->status == S_WAITING_D_INTR, "Status error!");
+            tlc_assert(info->status == S_C_WAITING_D || info->status == S_A_WAITING_D || info->status == S_WAITING_D_INTR, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 tlc_assert(*chnD.opcode == *pendingD.info->opcode, "Opcode mismatch among beats!");
                 tlc_assert(*chnD.param == *pendingD.info->param, "Param mismatch among beats!");
@@ -285,12 +290,14 @@ namespace tl_agent {
                 }
                 if (*chnD.opcode == ReleaseAck) {
                     Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
-                    if (info->status == S_WAITING_D) {
+                    if (info->status == S_C_WAITING_D) {
                         info->update_status(S_VALID, *cycles);
                     } else {
+                        tlc_assert(info->status == S_WAITING_D_INTR, "Status error!");
                         info->update_status(S_SENDING_C, *cycles);
                     }
                     info->unpending_priviledge(*cycles);
+                    this->globalBoard->unpending(addr);
                 }
                 idMap->erase(*chnD.source);
                 Log("== free == fireD %d\n", *chnD.source);

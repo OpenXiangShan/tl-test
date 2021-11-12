@@ -17,12 +17,13 @@ namespace tl_agent {
     enum {
         S_INVALID = 0,
         S_VALID,
-        S_SENDING_A,  // ready to send A request actively
-        S_REACTING_B, // ready to react B request actively
-        S_SENDING_C,  // ready to send C request actively
-        S_WAITING_D,  // wait for D response
+        S_SENDING_A,      // ready to send A request actively
+        S_REACTING_B,     // ready to react B request actively
+        S_SENDING_C,      // ready to send C request actively
+        S_C_WAITING_D,    // C wait for D response
+        S_A_WAITING_D,    // A wait for D response
         S_WAITING_D_INTR, // wait for D response while probe interrupted
-        S_SENDING_E,  // ready to send E request actively
+        S_SENDING_E,      // ready to send E request actively
     };
 
     class ReqField {
