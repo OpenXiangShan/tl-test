@@ -49,7 +49,7 @@ namespace tl_agent {
         void timeout_check();
 
     public:
-        ULAgent(GlobalBoard<paddr_t> * const gb, uint64_t* cycles);
+        ULAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles);
         ~ULAgent() = default;
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
         void handle_b(std::shared_ptr<ChnB> &b);

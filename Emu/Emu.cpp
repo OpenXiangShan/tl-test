@@ -11,17 +11,23 @@ Emu::Emu(int argc, char **argv) {
     globalBoard = new GlobalBoard<paddr_t>(); // address -> data
 
     // Init agents
-    for (int i = 0; i < NR_ULAGENTS; i++) {
-        agents[i] = new ULAgent_t(globalBoard, &cycles);
+    /* for (int i = 0; i < NR_ULAGENTS; i++) {
+        agents[i] = new ULAgent_t(globalBoard, i, &cycles);
         auto port = naive_gen_port();
         agents[i]->connect(port);
         fuzzers[i] = new ULFuzzer(static_cast<ULAgent_t*>(agents[i]));
         fuzzers[i]->set_cycles(&cycles);
-    }
+    }*/
+    tlc_assert(NR_ULAGENTS == 0, "Current version has not ul-agents");
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
-        agents[i] = new CAgent_t(globalBoard, &cycles);
-        auto port = naive_gen_port2();
-        agents[i]->connect(port);
+        agents[i] = new CAgent_t(globalBoard, i, &cycles);
+        if (i == 0) {
+            auto port = naive_gen_port();
+            agents[i]->connect(port);
+        } else {
+            auto port = naive_gen_port2();
+            agents[i]->connect(port);
+        }
         fuzzers[i] = new CFuzzer(static_cast<CAgent_t*>(agents[i]));
         fuzzers[i]->set_cycles(&cycles);
     }

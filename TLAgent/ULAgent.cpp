@@ -6,10 +6,11 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, uint64_t* cycles):
+    ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t* cycles):
             BaseAgent(), pendingA(), pendingD()
     {
         this->globalBoard = gb;
+        this->id = id;
         this->cycles = cycles;
         localBoard = new ScoreBoard<int, UL_SBEntry>();
     }
@@ -120,9 +121,9 @@ namespace tl_agent {
                 if (hasData) {
                     Log("[%ld] [AccessAckData] addr: %hx data: ", *cycles, info->address);
                     for(int i = 0; i < DATASIZE; i++) {
-                        Log("%02hhx", pendingD.info->data[i]);
+                        Dump("%02hhx", pendingD.info->data[i]);
                     }
-                    Log("\n");
+                    Dump("\n");
                     this->globalBoard->verify(info->address, pendingD.info->data);
                 } else if (*chnD.opcode == AccessAck) { // finish pending status in GlobalBoard
                     Log("[%ld] [AccessAck] addr: %hx\n", *cycles, info->address);
@@ -193,9 +194,9 @@ namespace tl_agent {
         pendingA.init(req_a, DATASIZE / BEATSIZE);
         Log("[%ld] [PutFullData] addr: %x data: ", *cycles, address);
         for(int i = 0; i < DATASIZE; i++) {
-            Log("%02hhx", data[i]);
+            Dump("%02hhx", data[i]);
         }
-        Log("\n");
+        Dump("\n");
         return true;
     }
 
@@ -215,9 +216,9 @@ namespace tl_agent {
         pendingA.init(req_a, nrBeat);
         Log("[%ld] [PutPartialData] addr: %x data: ", *cycles, address);
         for(int i = 0; i < DATASIZE; i++) {
-            Log("%02hhx", data[i]);
+            Dump("%02hhx", data[i]);
         }
-        Log("\n");
+        Dump("\n");
         return true;
     }
     

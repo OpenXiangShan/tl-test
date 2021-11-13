@@ -8,8 +8,8 @@
 enum {
     DATASIZE = 64, // Cache line is 64B
     BEATSIZE = 32,
-    NR_ULAGENTS = 1,
-    NR_CAGENTS = 1,
+    NR_ULAGENTS = 0,
+    NR_CAGENTS = 2,
     NR_SOURCEID = 16,
     TIMEOUT_INTERVAL = 1000
 };
@@ -31,8 +31,13 @@ typedef uint16_t paddr_t;
 
 #define Log(...) \
  do { \
+   printf("#%d ", this->id); \
    printf(__VA_ARGS__); \
  } while(0)
 
+#define Dump(...) \
+ do { \
+   printf(__VA_ARGS__); \
+ } while(0)
 
 #endif //TLC_TEST_COMMON_H

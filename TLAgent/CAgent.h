@@ -66,7 +66,7 @@ namespace tl_agent {
         void timeout_check();
 
     public:
-        CAgent(GlobalBoard<paddr_t> * const gb, uint64_t* cycles);
+        CAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles);
         ~CAgent() = default;
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
         void handle_b(std::shared_ptr<ChnB> &b);

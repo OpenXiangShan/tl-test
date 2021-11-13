@@ -26,10 +26,11 @@ namespace tl_agent {
         }
     }
 
-    CAgent::CAgent(GlobalBoard<paddr_t> *const gb, uint64_t *cycles):
+    CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles):
         BaseAgent(), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
     {
         this->globalBoard = gb;
+        this->id = id;
         this->cycles = cycles;
         this->localBoard = new ScoreBoard<paddr_t , C_SBEntry>();
         this->idMap = new ScoreBoard<int, C_IDEntry>();
@@ -92,7 +93,11 @@ namespace tl_agent {
             req_c->param = new uint8_t(TtoN); // TODO
             if (!globalBoard->haskey(*b->address)) {
                 // want to probe an all-zero block which does not exist in global board
+                Log("probeAck Data all-zero\n");
                 uint8_t *all_zero = new uint8_t[DATASIZE];
+                for (int i = 0; i < DATASIZE; i++) {
+                    all_zero[i] = 0;
+                }
                 req_c->data = all_zero;
             } else {
                 req_c->data = globalBoard->query(*b->address)->data;
@@ -100,9 +105,9 @@ namespace tl_agent {
             pendingC.init(req_c, DATASIZE / BEATSIZE);
             Log("[%ld] [ProbeAckData] addr: %x data: ", *cycles, *b->address);
             for(int i = 0; i < DATASIZE; i++) {
-                Log("%02hhx", req_c->data[i]);
+                Dump("%02hhx", req_c->data[i]);
             }
-            Log("\n");
+            Dump("\n");
         }
         pendingB.update();
     }
@@ -275,9 +280,9 @@ namespace tl_agent {
                 if (hasData) {
                     Log("[%ld] [GrantData] addr: %hx data: ", *cycles, addr);
                     for(int i = 0; i < DATASIZE; i++) {
-                        Log("%02hhx", pendingD.info->data[i]);
+                        Dump("%02hhx", pendingD.info->data[i]);
                     }
-                    Log("\n");
+                    Dump("\n");
                     this->globalBoard->verify(addr, pendingD.info->data);
                 }
                 if (*chnD.opcode == GrantData || *chnD.opcode == Grant) {
@@ -327,7 +332,8 @@ namespace tl_agent {
 
     void CAgent::update_signal() {
         *this->port->d.ready = true; // TODO: do random here
-        *this->port->b.ready = true; // TODO: do random here
+        *this->port->b.ready = !(pendingB.is_pending());
+
         if (pendingA.is_pending()) {
             // TODO: do delay here
             send_a(pendingA.info);
@@ -402,9 +408,9 @@ namespace tl_agent {
         pendingC.init(req_c, DATASIZE / BEATSIZE);
         Log("[%ld] [ReleaseData] addr: %x data: ", *cycles, address);
         for(int i = 0; i < DATASIZE; i++) {
-            Log("%02hhx", data[i]);
+            Dump("%02hhx", data[i]);
         }
-        Log("\n");
+        Dump("\n");
         return true;
     }
 

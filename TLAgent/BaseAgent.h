@@ -116,6 +116,7 @@ namespace tl_agent {
         GlobalBoard<paddr_t> *globalBoard;
         IDPool idpool;
         virtual void timeout_check() = 0;
+        int id;
 
     public:
         virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a) = 0;
