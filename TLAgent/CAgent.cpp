@@ -356,7 +356,7 @@ namespace tl_agent {
     }
 
     bool CAgent::do_acquireBlock(paddr_t address, int param) {
-        if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
+        if (pendingA.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(address);
@@ -365,9 +365,11 @@ namespace tl_agent {
             if (status != S_VALID && status != S_INVALID) {
                 return false;
             }
-            if (privilege == TIP) return false;
-            if (privilege == BRANCH && param != BtoT) return false;
-            if (privilege == INVALID && param == BtoT) return false;
+            if (status == S_VALID) {
+                if (privilege == TIP) return false;
+                if (privilege == BRANCH && param != BtoT) { param = BtoT; }
+                if (privilege == INVALID && param == BtoT) return false;
+            }
         }
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(AcquireBlock);
