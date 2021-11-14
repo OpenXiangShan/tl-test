@@ -6,7 +6,6 @@
 
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
     this->cAgent = cAgent;
-    srand((unsigned)time(0));
 }
 
 void CFuzzer::randomTest() {

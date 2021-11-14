@@ -10,6 +10,9 @@ Emu::Emu(int argc, char **argv) {
     dut_ptr = new VTestTop();
     globalBoard = new GlobalBoard<paddr_t>(); // address -> data
 
+    // srand((unsigned)time(0));
+    srand(10);
+
     // Init agents
     /* for (int i = 0; i < NR_ULAGENTS; i++) {
         agents[i] = new ULAgent_t(globalBoard, i, &cycles);
@@ -50,7 +53,6 @@ Emu::~Emu() {
 }
 
 void Emu::execute(uint64_t nr_cycle) {
-    srand((unsigned)time(0));
     while (cycles < nr_cycle) {
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();

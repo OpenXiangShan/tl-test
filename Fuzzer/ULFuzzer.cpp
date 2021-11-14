@@ -6,7 +6,6 @@
 
 ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) {
     this->ulAgent = ulAgent;
-    srand((unsigned)time(0));
 }
 
 void ULFuzzer::randomTest() {
