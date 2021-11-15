@@ -153,10 +153,13 @@ namespace tl_agent {
                 tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
 
                 if (localBoard->haskey(*c->address)) {
-                    if (localBoard->query(*c->address)->status == S_C_WAITING_D) {
-                        localBoard->query(*c->address)->update_status(S_WAITING_D_INTR, *cycles);
+                    auto item = localBoard->query(*c->address);
+                    if (item->status == S_C_WAITING_D) {
+                        item->update_status(S_C_WAITING_D_INTR, *cycles);
+                    } else if (item->status == S_A_WAITING_D) {
+                        item->update_status(S_A_WAITING_D_INTR, *cycles);
                     } else {
-                        localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles);
+                        item->update_status(S_SENDING_C, *cycles);
                     }
                 } else {
                     tlc_assert(false, "Localboard key not found!");
@@ -224,8 +227,10 @@ namespace tl_agent {
                 if (needAck) {
                     info->update_status(S_C_WAITING_D, *cycles);
                 } else {
-                    if (info->status == S_WAITING_D_INTR) {
+                    if (info->status == S_C_WAITING_D_INTR) {
                         info->update_status(S_C_WAITING_D, *cycles);
+                    } else if (info->status == S_A_WAITING_D_INTR) {
+                        info->update_status(S_A_WAITING_D, *cycles);
                     } else {
                         info->update_status(S_INVALID, *cycles);
                     }
@@ -257,7 +262,7 @@ namespace tl_agent {
             bool hasData = *chnD.opcode == GrantData;
             auto addr = idMap->query(*chnD.source)->address;
             auto info = localBoard->query(addr);
-            tlc_assert(info->status == S_C_WAITING_D || info->status == S_A_WAITING_D || info->status == S_WAITING_D_INTR, "Status error!");
+            tlc_assert(info->status == S_C_WAITING_D || info->status == S_A_WAITING_D || info->status == S_C_WAITING_D_INTR || info->status == S_A_WAITING_D_INTR, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 tlc_assert(*chnD.opcode == *pendingD.info->opcode, "Opcode mismatch among beats!");
                 tlc_assert(*chnD.param == *pendingD.info->param, "Param mismatch among beats!");
@@ -288,6 +293,7 @@ namespace tl_agent {
                     this->globalBoard->verify(addr, pendingD.info->data);
                 }
                 if (*chnD.opcode == GrantData || *chnD.opcode == Grant) {
+                    tlc_assert(info->status != S_A_WAITING_D_INTR, "TODO: check this Ridiculous probe!");
                     std::shared_ptr<ChnE> req_e(new ChnE());
                     req_e->sink = new uint8_t(*chnD.sink);
                     req_e->addr = new paddr_t(addr);
@@ -300,7 +306,7 @@ namespace tl_agent {
                     if (info->status == S_C_WAITING_D) {
                         info->update_status(S_INVALID, *cycles);
                     } else {
-                        tlc_assert(info->status == S_WAITING_D_INTR, "Status error!");
+                        tlc_assert(info->status == S_C_WAITING_D_INTR, "Status error!");
                         info->update_status(S_SENDING_C, *cycles);
                     }
                     info->unpending_priviledge(*cycles);
