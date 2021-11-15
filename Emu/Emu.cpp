@@ -4,14 +4,37 @@
 
 #include "Emu.h"
 
+void Emu::parse_args(int argc, char **argv) {
+    const struct option long_options[] = {
+        { "seed",       1, NULL, 's' },
+        { "wave-begin", 1, NULL, 'b' },
+        { "wave-end",   1, NULL, 'e' },
+        { 0,            0, NULL,  0  }
+    };
+    int o;
+    int long_index = 0;
+    while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
+                             "-s:b:e:", long_options, &long_index)) != -1) {
+        switch (o) {
+            case 's': this->seed = atoll(optarg);       break;
+            case 'b': this->wave_begin = atoll(optarg); break;
+            case 'e': this->wave_end = atoll(optarg);   break;
+            default:
+                tlc_assert(false, "Unknown args!");
+        }
+    }
+}
+
 Emu::Emu(int argc, char **argv) {
+    this->parse_args(argc, argv);
     Verilated::commandArgs(argc, argv);
     cycles = 0;
     dut_ptr = new VTestTop();
     globalBoard = new GlobalBoard<paddr_t>(); // address -> data
 
     // srand((unsigned)time(0));
-    srand(10);
+    printf("[INFO] use seed: %ld\n", this->seed);
+    srand(this->seed);
 
     // Init agents
     /* for (int i = 0; i < NR_ULAGENTS; i++) {
@@ -68,7 +91,9 @@ void Emu::execute(uint64_t nr_cycle) {
 
         this->neg_edge();
 #if VM_TRACE == 1
-        this->tfp->dump((vluint64_t)cycles);
+        if (cycles >= this->wave_begin && cycles <= this->wave_end) {
+            this->tfp->dump((vluint64_t)cycles);
+        }
 #endif
         this->pos_edge();
         this->update_cycles(1);

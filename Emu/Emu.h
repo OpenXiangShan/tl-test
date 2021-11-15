@@ -7,6 +7,7 @@
 
 #include "verilated.h"
 #include "VTestTop.h"
+#include <getopt.h>
 #if VM_TRACE == 1
 #include "verilated_vcd_c.h"
 #endif
@@ -28,8 +29,9 @@ private:
     GlobalBoard<paddr_t> *globalBoard;
     BaseAgent_t ** const agents = new BaseAgent_t*[NR_AGENTS];
     Fuzzer ** const fuzzers = new Fuzzer*[NR_AGENTS];
-    uint64_t cycles;
+    uint64_t cycles, seed = 0, wave_begin = 0, wave_end = 0;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
+    void parse_args(int argc, char **argv);
 
 public:
     Emu(int argc, char **argv);
@@ -66,6 +68,7 @@ inline void Emu::pos_edge() {
 
 inline void Emu::update_cycles(uint64_t inc) {
     cycles += inc;
+    if (cycles % 1000000 == 0) { printf("*\n"); }
 }
 
 inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
