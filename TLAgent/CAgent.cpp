@@ -73,16 +73,19 @@ namespace tl_agent {
             return;
         }
 
+        tlc_assert(localBoard->haskey(*b->address), "Probe an non-exist block!");
+        auto info = localBoard->query(*b->address);
+        tlc_assert(info->status != S_SENDING_C, "handle_b should be mutual exclusive with pendingC!");
+        if (info->status == S_C_WAITING_D) {
+            // Probe waits for releaseAck
+            return;
+        }
         std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
         req_c->address = new paddr_t(*b->address);
         req_c->size = new uint8_t(*b->size);
         req_c->source = new uint8_t(this->probeIDpool.getid());
-        Log("== id == handleB %d\n", *req_c->source);
-        tlc_assert(localBoard->haskey(*b->address), "Probe an non-exist block!");
-        auto info = localBoard->query(*b->address);
-        tlc_assert(info->status != S_SENDING_C, "handle_b should be mutual exclusive with pendingC!");
-        tlc_assert(info->status == S_VALID || info->status == S_C_WAITING_D, "Invalid status when receiving probe!");
-        if (info->status == S_C_WAITING_D) {
+        // Log("== id == handleB %d\n", *req_c->source);
+        if (info->status == S_SENDING_A || info->status == S_INVALID || info->status == S_A_WAITING_D) {
             Log("Probe an non-exist block\n");
             req_c->opcode = new uint8_t(ProbeAck);
             req_c->param = new uint8_t(NtoN);
@@ -153,7 +156,6 @@ namespace tl_agent {
                     if (localBoard->query(*c->address)->status == S_C_WAITING_D) {
                         localBoard->query(*c->address)->update_status(S_WAITING_D_INTR, *cycles);
                     } else {
-                        tlc_assert(localBoard->query(*c->address)->status == S_VALID, "SendingC without S_VALID!");
                         localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles);
                     }
                 } else {
@@ -242,7 +244,7 @@ namespace tl_agent {
                 if (*chnC.opcode == ReleaseData || *chnC.opcode == Release) {
                     info->update_pending_priviledge(shrinkGenPriv(*pendingC.info->param), *cycles);
                 } else {
-                    Log("== free == fireC %d\n", *chnC.source);
+                    // Log("== free == fireC %d\n", *chnC.source);
                     this->probeIDpool.freeid(*chnC.source);
                 }
             }
@@ -296,7 +298,7 @@ namespace tl_agent {
                 if (*chnD.opcode == ReleaseAck) {
                     Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
                     if (info->status == S_C_WAITING_D) {
-                        info->update_status(S_VALID, *cycles);
+                        info->update_status(S_INVALID, *cycles);
                     } else {
                         tlc_assert(info->status == S_WAITING_D_INTR, "Status error!");
                         info->update_status(S_SENDING_C, *cycles);
@@ -305,7 +307,7 @@ namespace tl_agent {
                     this->globalBoard->unpending(addr);
                 }
                 idMap->erase(*chnD.source);
-                Log("== free == fireD %d\n", *chnD.source);
+                // Log("== free == fireD %d\n", *chnD.source);
                 this->idpool.freeid(*chnD.source);
             }
         }
@@ -356,7 +358,7 @@ namespace tl_agent {
     }
 
     bool CAgent::do_acquireBlock(paddr_t address, int param) {
-        if (pendingA.is_pending() || idpool.full())
+        if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(address);
@@ -378,7 +380,7 @@ namespace tl_agent {
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
-        Log("== id == acquire %d\n", *req_a->source);
+        // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
         Log("[%ld] [AcquireData] addr: %x\n", *cycles, address);
         return true;
@@ -405,7 +407,7 @@ namespace tl_agent {
         req_c->param = new uint8_t(param);
         req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_c->source = new uint8_t(this->idpool.getid());
-        Log("== id == release %d\n", *req_c->source);
+        // Log("== id == release %d\n", *req_c->source);
         req_c->data = data;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
         Log("[%ld] [ReleaseData] addr: %x data: ", *cycles, address);
