@@ -50,6 +50,17 @@ namespace tl_agent {
                 }
                 break;
             }
+            case AcquirePerm: {
+                std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*a->address));
+                idMap->update(*a->source, idmap_entry);
+                if (localBoard->haskey(*a->address)) {
+                    localBoard->query(*a->address)->update_status(S_SENDING_A, *cycles);
+                } else {
+                    std::shared_ptr<C_SBEntry> entry(new C_SBEntry(S_SENDING_A, INVALID, *cycles)); // Set pending as INVALID
+                    localBoard->update(*a->address, entry);
+                }
+                break;
+            }
             default:
                 tlc_assert(false, "Unknown opcode for channel A!");
         }
@@ -260,6 +271,7 @@ namespace tl_agent {
         if (this->port->d.fire()) {
             auto chnD = this->port->d;
             bool hasData = *chnD.opcode == GrantData;
+            bool grant = *chnD.opcode == GrantData || *chnD.opcode == Grant;
             auto addr = idMap->query(*chnD.source)->address;
             auto info = localBoard->query(addr);
             tlc_assert(info->status == S_C_WAITING_D || info->status == S_A_WAITING_D || info->status == S_C_WAITING_D_INTR || info->status == S_A_WAITING_D_INTR, "Status error!");
@@ -273,7 +285,7 @@ namespace tl_agent {
                 resp_d->opcode = new uint8_t(*chnD.opcode);
                 resp_d->param = new uint8_t(*chnD.param);
                 resp_d->source = new uint8_t(*chnD.source);
-                resp_d->data = hasData ? new uint8_t[DATASIZE] : nullptr;
+                resp_d->data = grant ? new uint8_t[DATASIZE] : nullptr;
                 int nr_beat = (*chnD.opcode == Grant || *chnD.opcode == ReleaseAck) ? 0 : 1; // TODO: parameterize it
                 pendingD.init(resp_d, nr_beat);
             }
@@ -284,33 +296,48 @@ namespace tl_agent {
                 }
             }
             if (!pendingD.is_pending()) {
-                if (hasData) {
-                    Log("[%ld] [GrantData] addr: %hx data: ", *cycles, addr);
-                    for(int i = 0; i < DATASIZE; i++) {
-                        Dump("%02hhx", pendingD.info->data[i]);
+                switch (*chnD.opcode) {
+                    case GrantData: {
+                        Log("[%ld] [GrantData] addr: %hx data: ", *cycles, addr);
+                        for(int i = 0; i < DATASIZE; i++) {
+                            Dump("%02hhx", pendingD.info->data[i]);
+                        }
+                        Dump("\n");
+                        this->globalBoard->verify(addr, pendingD.info->data);
+                        break;
                     }
-                    Dump("\n");
-                    this->globalBoard->verify(addr, pendingD.info->data);
+                    case Grant: {
+                        Log("[%ld] [Grant] addr: %hx\n", *cycles, addr);
+                        break;
+                    }
+                    case ReleaseAck: {
+                        Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
+                        if (info->status == S_C_WAITING_D) {
+                            info->update_status(S_INVALID, *cycles);
+                        } else {
+                            tlc_assert(info->status == S_C_WAITING_D_INTR, "Status error!");
+                            info->update_status(S_SENDING_C, *cycles);
+                        }
+                        info->unpending_priviledge(*cycles);
+                        this->globalBoard->unpending(addr);
+                        break;
+                    }
+                    default:
+                        tlc_assert(false, "Unknown opcode in channel D!");
                 }
-                if (*chnD.opcode == GrantData || *chnD.opcode == Grant) {
+
+                // Send E
+                if (grant) {
                     tlc_assert(info->status != S_A_WAITING_D_INTR, "TODO: check this Ridiculous probe!");
                     std::shared_ptr<ChnE> req_e(new ChnE());
                     req_e->sink = new uint8_t(*chnD.sink);
                     req_e->addr = new paddr_t(addr);
+                    if (pendingE.is_pending()) {
+                        tlc_assert(false, "E is pending!");
+                    }
                     pendingE.init(req_e, 1);
                     info->update_status(S_SENDING_E, *cycles);
                     info->update_priviledge(capGenPriv(*chnD.param), *cycles);
-                }
-                if (*chnD.opcode == ReleaseAck) {
-                    Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
-                    if (info->status == S_C_WAITING_D) {
-                        info->update_status(S_INVALID, *cycles);
-                    } else {
-                        tlc_assert(info->status == S_C_WAITING_D_INTR, "Status error!");
-                        info->update_status(S_SENDING_C, *cycles);
-                    }
-                    info->unpending_priviledge(*cycles);
-                    this->globalBoard->unpending(addr);
                 }
                 idMap->erase(*chnD.source);
                 // Log("== free == fireD %d\n", *chnD.source);
@@ -331,11 +358,12 @@ namespace tl_agent {
     }
 
     void CAgent::handle_channel() {
+
         fire_a();
         fire_b();
         fire_c();
+        fire_e(); // Constraint: fire_e > fire_d
         fire_d();
-        fire_e();
     }
 
     void CAgent::update_signal() {
@@ -392,6 +420,35 @@ namespace tl_agent {
         return true;
     }
 
+    bool CAgent::do_acquirePerm(paddr_t address, int param) {
+        if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
+            return false;
+        if (localBoard->haskey(address)) {
+            auto entry = localBoard->query(address);
+            auto privilege = entry->privilege;
+            auto status = entry->status;
+            if (status != S_VALID && status != S_INVALID) {
+                return false;
+            }
+            if (status == S_VALID) {
+                if (privilege == TIP) return false;
+                if (privilege == BRANCH && param != BtoT) { param = BtoT; }
+                if (privilege == INVALID && param == BtoT) return false;
+            }
+        }
+        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        req_a->opcode = new uint8_t(AcquirePerm);
+        req_a->address = new paddr_t(address);
+        req_a->param = new uint8_t(param);
+        req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
+        req_a->mask = new uint32_t(0xffffffffUL);
+        req_a->source = new uint8_t(this->idpool.getid());
+        // Log("== id == acquire %d\n", *req_a->source);
+        pendingA.init(req_a, 1);
+        Log("[%ld] [AcquirePerm] addr: %x\n", *cycles, address);
+        return true;
+    }
+
     bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[]) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
@@ -434,7 +491,7 @@ namespace tl_agent {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
                     printf("Now time:   %lu\n", *this->cycles);
                     printf("Last stamp: %lu\n", value->time_stamp);
-                    printf("Status:     %d\n", value->status);
+                    printf("Status:     %d\n",  value->status);
                     tlc_assert(false,  "Transaction time out");
                 }
             }

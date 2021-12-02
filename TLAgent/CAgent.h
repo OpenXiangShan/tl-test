@@ -82,6 +82,7 @@ namespace tl_agent {
         void update_signal();
 
         bool do_acquireBlock(paddr_t address, int param);
+        bool do_acquirePerm(paddr_t address, int param);
         bool do_releaseData(paddr_t address, int param, uint8_t data[]);
     };
 
