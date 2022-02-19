@@ -54,7 +54,6 @@ namespace tl_agent {
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
         void handle_b(std::shared_ptr<ChnB> &b);
         Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c);
-        void handle_d();
         void fire_a();
         void fire_b();
         void fire_c();

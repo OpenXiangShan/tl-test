@@ -57,7 +57,7 @@ namespace tl_agent {
         PendingTrans<ChnC<ReqField, EchoField, DATASIZE>> pendingC;
         PendingTrans<ChnD<RespField, EchoField, DATASIZE>> pendingD;
         PendingTrans<ChnE> pendingE;
-        /* Here we need a scoreboard maintaining address->info
+        /* Here we need a scoreboard called localBoard maintaining address->info
          * For convenience, an idMap(id->addr) is also maintained
          */
         ScoreBoard<paddr_t , C_SBEntry> *localBoard;
@@ -71,7 +71,6 @@ namespace tl_agent {
         Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
         void handle_b(std::shared_ptr<ChnB> &b);
         Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c);
-        void handle_d();
         Resp send_e(std::shared_ptr<ChnE> &e);
         void fire_a();
         void fire_b();

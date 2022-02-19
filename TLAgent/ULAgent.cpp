@@ -140,9 +140,6 @@ namespace tl_agent {
 
     void ULAgent::handle_b(std::shared_ptr<ChnB> &b) {
     }
-
-    void ULAgent::handle_d() {
-    }
     
     void ULAgent::handle_channel() {
         fire_a();

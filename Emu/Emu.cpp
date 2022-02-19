@@ -4,6 +4,8 @@
 
 #include "Emu.h"
 
+uint64_t Cycles;
+
 void Emu::parse_args(int argc, char **argv) {
     const struct option long_options[] = {
         { "seed",       1, NULL, 's' },
@@ -28,7 +30,7 @@ void Emu::parse_args(int argc, char **argv) {
 Emu::Emu(int argc, char **argv) {
     this->parse_args(argc, argv);
     Verilated::commandArgs(argc, argv);
-    cycles = 0;
+    Cycles = 0;
     dut_ptr = new VTestTop();
     globalBoard = new GlobalBoard<paddr_t>(); // address -> data
 
@@ -38,15 +40,15 @@ Emu::Emu(int argc, char **argv) {
 
     // Init agents
     /* for (int i = 0; i < NR_ULAGENTS; i++) {
-        agents[i] = new ULAgent_t(globalBoard, i, &cycles);
+        agents[i] = new ULAgent_t(globalBoard, i, &Cycles);
         auto port = naive_gen_port();
         agents[i]->connect(port);
         fuzzers[i] = new ULFuzzer(static_cast<ULAgent_t*>(agents[i]));
-        fuzzers[i]->set_cycles(&cycles);
+        fuzzers[i]->set_cycles(&Cycles);
     }*/
     tlc_assert(NR_ULAGENTS == 0, "Current version has not ul-agents");
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
-        agents[i] = new CAgent_t(globalBoard, i, &cycles);
+        agents[i] = new CAgent_t(globalBoard, i, &Cycles);
         if (i == 0) {
             auto port = naive_gen_port();
             agents[i]->connect(port);
@@ -55,7 +57,7 @@ Emu::Emu(int argc, char **argv) {
             agents[i]->connect(port);
         }
         fuzzers[i] = new CFuzzer(static_cast<CAgent_t*>(agents[i]));
-        fuzzers[i]->set_cycles(&cycles);
+        fuzzers[i]->set_cycles(&Cycles);
     }
 
 #if VM_TRACE == 1
@@ -63,7 +65,7 @@ Emu::Emu(int argc, char **argv) {
     tfp = new VerilatedVcdC;
     dut_ptr->trace(tfp, 99);	// Trace 99 levels of hierarchy
     time_t now = time(NULL);
-    tfp->open(cycle_wavefile(cycles, now));
+    tfp->open(cycle_wavefile(Cycles, now));
 #endif
 
 }
@@ -76,7 +78,7 @@ Emu::~Emu() {
 }
 
 void Emu::execute(uint64_t nr_cycle) {
-    while (cycles < nr_cycle) {
+    while (Cycles < nr_cycle) {
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
@@ -91,8 +93,8 @@ void Emu::execute(uint64_t nr_cycle) {
 
         this->neg_edge();
 #if VM_TRACE == 1
-        if (cycles >= this->wave_begin && cycles <= this->wave_end) {
-            this->tfp->dump((vluint64_t)cycles);
+        if (Cycles >= this->wave_begin && Cycles <= this->wave_end) {
+            this->tfp->dump((vluint64_t)Cycles);
         }
 #endif
         this->pos_edge();

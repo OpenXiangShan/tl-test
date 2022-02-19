@@ -189,10 +189,6 @@ namespace tl_agent {
         return OK;
     }
 
-    void CAgent::handle_d() {
-
-    }
-
     Resp CAgent::send_e(std::shared_ptr<ChnE> &e) {
         *this->port->e.sink = *e->sink;
         *this->port->e.valid = true;
@@ -274,7 +270,10 @@ namespace tl_agent {
             bool grant = *chnD.opcode == GrantData || *chnD.opcode == Grant;
             auto addr = idMap->query(*chnD.source)->address;
             auto info = localBoard->query(addr);
-            tlc_assert(info->status == S_C_WAITING_D || info->status == S_A_WAITING_D || info->status == S_C_WAITING_D_INTR || info->status == S_A_WAITING_D_INTR, "Status error!");
+            if (!(info->status == S_C_WAITING_D || info->status == S_A_WAITING_D || info->status == S_C_WAITING_D_INTR || info->status == S_A_WAITING_D_INTR)) {
+              printf("fire_d: status of localboard is %d\n", info->status);
+              tlc_assert(false, "Status error!");
+            }
             if (pendingD.is_pending()) { // following beats
                 tlc_assert(*chnD.opcode == *pendingD.info->opcode, "Opcode mismatch among beats!");
                 tlc_assert(*chnD.param == *pendingD.info->param, "Param mismatch among beats!");
@@ -350,7 +349,7 @@ namespace tl_agent {
         if (this->port->e.fire()) {
             auto chnE = this->port->e;
             *chnE.valid = false;
-            tlc_assert(pendingE.is_pending(), "No pending A but A fired!");
+            tlc_assert(pendingE.is_pending(), "No pending A but E fired!");
             auto info = localBoard->query(*pendingE.info->addr);
             info->update_status(S_VALID, *cycles);
             pendingE.update();
@@ -358,11 +357,11 @@ namespace tl_agent {
     }
 
     void CAgent::handle_channel() {
-
+        // Constraint: fire_e > fire_d, otherwise concurrent D/E requests will disturb the pendingE
         fire_a();
         fire_b();
         fire_c();
-        fire_e(); // Constraint: fire_e > fire_d
+        fire_e();
         fire_d();
     }
 

@@ -5,6 +5,13 @@
 #ifndef TLC_TEST_COMMON_H
 #define TLC_TEST_COMMON_H
 
+#include <memory>
+#include <cmath>
+#include <string>
+#include <assert.h>
+
+extern uint64_t Cycles;
+
 enum {
     DATASIZE = 64, // Cache line is 64B
     BEATSIZE = 32,
@@ -14,17 +21,13 @@ enum {
     TIMEOUT_INTERVAL = 1000
 };
 
-#include <memory>
-#include <cmath>
-#include <string>
-#include <assert.h>
-
 typedef uint16_t paddr_t;
 
 #define tlc_assert(cond, info) \
     do { \
         if (!(cond)) { \
-            printf("\33[1;34m%s\33[0m\n", info); \
+            printf("\33[1;34m%s\n", info); \
+            printf("Cycles: %ld\33[0m\n", Cycles); \
             assert(cond); \
         } \
     } while (0)
