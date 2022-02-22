@@ -97,7 +97,7 @@ namespace tl_agent {
         req_c->source = new uint8_t(this->probeIDpool.getid());
         // Log("== id == handleB %d\n", *req_c->source);
         if (info->status == S_SENDING_A || info->status == S_INVALID || info->status == S_A_WAITING_D) {
-            Log("Probe an non-exist block\n");
+            Log("Probe an non-exist block, status: %d\n", info->status);
             req_c->opcode = new uint8_t(ProbeAck);
             req_c->param = new uint8_t(NtoN);
             pendingC.init(req_c, 1);
@@ -198,6 +198,7 @@ namespace tl_agent {
     void CAgent::fire_a() {
         if (this->port->a.fire()) {
             auto chnA = this->port->a;
+            // Log("[%ld] [A fire] addr: %hx\n", *cycles, *chnA.address);
             *chnA.valid = false;
             tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
             pendingA.update();
@@ -210,6 +211,7 @@ namespace tl_agent {
     void CAgent::fire_b() {
         if (this->port->b.fire()) {
             auto chnB = this->port->b;
+            // Log("[%ld] [B fire] addr: %hx\n", *cycles, *chnB.address);
             std::shared_ptr<ChnB> req_b(new ChnB());
             req_b->opcode = new uint8_t(*chnB.opcode);
             req_b->address = new paddr_t(*chnB.address);
@@ -230,13 +232,14 @@ namespace tl_agent {
             pendingC.update();
             if (!pendingC.is_pending()) { // req C finished
                 *chnC.valid = false;
+                // Log("[%ld] [C fire] addr: %hx opcode: %hx\n", *cycles, *chnC.address, *chnC.opcode);
                 auto info = this->localBoard->query(*pendingC.info->address);
                 if (needAck) {
                     info->update_status(S_C_WAITING_D, *cycles);
                 } else {
                     if (info->status == S_C_WAITING_D_INTR) {
                         info->update_status(S_C_WAITING_D, *cycles);
-                    } else if (info->status == S_A_WAITING_D_INTR) {
+                    } else if (info->status == S_A_WAITING_D_INTR || info->status == S_A_WAITING_D) {
                         info->update_status(S_A_WAITING_D, *cycles);
                     } else {
                         info->update_status(S_INVALID, *cycles);
@@ -272,6 +275,7 @@ namespace tl_agent {
             auto info = localBoard->query(addr);
             if (!(info->status == S_C_WAITING_D || info->status == S_A_WAITING_D || info->status == S_C_WAITING_D_INTR || info->status == S_A_WAITING_D_INTR)) {
               printf("fire_d: status of localboard is %d\n", info->status);
+              printf("addr: 0x%hx\n", addr);
               tlc_assert(false, "Status error!");
             }
             if (pendingD.is_pending()) { // following beats
