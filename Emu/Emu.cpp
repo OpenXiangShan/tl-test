@@ -25,6 +25,9 @@ void Emu::parse_args(int argc, char **argv) {
                 tlc_assert(false, "Unknown args!");
         }
     }
+    if (this->wave_begin == this->wave_end) {
+        this->enable_wave = false;
+    }
 }
 
 Emu::Emu(int argc, char **argv) {
@@ -61,11 +64,13 @@ Emu::Emu(int argc, char **argv) {
     }
 
 #if VM_TRACE == 1
-    Verilated::traceEverOn(true);	// Verilator must compute traced signals
-    tfp = new VerilatedVcdC;
-    dut_ptr->trace(tfp, 99);	// Trace 99 levels of hierarchy
-    time_t now = time(NULL);
-    tfp->open(cycle_wavefile(Cycles, now));
+    if (this->enable_wave) {
+        Verilated::traceEverOn(true); // Verilator must compute traced signals
+        tfp = new VerilatedVcdC;
+        dut_ptr->trace(tfp, 99); // Trace 99 levels of hierarchy
+        time_t now = time(NULL);
+        tfp->open(cycle_wavefile(Cycles, now));
+    }
 #endif
 
 }
@@ -73,7 +78,9 @@ Emu::Emu(int argc, char **argv) {
 Emu::~Emu() {
     delete dut_ptr;
 #if VM_TRACE == 1
-    this->tfp->close();
+    if (this->enable_wave) {
+        this->tfp->close();
+    }
 #endif
 }
 
@@ -93,7 +100,7 @@ void Emu::execute(uint64_t nr_cycle) {
 
         this->neg_edge();
 #if VM_TRACE == 1
-        if (Cycles >= this->wave_begin && Cycles <= this->wave_end) {
+        if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {
             this->tfp->dump((vluint64_t)Cycles);
         }
 #endif

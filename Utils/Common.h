@@ -28,19 +28,21 @@ typedef uint16_t paddr_t;
         if (!(cond)) { \
             printf("\33[1;34m%s\n", info); \
             printf("Cycles: %ld\33[0m\n", Cycles); \
+            fflush(stdout); \
+            fflush(stderr); \
             assert(cond); \
         } \
     } while (0)
 
 #define Log(...) \
- do { \
-   printf("#%d ", this->id); \
-   printf(__VA_ARGS__); \
- } while(0)
+    do { \
+        printf("#%d ", this->id); \
+        printf(__VA_ARGS__); \
+    } while(0)
 
 #define Dump(...) \
- do { \
-   printf(__VA_ARGS__); \
- } while(0)
+    do { \
+        printf(__VA_ARGS__); \
+    } while(0)
 
 #endif //TLC_TEST_COMMON_H
