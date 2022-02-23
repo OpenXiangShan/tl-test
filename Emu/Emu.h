@@ -84,6 +84,6 @@ inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
     return buf;
 }
 
-double sc_time_stamp() { return 0; }
+// double sc_time_stamp() { return 0; }
 
 #endif //TLC_TEST_EMU_H
