@@ -37,6 +37,7 @@ private:
 public:
     Emu(int argc, char **argv);
     ~Emu();
+    uint64_t exe_cycles = 10000000;
     inline void reset(uint64_t n);
     inline void neg_edge();
     inline void pos_edge();
@@ -83,7 +84,5 @@ inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
     printf("dump wave to %s...\n", buf);
     return buf;
 }
-
-// double sc_time_stamp() { return 0; }
 
 #endif //TLC_TEST_EMU_H
