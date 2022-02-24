@@ -21,7 +21,7 @@ enum {
     TIMEOUT_INTERVAL = 1000
 };
 
-typedef uint16_t paddr_t;
+typedef uint64_t paddr_t;
 
 #define tlc_assert(cond, info) \
     do { \

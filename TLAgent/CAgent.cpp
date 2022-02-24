@@ -275,7 +275,7 @@ namespace tl_agent {
             auto info = localBoard->query(addr);
             if (!(info->status == S_C_WAITING_D || info->status == S_A_WAITING_D || info->status == S_C_WAITING_D_INTR || info->status == S_A_WAITING_D_INTR)) {
               printf("fire_d: status of localboard is %d\n", info->status);
-              printf("addr: 0x%hx\n", addr);
+              printf("addr: 0x%lx\n", addr);
               tlc_assert(false, "Status error!");
             }
             if (pendingD.is_pending()) { // following beats
