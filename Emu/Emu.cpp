@@ -104,6 +104,23 @@ void Emu::execute(uint64_t nr_cycle) {
             agents[i]->update_signal();
         }
 
+        // AXI proc
+        if (axi_check_raddr_fire(axi)) {
+            printf("axi_check_raddr_fire at address 0x%llx\n", axi.ar.addr);
+        }
+        if (axi_check_rdata_fire(axi)) {
+            printf("axi_check_rdata_fire\n");
+        }
+        if (axi_check_waddr_fire(axi)) {
+            printf("axi_check_waddr_fire at address 0x%llx\n", axi.aw.addr);
+        }
+        if (axi_check_wdata_fire(axi)) {
+            printf("axi_check_wdata_fire\n");
+        }
+        if (axi_check_wack_fire(axi)) {
+            printf("axi_check_wack_fire\n");
+        }
+
         this->neg_edge();
 #if VM_TRACE == 1
         if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {

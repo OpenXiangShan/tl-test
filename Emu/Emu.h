@@ -16,7 +16,7 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../Fuzzer/Fuzzer.h"
-#include "../AXIAgent/AXI4Agent.h"
+#include "../AXI4Agent/AXI4Agent.h"
 
 class Emu {
 private:
