@@ -16,6 +16,7 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../Fuzzer/Fuzzer.h"
+#include "../AXIAgent/AXI4Agent.h"
 
 class Emu {
 private:
@@ -33,6 +34,8 @@ private:
     bool enable_wave = true;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
     void parse_args(int argc, char **argv);
+
+    axi_channel axi;
 
 public:
     Emu(int argc, char **argv);

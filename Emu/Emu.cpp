@@ -66,6 +66,8 @@ Emu::Emu(int argc, char **argv) {
         fuzzers[i] = new CFuzzer(static_cast<CAgent_t*>(agents[i]));
         fuzzers[i]->set_cycles(&Cycles);
     }
+    // connect AXI
+    axi_bind_dut<VTestTop>(dut_ptr, axi);
 
 #if VM_TRACE == 1
     if (this->enable_wave) {
