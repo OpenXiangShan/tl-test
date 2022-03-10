@@ -18,6 +18,7 @@
 #define __AXI4_H
 
 #include <stdint.h>
+#include <cstddef>
 
 // #define DEBUG_LOG_AXI4
 
@@ -28,10 +29,12 @@
 // TODO: Check that whether TL out data width is 64
 #define AXI_DATA_WIDTH_32 8
 
+#define MAX_AXI_DATA_LEN 8
+
 typedef uint64_t axi_addr_t;
 typedef uint32_t axi_data_t[AXI_DATA_WIDTH_32];
 #define axi_copy_data(dest, src) \
-  memcpy(dest, src, sizeof(uint8_t)*AXI_DATA_WIDTH_32);
+  memcpy(dest, src, sizeof(uint32_t)*AXI_DATA_WIDTH_32);
 
 struct axi_aw_channel {
   uint8_t       *ready;
@@ -51,7 +54,7 @@ struct axi_aw_channel {
 struct axi_w_channel {
   uint8_t       *ready;
   uint8_t       *valid;
-  axi_data_t    *data;
+  axi_data_t    data;
   // uint8_t       *strb;
   uint32_t       *strb;
   uint8_t       *last;
@@ -84,7 +87,7 @@ struct axi_r_channel {
   uint8_t       *ready;
   uint8_t       *valid;
   uint8_t       *resp;
-  axi_data_t    *data;
+  void          *data;
   uint8_t       *last;
   uint16_t       *id;
   uint8_t       *user;
@@ -129,7 +132,7 @@ void axi_w_bind_dut(DUT *dut_ptr, axi_w_channel &w)
 {
   w.ready = &(dut_ptr->DUT_AXI(w_ready));
   w.valid = &(dut_ptr->DUT_AXI(w_valid));
-  w.data = &(dut_ptr->DUT_AXI(w_bits_data));
+  // w.data = static_cast<axi_data_t *>(dut_ptr->DUT_AXI(w_bits_data));
   w.strb = &(dut_ptr->DUT_AXI(w_bits_strb));
   w.last = &(dut_ptr->DUT_AXI(w_bits_last));
 }
@@ -182,7 +185,7 @@ void axi_r_bind_dut(DUT* dut_ptr, axi_r_channel &r)
   r.ready = &(dut_ptr->DUT_AXI(r_ready));
   r.valid = &(dut_ptr->DUT_AXI(r_valid));
   r.resp = &(dut_ptr->DUT_AXI(r_bits_resp));
-  r.data = &(dut_ptr->DUT_AXI(r_bits_data));
+  r.data = static_cast<void *>(dut_ptr->DUT_AXI(r_bits_data));
   r.last = &(dut_ptr->DUT_AXI(r_bits_last));
   r.id = &(dut_ptr->DUT_AXI(r_bits_id));
 }
@@ -218,25 +221,27 @@ void axi_bind_dut(DUT *dut_ptr, axi_channel &axi)
 
 // ar channel: (1) read raddr; (2) try to accept the address; (3) check raddr fire
 bool axi_get_raddr(const axi_channel &axi, axi_addr_t &addr);
-void axi_accept_raddr(axi_channel &axi);
+void axi_accept_raddr(const axi_channel &axi);
 bool axi_check_raddr_fire(const axi_channel &axi);
 
 // r channel: (1) put rdata; (2) check rdata fire
-void axi_put_rdata(axi_channel &axi, void *src, size_t n, bool last, uint8_t id);
+void axi_put_rdata(const axi_channel &axi, void *src, size_t n, bool last, uint8_t id);
 bool axi_check_rdata_fire(const axi_channel &axi);
 
 // aw channel: (1) read waddr; (2) try to accept the address; (3) check waddr fire
 bool axi_get_waddr(const axi_channel &axi, axi_addr_t &addr);
-void axi_accept_waddr(axi_channel &axi);
+void axi_accept_waddr(const axi_channel &axi);
 bool axi_check_waddr_fire(const axi_channel &axi);
 
 // w channel: (1) accept wdata; (2) get wdata; (3) check wdata fire
-void axi_accept_wdata(axi_channel &axi);
+void axi_accept_wdata(const axi_channel &axi);
 void axi_get_wdata(const axi_channel &axi, void *dest, const void *src, size_t n);
 bool axi_check_wdata_fire(const axi_channel &axi);
 
 // b channel: (1) put response; (2) check response fire
-void axi_put_wack(axi_channel &axi, uint8_t id);
+void axi_put_wack(const axi_channel &axi, uint8_t id);
 bool axi_check_wack_fire(const axi_channel &axi);
+
+void axi_buf_init();
 
 #endif

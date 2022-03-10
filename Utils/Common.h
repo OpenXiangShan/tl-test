@@ -18,7 +18,7 @@ enum {
     NR_ULAGENTS = 0,
     NR_CAGENTS = 1,
     NR_SOURCEID = 16,
-    TIMEOUT_INTERVAL = 1000
+    TIMEOUT_INTERVAL = 10001
 };
 
 typedef uint64_t paddr_t;
@@ -34,7 +34,6 @@ typedef uint64_t paddr_t;
         } \
     } while (0)
 
-/*
 #define Log(...) \
     do { \
         printf("#%d ", this->id); \
@@ -45,12 +44,13 @@ typedef uint64_t paddr_t;
     do { \
         printf(__VA_ARGS__); \
     } while(0)
-*/
 
-#define Log(...) \
-    do {} while(0)
+/*
+// #define Log(...) \
+//     do {} while(0)
 
 #define Dump(...) \
     do {} while(0)
+*/
 
 #endif //TLC_TEST_COMMON_H

@@ -196,6 +196,9 @@ namespace tl_agent {
     }
 
     void CAgent::fire_a() {
+        if (this->port->a.waiting()) {
+            Log("Address %lx waiting to fire\n", this->port->a.address);
+        }
         if (this->port->a.fire()) {
             auto chnA = this->port->a;
             // Log("[%ld] [A fire] addr: %hx\n", *cycles, *chnA.address);
@@ -203,6 +206,7 @@ namespace tl_agent {
             tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
             pendingA.update();
             if (!pendingA.is_pending()) { // req A finished
+                printf("Update A request to addr 0x%lx to waiting-D state\n", *pendingA.info->address);
                 this->localBoard->query(*pendingA.info->address)->update_status(S_A_WAITING_D, *cycles);
             }
         }
@@ -277,6 +281,8 @@ namespace tl_agent {
               printf("fire_d: status of localboard is %d\n", info->status);
               printf("addr: 0x%lx\n", addr);
               tlc_assert(false, "Status error!");
+            } else {
+              printf("D channel response addr: 0x%lx\n", addr);
             }
             if (pendingD.is_pending()) { // following beats
                 tlc_assert(*chnD.opcode == *pendingD.info->opcode, "Opcode mismatch among beats!");
@@ -419,7 +425,7 @@ namespace tl_agent {
         req_a->source = new uint8_t(this->idpool.getid());
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        Log("[%ld] [AcquireData] addr: %x\n", *cycles, address);
+        Log("[%ld] [AcquireData] addr: %lx\n", *cycles, address);
         return true;
     }
 
@@ -448,7 +454,7 @@ namespace tl_agent {
         req_a->source = new uint8_t(this->idpool.getid());
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        Log("[%ld] [AcquirePerm] addr: %x\n", *cycles, address);
+        Log("[%ld] [AcquirePerm] addr: %lx\n", *cycles, address);
         return true;
     }
 
@@ -495,6 +501,7 @@ namespace tl_agent {
                     printf("Now time:   %lu\n", *this->cycles);
                     printf("Last stamp: %lu\n", value->time_stamp);
                     printf("Status:     %d\n",  value->status);
+                    printf("Address:    %lx\n",  it->first);
                     tlc_assert(false,  "Transaction time out");
                 }
             }
