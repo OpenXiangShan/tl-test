@@ -8,6 +8,9 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 
+#include <iostream>
+#include <fstream>
+
 class Fuzzer {
 protected:
     uint64_t *cycles;
@@ -33,10 +36,13 @@ public:
 class CFuzzer: public Fuzzer {
 private:
     tl_agent::CAgent *cAgent;
+    uint64_t last_block_addr = 0;
+    std::ifstream addr_ifstream;
 public:
     CFuzzer(tl_agent::CAgent *cAgent);
     void randomTest();
     void caseTest();
+    void warmupTraffic();
     void tick();
 };
 
