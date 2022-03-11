@@ -6,6 +6,7 @@
 
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
     this->cAgent = cAgent;
+    addr_ifstream.open("/nfs-nvme/home/zhouyaoyang/projects/ff-reshape/system.cpu.dcache.tags.hex.txt");
 }
 
 void CFuzzer::randomTest() {
@@ -39,6 +40,17 @@ void CFuzzer::caseTest() {
 }
 
 void CFuzzer::tick() {
-    this->randomTest();
-//    this->caseTest();
+    // this->randomTest();
+    this->warmupTraffic();
+}
+
+void CFuzzer::warmupTraffic() {
+    if (last_block_addr == 0) {
+        addr_ifstream >> std::hex >> last_block_addr;
+        std::cout << "Address:" << std::hex << last_block_addr << std::endl;
+    }
+    if (this->cAgent->do_acquireBlock(last_block_addr, tl_agent::NtoT)) {
+        // clear it to indicate sent
+        last_block_addr = 0;
+    }
 }
