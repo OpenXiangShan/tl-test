@@ -34,7 +34,8 @@ void ULFuzzer::caseTest() {
     }
 }
 
-void ULFuzzer::tick() {
+bool ULFuzzer::tick() {
     this->randomTest();
 //    this->caseTest();
+    return true;    
 }

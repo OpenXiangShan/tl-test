@@ -39,15 +39,20 @@ void CFuzzer::caseTest() {
     }
 }
 
-void CFuzzer::tick() {
+bool CFuzzer::tick() {
     // this->randomTest();
-    this->warmupTraffic();
+    if (addr_ifstream.peek() != EOF) {
+        this->warmupTraffic();
+        return true;
+    } else {
+        return false;
+    }
 }
 
 void CFuzzer::warmupTraffic() {
     if (last_block_addr == 0) {
         addr_ifstream >> std::hex >> last_block_addr;
-        std::cout << "Address:" << std::hex << last_block_addr << std::endl;
+        std::cout << "Warmup address: 0x" << std::hex << last_block_addr << std::endl;
     }
     if (this->cAgent->do_acquireBlock(last_block_addr, tl_agent::NtoT)) {
         // clear it to indicate sent

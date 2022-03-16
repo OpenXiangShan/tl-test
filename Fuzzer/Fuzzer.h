@@ -17,7 +17,7 @@ protected:
 public:
     Fuzzer() = default;
     ~Fuzzer() = default;
-    virtual void tick() = 0;
+    virtual bool tick() = 0;
     void set_cycles(uint64_t *cycles) {
         this->cycles = cycles;
     }
@@ -30,7 +30,7 @@ public:
     ULFuzzer(tl_agent::ULAgent *ulAgent);
     void randomTest();
     void caseTest();
-    void tick();
+    bool tick() override;
 };
 
 class CFuzzer: public Fuzzer {
@@ -43,7 +43,8 @@ public:
     void randomTest();
     void caseTest();
     void warmupTraffic();
-    void tick();
+    bool tick() override;
+    bool stream_end() {return addr_ifstream.peek() == EOF;}
 };
 
 #endif //TLC_TEST_FUZZER_H

@@ -3,6 +3,7 @@
 //
 
 #include "Emu.h"
+#include "../AXI4Agent/BackedMem.h"
 
 uint64_t Cycles;
 
@@ -69,6 +70,9 @@ Emu::Emu(int argc, char **argv) {
     // connect AXI
     axi_bind_dut<VTestTop>(dut_ptr, axi);
 
+    // init RAM
+    init_ram_backed_store();
+
 #if VM_TRACE == 1
     if (this->enable_wave) {
         Verilated::traceEverOn(true); // Verilator must compute traced signals
@@ -96,39 +100,62 @@ void Emu::execute(uint64_t nr_cycle) {
             agents[i]->handle_channel();
         }
 
-        for (int i = 0; i < NR_AGENTS; i++) {
-            fuzzers[i]->tick();
-        }
+        bool suc = fuzzers[0]->tick();
 
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->update_signal();
         }
 
         // AXI proc
-        if (axi_check_raddr_fire(axi)) {
-            printf("axi_check_raddr_fire at address 0x%llx\n", axi.ar.addr);
-        }
-        if (axi_check_rdata_fire(axi)) {
-            printf("axi_check_rdata_fire\n");
-        }
-        if (axi_check_waddr_fire(axi)) {
-            printf("axi_check_waddr_fire at address 0x%llx\n", axi.aw.addr);
-        }
-        if (axi_check_wdata_fire(axi)) {
-            printf("axi_check_wdata_fire\n");
-        }
-        if (axi_check_wack_fire(axi)) {
-            printf("axi_check_wack_fire\n");
-        }
+        // if (*axi.ar.valid) {
+        //     printf("axi raddr valid at address %lx\n", *(axi.ar.addr));
+        //     assert(false);
+        // }
+        // if (axi_check_raddr_fire(axi)) {
+        //     printf("axi_check_raddr_fire at address %lx\n", *(axi.ar.addr));
+        // }
+        // if (axi_check_rdata_fire(axi)) {
+        //     // printf("axi_check_rdata_fire\n");
+        // }
+        // if (axi_check_waddr_fire(axi)) {
+        //     // printf("axi_check_waddr_fire at address %p\n", axi.aw.addr);
+        // }
+        // if (axi_check_wdata_fire(axi)) {
+        //     // printf("axi_check_wdata_fire\n");
+        // }
+        // if (axi_check_wack_fire(axi)) {
+        //     // printf("axi_check_wack_fire\n");
+        // }
 
         this->neg_edge();
+
+        if (Cycles > 0) {
+          axi_copy_data(axi.w.data, dut_ptr->DUT_AXI(w_bits_data))
+        }
+        // *axi.aw.addr -= 0x80000000UL;
+        // *axi.ar.addr -= 0x80000000UL;
+        axi4_mem_rising(axi);
+
 #if VM_TRACE == 1
         if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {
             this->tfp->dump((vluint64_t)Cycles);
         }
 #endif
         this->pos_edge();
+
+        if (Cycles > 0) {
+          axi_copy_data(axi.w.data, dut_ptr->DUT_AXI(w_bits_data))
+        }
+        // *axi.aw.addr += 0x80000000UL;
+        // *axi.ar.addr += 0x80000000UL;
+        axi4_mem_falling(axi);
+
         this->update_cycles(1);
+
+        if (!suc) {
+            printf("No more cachelines break\n");
+            break;
+        }
     }
 }
 

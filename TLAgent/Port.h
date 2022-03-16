@@ -76,6 +76,9 @@ namespace tl_agent {
         bool fire() const {
             return *valid && *ready;
         }
+        bool waiting() const {
+            return *valid && !*ready;
+        }
     };
 
     template<class Usr, class Echo, std::size_t N>
