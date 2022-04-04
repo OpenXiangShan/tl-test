@@ -142,6 +142,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->c.size = &(dut_ptr->master_port_0_0_c_bits_size);
     port->c.source = &(dut_ptr->master_port_0_0_c_bits_source);
     port->c.data = (uint8_t*)&(dut_ptr->master_port_0_0_c_bits_data);
+    port->c.dirty = &(dut_ptr->master_port_0_0_c_bits_echo_blockisdirty);
 
     port->d.ready = &(dut_ptr->master_port_0_0_d_ready);
     port->d.valid = &(dut_ptr->master_port_0_0_d_valid);
@@ -186,6 +187,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->c.size = &(dut_ptr->master_port_1_0_c_bits_size);
     port->c.source = &(dut_ptr->master_port_1_0_c_bits_source);
     port->c.data = (uint8_t*)&(dut_ptr->master_port_1_0_c_bits_data);
+    port->c.dirty = &(dut_ptr->master_port_1_0_c_bits_echo_blockisdirty);
 
     port->d.ready = &(dut_ptr->master_port_1_0_d_ready);
     port->d.valid = &(dut_ptr->master_port_1_0_d_valid);

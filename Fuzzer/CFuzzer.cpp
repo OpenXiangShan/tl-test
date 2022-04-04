@@ -12,16 +12,23 @@ void CFuzzer::randomTest() {
     paddr_t addr = (rand() % 0x100) * 0x100;
     if (rand() % 2) {
         if (rand() % 3) {
-            cAgent->do_acquireBlock(addr, tl_agent::NtoT); // AcquireBlock
+            if (rand() % 2) {
+                cAgent->do_acquireBlock(addr, tl_agent::NtoT); // AcquireBlock NtoT
+            } else {
+                cAgent->do_acquireBlock(addr, tl_agent::NtoB); // AcquireBlock NtoB
+            }
         } else {
-            cAgent->do_acquirePerm(addr, tl_agent::NtoT);  // AcquirePerm
+            cAgent->do_acquirePerm(addr, tl_agent::NtoT); // AcquirePerm
         }
     } else {
+        /*
         uint8_t* putdata = new uint8_t[DATASIZE];
         for (int i = 0; i < DATASIZE; i++) {
             putdata[i] = (uint8_t)rand();
         }
         cAgent->do_releaseData(addr, tl_agent::TtoN, putdata); // ReleaseData
+        */
+        cAgent->do_releaseDataAuto(addr); // feel free to releaseData according to its priv
     }
 }
 

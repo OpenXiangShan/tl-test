@@ -113,6 +113,7 @@ namespace tl_agent {
         paddr_t *address;
         Usr *usr;
         Echo *echo;
+        uint8_t *dirty;
         uint8_t *data;
         uint8_t *corrupt;
     };
