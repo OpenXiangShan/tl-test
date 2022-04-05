@@ -435,7 +435,7 @@ namespace tl_agent {
     }
 
     bool CAgent::do_acquireBlock(paddr_t address, int param) {
-        if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
+        if (pendingA.is_pendC_IDEntrying() || pendingB.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(address);

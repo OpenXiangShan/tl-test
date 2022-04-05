@@ -14,27 +14,28 @@ namespace tl_agent {
     class C_SBEntry {
     public:
         uint64_t time_stamp;
-        int status;
-        int privilege;
-        int pending_privilege;
-        C_SBEntry(int status, int privilege, uint64_t& time) {
+        int status[4];
+        int privilege[4];
+        int pending_privilege[4];info
+
+        C_SBEntry(int[] status, int[] privilege, uint64_t& time) {
             this->time_stamp = time;
             this->privilege = privilege;
             this->status = status;
         }
-        void update_status(int status, uint64_t& time) {
+        void update_status(int status, uint64_t& time, int alias) {
             this->status = status;
             this->time_stamp = time;
         }
-        void update_priviledge(int priv, uint64_t& time) {
+        void update_priviledge(int priv, uint64_t& time, int alias) {
             this->privilege = priv;
             this->time_stamp = time;
         }
-        void update_pending_priviledge(int priv, uint64_t& time) {
+        void update_pending_priviledge(int priv, uint64_t& time, int alias) {
             this->pending_privilege = priv;
             this->time_stamp = time;
         }
-        void unpending_priviledge(uint64_t& time) {
+        void unpending_priviledge(uint64_t& time, int alias) {
             this->privilege = this->pending_privilege;
             this->pending_privilege = -1;
             this->time_stamp = time;
@@ -44,8 +45,10 @@ namespace tl_agent {
     class C_IDEntry {
     public:
         paddr_t address;
-        C_IDEntry(paddr_t &addr) {
+        int alias;
+        C_IDEntry(paddr_t &addr, int &alias) {info
             this->address = addr;
+            this->alias = alias;
         }
     };
 
@@ -80,10 +83,10 @@ namespace tl_agent {
         void handle_channel();
         void update_signal();
 
-        bool do_acquireBlock(paddr_t address, int param);
-        bool do_acquirePerm(paddr_t address, int param);
+        bool do_acquireBlock(paddr_t address, int param, int alias);
+        bool do_acquirePerm(paddr_t address, int param, int alias);
         bool do_releaseData(paddr_t address, int param, uint8_t data[]);
-        bool do_releaseDataAuto(paddr_t address);
+        bool do_releaseDataAuto(paddr_t address, int alias);
     };
 
 }
