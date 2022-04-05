@@ -133,7 +133,11 @@ namespace tl_agent {
                   tlc_assert(false, "Try to probe toB an invalid block!");
                 }
             } else if (*b->param == toN) {
-                req_c->param = new uint8_t(BtoN); // TODO
+                if (exact_privilege == TIP) {
+                    req_c->param = new uint8_t(TtoN);
+                } else {
+                    req_c->param = new uint8_t(BtoN);
+                }
             }
             if (!globalBoard->haskey(*b->address)) {
                 // want to probe an all-zero block which does not exist in global board
@@ -144,7 +148,15 @@ namespace tl_agent {
                 }
                 req_c->data = all_zero;
             } else {
-                req_c->data = globalBoard->query(*b->address)->data;
+                if (*req_c->opcode == ProbeAckData && *req_c->param != BtoN) {
+                    uint8_t *random = new uint8_t[DATASIZE];
+                    for (int i = 0; i < DATASIZE; i++) {
+                      random[i] = (uint8_t)rand();
+                    }
+                    req_c->data = random;
+                } else {
+                    req_c->data = globalBoard->query(*b->address)->data;
+                }
             }
             pendingC.init(req_c, DATASIZE / BEATSIZE);
             if (*req_c->param == TtoN) {
