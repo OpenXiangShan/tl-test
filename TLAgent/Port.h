@@ -140,6 +140,7 @@ namespace tl_agent {
     public:
         uint8_t *sink;
         paddr_t *addr;  // used for index scoreboard
+        uint8_t *alias;
     };
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>

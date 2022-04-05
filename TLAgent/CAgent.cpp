@@ -45,7 +45,7 @@ namespace tl_agent {
                 if (localBoard->haskey(*a->address)) {
                     localBoard->query(*a->address)->update_status(S_SENDING_A, *cycles, *a->alias);
                 } else {
-                    int statuses[4] = {S_INVALD};
+                    int statuses[4] = {S_INVALID};
                     int privileges[4] = {INVALID};
                     for (int i = 0; i < 4; i++) {
                         if (*a->alias == i) {
@@ -63,7 +63,7 @@ namespace tl_agent {
                 if (localBoard->haskey(*a->address)) {
                     localBoard->query(*a->address)->update_status(S_SENDING_A, *cycles, *a->alias);
                 } else {
-                    int statuses[4] = {S_INVALD};
+                    int statuses[4] = {S_INVALID};
                     int privileges[4] = {INVALID};
                     for (int i = 0; i < 4; i++) {
                         if (*a->alias == i) {
@@ -114,7 +114,7 @@ namespace tl_agent {
         req_c->size = new uint8_t(*b->size);
         req_c->source = new uint8_t(this->probeIDpool.getid());
         req_c->dirty = new uint8_t(1);
-        req_c->alias = new int(*b->alias);
+        req_c->alias = new uint8_t(*b->alias);
         // Log("== id == handleB %d\n", *req_c->source);
         if (exact_status == S_SENDING_A || exact_status == S_INVALID || exact_status == S_A_WAITING_D) {
             Log("Probe an non-exist block, status: %d\n", exact_status);
@@ -262,9 +262,9 @@ namespace tl_agent {
             req_b->param = new uint8_t(*chnB.param);
             req_b->size = new uint8_t(*chnB.size);
             req_b->source = new uint8_t(*chnB.source);
-            req_b->alias = new int(*chnB.alias);
+            req_b->alias = new uint8_t ((*chnB.alias) >> 1);
             pendingB.init(req_b, 1);
-            Log("[%ld] [Probe] addr: %hx alias: %d\n", *cycles, *chnB.address, *chnB.alias);
+            Log("[%ld] [Probe] addr: %hx alias: %d\n", *cycles, *chnB.address, (*chnB.alias) >> 1);
         }
     }
 
@@ -382,7 +382,7 @@ namespace tl_agent {
                             info->update_status(S_INVALID, *cycles, alias);
                         } else {
                             tlc_assert(exact_status == S_C_WAITING_D_INTR, "Status error!");
-                            info->update_status(S_SENDING_C, *cycles);
+                            info->update_status(S_SENDING_C, *cycles, alias);
                         }
                         info->unpending_priviledge(*cycles, alias);
                         this->globalBoard->unpending(addr);
@@ -398,7 +398,7 @@ namespace tl_agent {
                     std::shared_ptr<ChnE> req_e(new ChnE());
                     req_e->sink = new uint8_t(*chnD.sink);
                     req_e->addr = new paddr_t(addr);
-                    req_e->alias = new int(alias);
+                    req_e->alias = new uint8_t(alias);
                     if (pendingE.is_pending()) {
                         tlc_assert(false, "E is pending!");
                     }

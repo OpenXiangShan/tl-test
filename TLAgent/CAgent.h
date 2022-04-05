@@ -48,7 +48,7 @@ namespace tl_agent {
     public:
         paddr_t address;
         int alias;
-        C_IDEntry(paddr_t &addr, int &alias) {
+        C_IDEntry(paddr_t &addr, uint8_t &alias) {
             this->address = addr;
             this->alias = alias;
         }
