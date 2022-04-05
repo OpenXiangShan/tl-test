@@ -118,6 +118,7 @@ namespace tl_agent {
         uint8_t *dirty;
         uint8_t *data;
         uint8_t *corrupt;
+        uint8_t *alias;
     };
 
     template<class Usr, class Echo, std::size_t N>

@@ -434,13 +434,13 @@ namespace tl_agent {
         probeIDpool.update();
     }
 
-    bool CAgent::do_acquireBlock(paddr_t address, int param) {
-        if (pendingA.is_pendC_IDEntrying() || pendingB.is_pending() || idpool.full())
+    bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
+        if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(address);
-            auto privilege = entry->privilege;
-            auto status = entry->status;
+            auto privilege = entry->privilege[alias];
+            auto status = entry->status[alias];
             if (status != S_VALID && status != S_INVALID) {
                 return false;
             }
@@ -458,27 +458,28 @@ namespace tl_agent {
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
+        req_a->alias = new uint8_t(alias);
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
         switch (param) {
         case NtoB:
-            Log("[%ld] [AcquireData NtoB] addr: %x\n", *cycles, address);
+            Log("[%ld] [AcquireData NtoB] addr: %x alias: %d\n", *cycles, address, alias);
             break;
         case NtoT:
-            Log("[%ld] [AcquireData NtoT] addr: %x\n", *cycles, address);
+            Log("[%ld] [AcquireData NtoT] addr: %x alias: %d\n", *cycles, address, alias);
             break;
         }
 
         return true;
     }
 
-    bool CAgent::do_acquirePerm(paddr_t address, int param) {
+    bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
         if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) {
             auto entry = localBoard->query(address);
-            auto privilege = entry->privilege;
-            auto status = entry->status;
+            auto privilege = entry->privilege[alias];
+            auto status = entry->status[alias];
             if (status != S_VALID && status != S_INVALID) {
                 return false;
             }
@@ -495,20 +496,21 @@ namespace tl_agent {
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
+        req_a->alias = new uint8_t(alias);
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        Log("[%ld] [AcquirePerm] addr: %x\n", *cycles, address);
+        Log("[%ld] [AcquirePerm] addr: %x alias: %d\n", *cycles, address, alias);
         return true;
     }
 
-    bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[]) {
+    bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[], int alias) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
-        auto privilege = entry->privilege;
-        auto status = entry->status;
+        auto privilege = entry->privilege[alias];
+        auto status = entry->status[alias];
         if (status != S_VALID) {
             return false;
         }
@@ -525,6 +527,7 @@ namespace tl_agent {
         req_c->dirty = new uint8_t(1);
         // Log("== id == release %d\n", *req_c->source);
         req_c->data = data;
+        req_c->alias = new uint8_t(alias);
         pendingC.init(req_c, DATASIZE / BEATSIZE);
         Log("[%ld] [ReleaseData] addr: %x data: ", *cycles, address);
         for(int i = 0; i < DATASIZE; i++) {
@@ -534,13 +537,13 @@ namespace tl_agent {
         return true;
     }
 
-    bool CAgent::do_releaseDataAuto(paddr_t address) {
+    bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
-        auto privilege = entry->privilege;
+        auto privilege = entry->privilege[alias];
         int param;
         switch (privilege) {
         case INVALID:
@@ -554,7 +557,7 @@ namespace tl_agent {
         default:
             tlc_assert(false, "Invalid priviledge detected!");
         }
-        auto status = entry->status;
+        auto status = entry->status[alias];
         if (status != S_VALID) {
             return false;
         }
@@ -566,6 +569,7 @@ namespace tl_agent {
         req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
         req_c->source = new uint8_t(this->idpool.getid());
         req_c->dirty = new uint8_t(1);
+        req_c->alias = new uint8_t(alias);
         if (param == BtoN) {
             uint8_t* data = globalBoard->query(address)->data;
             req_c->data = data;
@@ -602,13 +606,15 @@ namespace tl_agent {
         }
         for (auto it = this->localBoard->get().begin(); it != this->localBoard->get().end(); it++) {
             auto value = it->second;
-            if (value->status != S_INVALID && value->status != S_VALID) {
+            for(int i = 0; i < 4; i++){
+              if (value->status[i] != S_INVALID && value->status[i] != S_VALID) {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
-                    printf("Now time:   %lu\n", *this->cycles);
-                    printf("Last stamp: %lu\n", value->time_stamp);
-                    printf("Status:     %d\n",  value->status);
-                    tlc_assert(false,  "Transaction time out");
+                  printf("Now time:   %lu\n", *this->cycles);
+                  printf("Last stamp: %lu\n", value->time_stamp);
+                  printf("Status:     %d\n",  value->status);
+                  tlc_assert(false,  "Transaction time out");
                 }
+              }
             }
         }
     }

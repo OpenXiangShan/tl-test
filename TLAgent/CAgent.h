@@ -16,28 +16,30 @@ namespace tl_agent {
         uint64_t time_stamp;
         int status[4];
         int privilege[4];
-        int pending_privilege[4];info
+        int pending_privilege[4];
 
-        C_SBEntry(int[] status, int[] privilege, uint64_t& time) {
+        C_SBEntry(const int status[], const int privilege[], uint64_t& time) {
             this->time_stamp = time;
-            this->privilege = privilege;
-            this->status = status;
+            for(int i = 0; i<4; i++){
+              this->privilege[i] = privilege[i];
+              this->status[i] = status[i];
+            }
         }
         void update_status(int status, uint64_t& time, int alias) {
-            this->status = status;
+            this->status[alias] = status;
             this->time_stamp = time;
         }
         void update_priviledge(int priv, uint64_t& time, int alias) {
-            this->privilege = priv;
+            this->privilege[alias] = priv;
             this->time_stamp = time;
         }
         void update_pending_priviledge(int priv, uint64_t& time, int alias) {
-            this->pending_privilege = priv;
+            this->pending_privilege[alias] = priv;
             this->time_stamp = time;
         }
         void unpending_priviledge(uint64_t& time, int alias) {
-            this->privilege = this->pending_privilege;
-            this->pending_privilege = -1;
+            this->privilege[alias] = this->pending_privilege[alias];
+            this->pending_privilege[alias] = -1;
             this->time_stamp = time;
         }
     };
@@ -46,7 +48,7 @@ namespace tl_agent {
     public:
         paddr_t address;
         int alias;
-        C_IDEntry(paddr_t &addr, int &alias) {info
+        C_IDEntry(paddr_t &addr, int &alias) {
             this->address = addr;
             this->alias = alias;
         }
@@ -85,7 +87,7 @@ namespace tl_agent {
 
         bool do_acquireBlock(paddr_t address, int param, int alias);
         bool do_acquirePerm(paddr_t address, int param, int alias);
-        bool do_releaseData(paddr_t address, int param, uint8_t data[]);
+        bool do_releaseData(paddr_t address, int param, uint8_t data[], int alias);
         bool do_releaseDataAuto(paddr_t address, int alias);
     };
 
