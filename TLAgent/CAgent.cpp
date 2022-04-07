@@ -348,7 +348,7 @@ namespace tl_agent {
             auto alias = idMap->query(*chnD.source)->alias;
             auto info = localBoard->query(addr);
             auto exact_status = info->status[alias];
-            if (!(exact_status == S_C_WAITING_D || exact_status == S_A_WAITING_D || exact_status == S_C_WAITING_D_INTR || exact_status == S_A_WAITING_D_INTR)) {
+            if (!(exact_status == S_C_WAITING_D || exact_status == S_A_WAITING_D || exact_status == S_C_WAITING_D_INTR || exact_status == S_A_WAITING_D_INTR || exact_status == S_INVALID)) {
               printf("fire_d: status of localboard is %d\n", exact_status);
               printf("addr: 0x%hx\n", addr);
               tlc_assert(false, "Status error!");
