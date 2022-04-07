@@ -103,6 +103,7 @@ namespace tl_agent {
         paddr_t *address;
         uint8_t *corrupt;
         uint8_t *alias;
+        uint8_t *needdata;
     };
 
     template<class Usr, class Echo, std::size_t N>

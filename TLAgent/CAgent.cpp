@@ -18,9 +18,12 @@ namespace tl_agent {
 
     int shrinkGenPriv(int param) {
         switch (param) {
+            case TtoT: return TIP;
+            case BtoB:
             case TtoB: return BRANCH;
-            case TtoN: return INVALID;
-            case BtoN: return INVALID;
+            case TtoN:
+            case BtoN:
+            case NtoN: return INVALID;
             default:
                 tlc_assert(false, "Invalid param!");
         }
@@ -123,20 +126,20 @@ namespace tl_agent {
             pendingC.init(req_c, 1);
             Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *b->address);
         } else {
-            req_c->opcode = new uint8_t(ProbeAckData); // TODO: no need to always probeackData
+            int dirty = rand() % 3;
+            // When should we probeAck with data? request need_data or dirty itself
+            req_c->opcode = (dirty || *b->needdata) ? new uint8_t(ProbeAckData) : new uint8_t(ProbeAck);;
             if (*b->param == toB) {
-                if (exact_privilege == TIP) {
-                    req_c->param = new uint8_t(TtoB);
-                } else if (exact_privilege == BRANCH) {
-                    req_c->param = new uint8_t(BtoB);
-                } else {
-                  tlc_assert(false, "Try to probe toB an invalid block!");
+                switch (exact_privilege) {
+                    case TIP:    req_c->param = new uint8_t(TtoB); break;
+                    case BRANCH: req_c->param = new uint8_t(BtoB); break;
+                    default: tlc_assert(false, "Try to probe toB an invalid block!");
                 }
             } else if (*b->param == toN) {
-                if (exact_privilege == TIP) {
-                    req_c->param = new uint8_t(TtoN);
-                } else {
-                    req_c->param = new uint8_t(BtoN);
+                switch (exact_privilege) {
+                    case TIP:    req_c->param = new uint8_t(TtoN); break;
+                    case BRANCH: req_c->param = new uint8_t(BtoN); break;
+                    default: tlc_assert(false, "Try to probe toB an invalid block!");
                 }
             }
             if (!globalBoard->haskey(*b->address)) {
@@ -159,6 +162,7 @@ namespace tl_agent {
                 }
             }
             pendingC.init(req_c, DATASIZE / BEATSIZE);
+
             if (*req_c->param == TtoN) {
                 Log("[%ld] [ProbeAckData TtoN] addr: %x data: ", *cycles, *b->address);
             } else if (*req_c->param == TtoB) {
@@ -170,9 +174,8 @@ namespace tl_agent {
             } else if (*req_c->param == BtoB) {
                 Log("[%ld] [ProbeAckData BtoB] addr: %x data: ", *cycles, *b->address);
             } else {
-                tlc_assert(false, "What the hell is param?");
+                tlc_assert(false, "What the hell is req_c's param?");
             }
-
             for (int i = 0; i < DATASIZE; i++) {
                 Dump("%02hhx", req_c->data[i]);
             }
@@ -203,6 +206,7 @@ namespace tl_agent {
                 idMap->update(*c->source, idmap_entry);
 
                 if (localBoard->haskey(*c->address)) {
+                    // TODO: What if this is an interrupted probe?
                     localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles, *c->alias);
                 } else {
                     tlc_assert(false, "Localboard key not found!");
@@ -216,8 +220,7 @@ namespace tl_agent {
             case ProbeAck: {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*c->address, *c->alias));
                 idMap->update(*c->source, idmap_entry);
-                tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
-
+                // tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
                 if (localBoard->haskey(*c->address)) {
                     auto item = localBoard->query(*c->address);
                     if (item->status[*c->alias] == S_C_WAITING_D) {
@@ -274,7 +277,8 @@ namespace tl_agent {
             req_b->param = new uint8_t(*chnB.param);
             req_b->size = new uint8_t(*chnB.size);
             req_b->source = new uint8_t(*chnB.source);
-            req_b->alias = new uint8_t ((*chnB.alias) >> 1);
+            req_b->alias = new uint8_t((*chnB.alias) >> 1);
+            req_b->needdata = new uint8_t((*chnB.alias) & 0x1);
             pendingB.init(req_b, 1);
             Log("[%ld] [Probe] addr: %hx alias: %d\n", *cycles, *chnB.address, (*chnB.alias) >> 1);
         }
@@ -328,8 +332,8 @@ namespace tl_agent {
                 if (*chnC.opcode == ReleaseData || *chnC.opcode == Release) {
                     info->update_pending_priviledge(shrinkGenPriv(*pendingC.info->param), *cycles, *pendingC.info->alias);
                 } else {
-                    if (probeAckDataToB) {
-                      info->update_priviledge(BRANCH, *cycles, *pendingC.info->alias);
+                    if (*chnC.opcode == ProbeAck || *chnC.opcode == ProbeAckData) {
+                      info->update_priviledge(shrinkGenPriv(*pendingC.info->param), *cycles, *pendingC.info->alias);
                     }
                     // Log("== free == fireC %d\n", *chnC.source);
                     this->probeIDpool.freeid(*chnC.source);
