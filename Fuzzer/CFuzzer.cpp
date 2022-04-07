@@ -8,17 +8,18 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
     this->cAgent = cAgent;
 }
 
-void CFuzzer::randomTest() {
+void CFuzzer::randomTest(bool do_alias) {
     paddr_t addr = (rand() % 0x8) * (rand() % 0x80) * 0x40;  // Tag + Set + Offset
+    int alias = (do_alias) ? (rand() % 4) : 0;
     if (rand() % 2) {
         if (rand() % 3) {
             if (rand() % 2) {
-                cAgent->do_acquireBlock(addr, tl_agent::NtoT, rand() % 4); // AcquireBlock NtoT
+                cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoT
             } else {
-                cAgent->do_acquireBlock(addr, tl_agent::NtoT, rand() % 4); // AcquireBlock NtoB
+                cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoB
             }
         } else {
-            cAgent->do_acquirePerm(addr, tl_agent::NtoT, rand() % 4); // AcquirePerm
+            cAgent->do_acquirePerm(addr, tl_agent::NtoT, alias); // AcquirePerm
         }
     } else {
         /*
@@ -28,7 +29,7 @@ void CFuzzer::randomTest() {
         }
         cAgent->do_releaseData(addr, tl_agent::TtoN, putdata); // ReleaseData
         */
-        cAgent->do_releaseDataAuto(addr, rand() % 4); // feel free to releaseData according to its priv
+        cAgent->do_releaseDataAuto(addr, alias); // feel free to releaseData according to its priv
     }
 }
 
@@ -46,6 +47,6 @@ void CFuzzer::caseTest() {
 }
 
 void CFuzzer::tick() {
-    this->randomTest();
+    this->randomTest(false);
 //    this->caseTest();
 }

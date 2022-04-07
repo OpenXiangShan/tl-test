@@ -35,7 +35,7 @@ private:
     tl_agent::CAgent *cAgent;
 public:
     CFuzzer(tl_agent::CAgent *cAgent);
-    void randomTest();
+    void randomTest(bool do_alias);
     void caseTest();
     void tick();
 };
