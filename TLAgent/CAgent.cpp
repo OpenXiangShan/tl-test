@@ -126,9 +126,9 @@ namespace tl_agent {
             pendingC.init(req_c, 1);
             Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *b->address);
         } else {
-            int dirty = rand() % 3;
+            int dirty = (exact_privilege == TIP) && (rand() % 3);
             // When should we probeAck with data? request need_data or dirty itself
-            req_c->opcode = (dirty || *b->needdata) ? new uint8_t(ProbeAckData) : new uint8_t(ProbeAck);;
+            req_c->opcode = (dirty || *b->needdata) ? new uint8_t(ProbeAckData) : new uint8_t(ProbeAck);
             if (*b->param == toB) {
                 switch (exact_privilege) {
                     case TIP:    req_c->param = new uint8_t(TtoB); break;
@@ -161,23 +161,31 @@ namespace tl_agent {
                     req_c->data = globalBoard->query(*b->address)->data;
                 }
             }
-            pendingC.init(req_c, DATASIZE / BEATSIZE);
+            if (*req_c->opcode == ProbeAckData) {
+                pendingC.init(req_c, DATASIZE / BEATSIZE);
+            } else {
+                pendingC.init(req_c, 1);
+            }
 
             if (*req_c->param == TtoN) {
-                Log("[%ld] [ProbeAckData TtoN] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck TtoN] addr: %x data: ", *cycles, *b->address);
             } else if (*req_c->param == TtoB) {
-                Log("[%ld] [ProbeAckData TtoB] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck TtoB] addr: %x data: ", *cycles, *b->address);
             } else if (*req_c->param == NtoN) {
-                Log("[%ld] [ProbeAckData NtoN] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck NtoN] addr: %x data: ", *cycles, *b->address);
             } else if (*req_c->param == BtoN) {
-                Log("[%ld] [ProbeAckData BtoN] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck BtoN] addr: %x data: ", *cycles, *b->address);
             } else if (*req_c->param == BtoB) {
-                Log("[%ld] [ProbeAckData BtoB] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck BtoB] addr: %x data: ", *cycles, *b->address);
             } else {
                 tlc_assert(false, "What the hell is req_c's param?");
             }
-            for (int i = 0; i < DATASIZE; i++) {
-                Dump("%02hhx", req_c->data[i]);
+            if (*req_c->opcode == ProbeAckData) {
+                for (int i = 0; i < DATASIZE; i++) {
+                  Dump("%02hhx", req_c->data[i]);
+                }
+            } else {
+              Dump("no data");
             }
             Dump("\n");
         }
