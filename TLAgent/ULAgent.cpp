@@ -175,7 +175,7 @@ namespace tl_agent {
         return true;
     }
     
-    bool ULAgent::do_putfulldata(uint16_t address, uint8_t data[]) {
+    bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
@@ -197,7 +197,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_putpartialdata(uint16_t address, uint8_t size, uint32_t mask, uint8_t data[]) {
+    bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)

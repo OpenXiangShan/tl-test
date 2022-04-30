@@ -9,7 +9,8 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
 }
 
 void CFuzzer::randomTest() {
-    paddr_t addr = (rand() % 0x100) * 0x100;
+    // paddr_t addr = (rand() % 0x100) * 0x100;
+    paddr_t addr = (rand() % 0x1000000) * 0x100;
     if (rand() % 2) {
         if (rand() % 3) {
             cAgent->do_acquireBlock(addr, tl_agent::NtoT); // AcquireBlock

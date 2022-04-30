@@ -18,10 +18,11 @@ enum {
     NR_ULAGENTS = 0,
     NR_CAGENTS = 2,
     NR_SOURCEID = 16,
-    TIMEOUT_INTERVAL = 1000
+    TIMEOUT_INTERVAL = 2000
 };
 
-typedef uint16_t paddr_t;
+// typedef uint16_t paddr_t;
+typedef uint32_t paddr_t;
 
 #define tlc_assert(cond, info) \
     do { \
