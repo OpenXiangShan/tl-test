@@ -2,12 +2,12 @@
 
 ```
 > git clone https://github.com/OpenXiangShan/HuanCun.git
+> git checkout BRANCH_UNDER_TEST
 > make init
-> make compile
 
-We provide two kinds of tests here, you can also build new tests.
+Next we need to generate a DUT wrapper. We provide two pre-written wrappers, you can also build new DUT wrappers.
 Please see https://github.com/OpenXiangShan/HuanCun/blob/non-inclusive/src/test/scala/huancun/TestTop.scala for more information.
-> make test-top-l2    // For L2 test
+> make test-top-l2    // For StandAlone L2 test
 > make test-top-l2l3  // For L2-L3 test
 ```
 
