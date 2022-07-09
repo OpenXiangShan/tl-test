@@ -29,7 +29,7 @@ void Emu::parse_args(int argc, char **argv) {
                 tlc_assert(false, "Unknown args!");
         }
     }
-    if (this->wave_begin == this->wave_end) {
+    if (this->wave_begin >= this->wave_end) {
         this->enable_wave = false;
     }
 }
