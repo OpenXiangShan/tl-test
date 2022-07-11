@@ -126,7 +126,7 @@ namespace tl_agent {
             pendingC.init(req_c, 1);
             Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *b->address);
         } else {
-            int dirty = (exact_privilege == TIP) && (rand() % 3);
+            int dirty = (exact_privilege == TIP); // && (rand() % 3); // FIXME
             // When should we probeAck with data? request need_data or dirty itself
             req_c->opcode = (dirty || *b->needdata) ? new uint8_t(ProbeAckData) : new uint8_t(ProbeAck);
             if (*b->param == toB) {
