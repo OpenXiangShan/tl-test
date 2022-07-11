@@ -18,7 +18,7 @@ enum {
     NR_ULAGENTS = 0,
     NR_CAGENTS = 2,
     NR_SOURCEID = 16,
-    TIMEOUT_INTERVAL = 1000
+    TIMEOUT_INTERVAL = 5000
 };
 
 typedef uint16_t paddr_t;
