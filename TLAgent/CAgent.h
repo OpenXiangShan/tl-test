@@ -17,6 +17,7 @@ namespace tl_agent {
         int status[4];
         int privilege[4];
         int pending_privilege[4];
+        int dirty[4];
 
         C_SBEntry(const int status[], const int privilege[], uint64_t& time) {
             this->time_stamp = time;
@@ -41,6 +42,9 @@ namespace tl_agent {
             this->privilege[alias] = this->pending_privilege[alias];
             this->pending_privilege[alias] = -1;
             this->time_stamp = time;
+        }
+        void update_dirty(int dirty, int alias) {
+            this->dirty[alias] = dirty;
         }
     };
 

@@ -133,6 +133,7 @@ namespace tl_agent {
         uint8_t *denied;
         Usr *usr;
         Echo *echo;
+        uint8_t *dirty;
         uint8_t *data;
         uint8_t *corrupt;
     };

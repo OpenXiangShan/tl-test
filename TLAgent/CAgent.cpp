@@ -126,7 +126,7 @@ namespace tl_agent {
             pendingC.init(req_c, 1);
             Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *b->address);
         } else {
-            int dirty = (exact_privilege == TIP); // && (rand() % 3); // FIXME
+            int dirty = (exact_privilege == TIP) && (info->dirty[*b->alias] || rand() % 3);
             // When should we probeAck with data? request need_data or dirty itself
             req_c->opcode = (dirty || *b->needdata) ? new uint8_t(ProbeAckData) : new uint8_t(ProbeAck);
             if (*b->param == toB) {
@@ -394,16 +394,19 @@ namespace tl_agent {
                         }
                         Dump("\n");
                         this->globalBoard->verify(addr, pendingD.info->data);
+                        info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
                     case Grant: {
                         Log("[%ld] [Grant] addr: %hx\n", *cycles, addr);
+                        info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
                     case ReleaseAck: {
                         Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
                         if (exact_status == S_C_WAITING_D) {
                             info->update_status(S_INVALID, *cycles, alias);
+                            info->update_dirty(0, alias);
                         } else {
                             tlc_assert(exact_status == S_C_WAITING_D_INTR, "Status error!");
                             info->update_status(S_SENDING_C, *cycles, alias);

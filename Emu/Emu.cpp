@@ -46,14 +46,14 @@ Emu::Emu(int argc, char **argv) {
     srand(this->seed);
 
     // Init agents
-    /* for (int i = 0; i < NR_ULAGENTS; i++) {
+    for (int i = 0; i < NR_ULAGENTS; i++) {
         agents[i] = new ULAgent_t(globalBoard, i, &Cycles);
         auto port = naive_gen_port();
         agents[i]->connect(port);
         fuzzers[i] = new ULFuzzer(static_cast<ULAgent_t*>(agents[i]));
         fuzzers[i]->set_cycles(&Cycles);
-    }*/
-    tlc_assert(NR_ULAGENTS == 0, "Current version has not ul-agents");
+    }
+    // tlc_assert(NR_ULAGENTS == 0, "Current version has not ul-agents");
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
         agents[i] = new CAgent_t(globalBoard, i, &Cycles);
         if (i == 0) {
@@ -154,6 +154,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->d.sink = &(dut_ptr->master_port_0_0_d_bits_sink);
     port->d.source = &(dut_ptr->master_port_0_0_d_bits_source);
     port->d.data = (uint8_t*)&(dut_ptr->master_port_0_0_d_bits_data);
+    port->d.dirty = &(dut_ptr->master_port_0_0_d_bits_echo_blockisdirty);
 
     port->e.ready = &(dut_ptr->master_port_0_0_e_ready);
     port->e.valid = &(dut_ptr->master_port_0_0_e_valid);
@@ -201,6 +202,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->d.sink = &(dut_ptr->master_port_1_0_d_bits_sink);
     port->d.source = &(dut_ptr->master_port_1_0_d_bits_source);
     port->d.data = (uint8_t*)&(dut_ptr->master_port_1_0_d_bits_data);
+    port->d.dirty = &(dut_ptr->master_port_1_0_d_bits_echo_blockisdirty);
 
     port->e.ready = &(dut_ptr->master_port_1_0_e_ready);
     port->e.valid = &(dut_ptr->master_port_1_0_e_valid);
