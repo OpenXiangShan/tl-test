@@ -9,4 +9,4 @@ else()
     set(ARG_THREAD 1)
 endif()
 
-verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" ${ARG_TRACE} THREADS ${ARG_THREAD})
+verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" "${DUT_DIR}/ClockDivider2.v" ${ARG_TRACE} THREADS ${ARG_THREAD})
