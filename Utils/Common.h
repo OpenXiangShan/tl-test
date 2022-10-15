@@ -11,6 +11,7 @@
 #include <assert.h>
 
 extern uint64_t Cycles;
+extern bool Verbose;
 
 enum {
     DATASIZE = 64, // Cache line is 64B
@@ -36,13 +37,17 @@ typedef uint16_t paddr_t;
 
 #define Log(...) \
     do { \
-        printf("#%d ", this->id); \
-        printf(__VA_ARGS__); \
+        if (Verbose) { \
+            printf("#%d ", this->id); \
+            printf(__VA_ARGS__); \
+        } \
     } while(0)
 
 #define Dump(...) \
     do { \
-        printf(__VA_ARGS__); \
+        if (Verbose) { \
+            printf(__VA_ARGS__); \
+        } \
     } while(0)
 
 /*

@@ -5,6 +5,7 @@
 #include "Emu.h"
 
 uint64_t Cycles;
+bool Verbose = false;
 
 double sc_time_stamp() { return 0; }
 
@@ -15,18 +16,20 @@ void Emu::parse_args(int argc, char **argv) {
         { "wave-end",   1, NULL, 'e' },
         { "cycles",     1, NULL, 'c' },
         { "wave-full",  0, NULL, 'f' },
+        { "verbose",    0, NULL, 'v' },
         { 0,            0, NULL,  0  }
     };
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:f", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:fv", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
             case 'e': this->wave_end = atoll(optarg);   break;
             case 'c': this->exe_cycles = atoll(optarg); break;
             case 'f': this->wave_full = true;                break;
+            case 'v': Verbose = true;                        break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
