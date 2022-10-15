@@ -31,6 +31,7 @@ private:
     Fuzzer ** const fuzzers = new Fuzzer*[NR_AGENTS];
     uint64_t seed = 0, wave_begin = 0, wave_end = 0;
     bool enable_wave = true;
+    bool wave_full = false;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
     void parse_args(int argc, char **argv);
 

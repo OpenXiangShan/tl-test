@@ -14,17 +14,19 @@ void Emu::parse_args(int argc, char **argv) {
         { "wave-begin", 1, NULL, 'b' },
         { "wave-end",   1, NULL, 'e' },
         { "cycles",     1, NULL, 'c' },
+        { "wave-full",  0, NULL, 'f' },
         { 0,            0, NULL,  0  }
     };
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:f", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
             case 'e': this->wave_end = atoll(optarg);   break;
             case 'c': this->exe_cycles = atoll(optarg); break;
+            case 'f': this->wave_full = true;                break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -46,14 +48,14 @@ Emu::Emu(int argc, char **argv) {
     srand(this->seed);
 
     // Init agents
-    /* for (int i = 0; i < NR_ULAGENTS; i++) {
+    for (int i = 0; i < NR_ULAGENTS; i++) {
         agents[i] = new ULAgent_t(globalBoard, i, &Cycles);
         auto port = naive_gen_port();
         agents[i]->connect(port);
         fuzzers[i] = new ULFuzzer(static_cast<ULAgent_t*>(agents[i]));
         fuzzers[i]->set_cycles(&Cycles);
-    }*/
-    tlc_assert(NR_ULAGENTS == 0, "Current version has not ul-agents");
+    }
+    // tlc_assert(NR_ULAGENTS == 0, "Current version has not ul-agents");
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
         agents[i] = new CAgent_t(globalBoard, i, &Cycles);
         if (i == 0) {
@@ -105,11 +107,19 @@ void Emu::execute(uint64_t nr_cycle) {
         this->neg_edge();
 #if VM_TRACE == 1
         if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {
-            this->tfp->dump((vluint64_t)Cycles);
+            if (this->wave_full)
+                this->tfp->dump((vluint64_t)Cycles*2+1);
+            else
+                this->tfp->dump((vluint64_t)Cycles);
         }
 #endif
         this->pos_edge();
         this->update_cycles(1);
+#if VM_TRACE == 1
+        if (this->wave_full && this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {
+          this->tfp->dump((vluint64_t)Cycles*2);
+        }
+#endif
     }
 }
 
@@ -125,6 +135,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->a.source = &(dut_ptr->master_port_0_0_a_bits_source);
     port->a.mask = &(dut_ptr->master_port_0_0_a_bits_mask);
     port->a.data = (uint8_t*)&(dut_ptr->master_port_0_0_a_bits_data);
+    port->a.alias = (uint8_t*)&(dut_ptr->master_port_0_0_a_bits_user_alias);
 
     port->b.ready = &(dut_ptr->master_port_0_0_b_ready);
     port->b.valid = &(dut_ptr->master_port_0_0_b_valid);
@@ -133,6 +144,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->b.address = &(dut_ptr->master_port_0_0_b_bits_address);
     port->b.size = &(dut_ptr->master_port_0_0_b_bits_size);
     port->b.source = &(dut_ptr->master_port_0_0_b_bits_source);
+    port->b.alias = (uint8_t *)&(dut_ptr->master_port_0_0_b_bits_data[0]);
 
     port->c.ready = &(dut_ptr->master_port_0_0_c_ready);
     port->c.valid = &(dut_ptr->master_port_0_0_c_valid);
@@ -142,6 +154,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->c.size = &(dut_ptr->master_port_0_0_c_bits_size);
     port->c.source = &(dut_ptr->master_port_0_0_c_bits_source);
     port->c.data = (uint8_t*)&(dut_ptr->master_port_0_0_c_bits_data);
+    port->c.dirty = &(dut_ptr->master_port_0_0_c_bits_echo_blockisdirty);
 
     port->d.ready = &(dut_ptr->master_port_0_0_d_ready);
     port->d.valid = &(dut_ptr->master_port_0_0_d_valid);
@@ -151,6 +164,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->d.sink = &(dut_ptr->master_port_0_0_d_bits_sink);
     port->d.source = &(dut_ptr->master_port_0_0_d_bits_source);
     port->d.data = (uint8_t*)&(dut_ptr->master_port_0_0_d_bits_data);
+    port->d.dirty = &(dut_ptr->master_port_0_0_d_bits_echo_blockisdirty);
 
     port->e.ready = &(dut_ptr->master_port_0_0_e_ready);
     port->e.valid = &(dut_ptr->master_port_0_0_e_valid);
@@ -169,6 +183,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->a.source = &(dut_ptr->master_port_1_0_a_bits_source);
     port->a.mask = &(dut_ptr->master_port_1_0_a_bits_mask);
     port->a.data = (uint8_t*)&(dut_ptr->master_port_1_0_a_bits_data);
+    port->a.alias = (uint8_t*)&(dut_ptr->master_port_1_0_a_bits_user_alias);
 
     port->b.ready = &(dut_ptr->master_port_1_0_b_ready);
     port->b.valid = &(dut_ptr->master_port_1_0_b_valid);
@@ -177,6 +192,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->b.address = &(dut_ptr->master_port_1_0_b_bits_address);
     port->b.size = &(dut_ptr->master_port_1_0_b_bits_size);
     port->b.source = &(dut_ptr->master_port_1_0_b_bits_source);
+    port->b.alias = (uint8_t*)&(dut_ptr->master_port_1_0_b_bits_data[0]);
 
     port->c.ready = &(dut_ptr->master_port_1_0_c_ready);
     port->c.valid = &(dut_ptr->master_port_1_0_c_valid);
@@ -186,6 +202,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->c.size = &(dut_ptr->master_port_1_0_c_bits_size);
     port->c.source = &(dut_ptr->master_port_1_0_c_bits_source);
     port->c.data = (uint8_t*)&(dut_ptr->master_port_1_0_c_bits_data);
+    port->c.dirty = &(dut_ptr->master_port_1_0_c_bits_echo_blockisdirty);
 
     port->d.ready = &(dut_ptr->master_port_1_0_d_ready);
     port->d.valid = &(dut_ptr->master_port_1_0_d_valid);
@@ -195,6 +212,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->d.sink = &(dut_ptr->master_port_1_0_d_bits_sink);
     port->d.source = &(dut_ptr->master_port_1_0_d_bits_source);
     port->d.data = (uint8_t*)&(dut_ptr->master_port_1_0_d_bits_data);
+    port->d.dirty = &(dut_ptr->master_port_1_0_d_bits_echo_blockisdirty);
 
     port->e.ready = &(dut_ptr->master_port_1_0_e_ready);
     port->e.valid = &(dut_ptr->master_port_1_0_e_valid);

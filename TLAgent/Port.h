@@ -91,6 +91,7 @@ namespace tl_agent {
         Usr *usr;
         Echo *echo;
         uint8_t *corrupt;
+        uint8_t *alias;
     };
 
     class ChnB : public Decoupled {
@@ -101,6 +102,8 @@ namespace tl_agent {
         uint8_t *source;
         paddr_t *address;
         uint8_t *corrupt;
+        uint8_t *alias;
+        uint8_t *needdata;
     };
 
     template<class Usr, class Echo, std::size_t N>
@@ -113,8 +116,10 @@ namespace tl_agent {
         paddr_t *address;
         Usr *usr;
         Echo *echo;
+        uint8_t *dirty;
         uint8_t *data;
         uint8_t *corrupt;
+        uint8_t *alias;
     };
 
     template<class Usr, class Echo, std::size_t N>
@@ -128,6 +133,7 @@ namespace tl_agent {
         uint8_t *denied;
         Usr *usr;
         Echo *echo;
+        uint8_t *dirty;
         uint8_t *data;
         uint8_t *corrupt;
     };
@@ -136,6 +142,7 @@ namespace tl_agent {
     public:
         uint8_t *sink;
         paddr_t *addr;  // used for index scoreboard
+        uint8_t *alias;
     };
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>

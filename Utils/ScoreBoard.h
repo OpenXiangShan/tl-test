@@ -169,7 +169,10 @@ template<typename T>
 void GlobalBoard<T>::unpending(const T& key) {
     tlc_assert(this->mapping.count(key) == 1, "Un-pending non-exist entry in GlobalBoard!");
     Global_SBEntry* value = this->mapping.at(key).get();
-    tlc_assert(value->pending_data != nullptr, "Un-pending entry with NULL ptr in GlobalBoard!");
+    // tlc_assert(value->pending_data != nullptr, "Un-pending entry with NULL ptr in GlobalBoard!");
+    if (value->pending_data == nullptr) {
+        return;
+    }
     value->data = value->pending_data;
     value->pending_data = nullptr;
     value->status = Global_SBEntry::SB_VALID;

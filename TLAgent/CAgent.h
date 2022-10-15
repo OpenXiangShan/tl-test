@@ -14,38 +14,47 @@ namespace tl_agent {
     class C_SBEntry {
     public:
         uint64_t time_stamp;
-        int status;
-        int privilege;
-        int pending_privilege;
-        C_SBEntry(int status, int privilege, uint64_t& time) {
+        int status[4];
+        int privilege[4];
+        int pending_privilege[4];
+        int dirty[4];
+
+        C_SBEntry(const int status[], const int privilege[], uint64_t& time) {
             this->time_stamp = time;
-            this->privilege = privilege;
-            this->status = status;
+            for(int i = 0; i<4; i++){
+              this->privilege[i] = privilege[i];
+              this->status[i] = status[i];
+            }
         }
-        void update_status(int status, uint64_t& time) {
-            this->status = status;
-            this->time_stamp = time;
-        }
-        void update_priviledge(int priv, uint64_t& time) {
-            this->privilege = priv;
-            this->time_stamp = time;
-        }
-        void update_pending_priviledge(int priv, uint64_t& time) {
-            this->pending_privilege = priv;
+        void update_status(int status, uint64_t& time, int alias) {
+            this->status[alias] = status;
             this->time_stamp = time;
         }
-        void unpending_priviledge(uint64_t& time) {
-            this->privilege = this->pending_privilege;
-            this->pending_privilege = -1;
+        void update_priviledge(int priv, uint64_t& time, int alias) {
+            this->privilege[alias] = priv;
             this->time_stamp = time;
+        }
+        void update_pending_priviledge(int priv, uint64_t& time, int alias) {
+            this->pending_privilege[alias] = priv;
+            this->time_stamp = time;
+        }
+        void unpending_priviledge(uint64_t& time, int alias) {
+            this->privilege[alias] = this->pending_privilege[alias];
+            this->pending_privilege[alias] = -1;
+            this->time_stamp = time;
+        }
+        void update_dirty(int dirty, int alias) {
+            this->dirty[alias] = dirty;
         }
     };
 
     class C_IDEntry {
     public:
         paddr_t address;
-        C_IDEntry(paddr_t &addr) {
+        int alias;
+        C_IDEntry(paddr_t &addr, uint8_t &alias) {
             this->address = addr;
+            this->alias = alias;
         }
     };
 
@@ -80,9 +89,10 @@ namespace tl_agent {
         void handle_channel();
         void update_signal();
 
-        bool do_acquireBlock(paddr_t address, int param);
-        bool do_acquirePerm(paddr_t address, int param);
-        bool do_releaseData(paddr_t address, int param, uint8_t data[]);
+        bool do_acquireBlock(paddr_t address, int param, int alias);
+        bool do_acquirePerm(paddr_t address, int param, int alias);
+        bool do_releaseData(paddr_t address, int param, uint8_t data[], int alias);
+        bool do_releaseDataAuto(paddr_t address, int alias);
     };
 
 }
