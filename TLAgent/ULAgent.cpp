@@ -106,7 +106,7 @@ namespace tl_agent {
                 resp_d->param = new uint8_t(*chnD.param);
                 resp_d->source = new uint8_t(*chnD.source);
                 resp_d->data = hasData ? new uint8_t[DATASIZE] : nullptr;
-                int nr_beat = (*chnD.opcode == Grant || *chnD.opcode == AccessAck) ? 0 : 1; // TODO: parameterize it
+                int nr_beat = (*chnD.opcode == Grant || *chnD.opcode == AccessAck || *chnD.size <= 5) ? 0 : 1; // TODO: parameterize it
                 pendingD.init(resp_d, nr_beat);
             }
             // Store data to pendingD
@@ -161,7 +161,7 @@ namespace tl_agent {
         idpool.update();
     }
     
-    bool ULAgent::do_get(paddr_t address) {
+    bool ULAgent::do_getAuto(paddr_t address) {
         if (pendingA.is_pending() || idpool.full())
             return false;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
@@ -172,6 +172,20 @@ namespace tl_agent {
         req_a->source = new uint8_t(this->idpool.getid());
         pendingA.init(req_a, 1);
         Log("[%ld] [Get] addr: %x\n", *cycles, address);
+        return true;
+    }
+
+    bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
+        if (pendingA.is_pending() || idpool.full())
+            return false;
+        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        req_a->opcode = new uint8_t(Get);
+        req_a->address = new paddr_t(address);
+        req_a->size = new uint8_t(size);
+        req_a->mask = new uint32_t(mask);
+        req_a->source = new uint8_t(this->idpool.getid());
+        pendingA.init(req_a, 1);
+        Log("[%ld] [Get] addr: %x size: %x\n", *cycles, address, size);
         return true;
     }
     
