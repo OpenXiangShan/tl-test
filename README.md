@@ -34,6 +34,8 @@ For multi-thread, add -DTHREAD=${NR_THREADS}
 -c --cycle=N       Simulate for N cycles
 -b --wave-begin=N  Wave dump starts from cycle N
 -e --wave-end=N    Wave dump ends to cycle N
+-f --wave-full     Dump wave in full cycles
+-v --verbose       Verbose mode
 Please check -DTRACE=1 is added to tl-test compiling cmake arguments before wave dump.
 
 Tl-test will dump wave to directory tl-test/build/ if wave_begin < wave_end.
