@@ -88,6 +88,7 @@ namespace tl_agent {
         void fire_e();
         void handle_channel();
         void update_signal();
+        bool local_probe(paddr_t address);
 
         bool do_acquireBlock(paddr_t address, int param, int alias);
         bool do_acquirePerm(paddr_t address, int param, int alias);

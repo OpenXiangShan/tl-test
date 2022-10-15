@@ -334,7 +334,17 @@ namespace tl_agent {
                 if (*chnC.opcode == ProbeAckData) {
                     std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
                     global_SBEntry->data = pendingC.info->data;
-                    global_SBEntry->status = Global_SBEntry::SB_VALID;
+                    if (this->globalBoard->get().count(*pendingC.info->address) != 0) {
+                        auto originEntry = this->globalBoard->get()[*pendingC.info->address];
+                        global_SBEntry->pending_data = originEntry->pending_data;
+                        if (originEntry->status == Global_SBEntry::SB_PENDING) {
+                            global_SBEntry->status = Global_SBEntry::SB_PENDING;
+                        } else {
+                            global_SBEntry->status = Global_SBEntry::SB_VALID;
+                        }
+                    } else {
+                        global_SBEntry->status = Global_SBEntry::SB_VALID;
+                    }
                     this->globalBoard->update(*pendingC.info->address, global_SBEntry);
                 }
                 if (*chnC.opcode == ReleaseData || *chnC.opcode == Release) {
@@ -657,7 +667,7 @@ namespace tl_agent {
         }
         for (auto it = this->localBoard->get().begin(); it != this->localBoard->get().end(); it++) {
             auto value = it->second;
-            for(int i = 0; i < 4; i++){
+            for (int i = 0; i < 4; i++) {
               if (value->status[i] != S_INVALID && value->status[i] != S_VALID) {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
                   printf("Now time:   %lu\n", *this->cycles);
@@ -668,5 +678,22 @@ namespace tl_agent {
               }
             }
         }
+    }
+
+    bool CAgent::local_probe(paddr_t address) {
+        // can exist in either localboard, pendingA or pendingC
+        // TODO: how about unaligned address?
+        if (!localBoard->haskey(address))
+            return false;
+        if (pendingA.is_pending() && *pendingA.info->address == address)
+            return true;
+        if (pendingC.is_pending() && *pendingC.info->address == address)
+            return true;
+        std::shared_ptr<tl_agent::C_SBEntry> entry = localBoard->query(address);
+        for (int i = 0; i < 4; i++) {
+            if (entry->status[i] != S_INVALID && entry->status[i] != S_VALID)
+                return true;
+        }
+        return false;
     }
 }

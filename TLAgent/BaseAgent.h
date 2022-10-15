@@ -130,6 +130,7 @@ namespace tl_agent {
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
+        virtual bool local_probe(paddr_t address) = 0;
         BaseAgent(): idpool(0, NR_SOURCEID) {};
         virtual ~BaseAgent() = default;
 

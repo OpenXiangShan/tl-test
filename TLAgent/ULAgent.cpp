@@ -91,6 +91,7 @@ namespace tl_agent {
     void ULAgent::fire_d() {
         if (this->port->d.fire()) {
             auto chnD = this->port->d;
+            tlc_assert(localBoard->haskey(*chnD.source), "SourceID in chnD is invalid!");
             auto info = localBoard->query(*chnD.source);
             bool hasData = *chnD.opcode == GrantData || *chnD.opcode == AccessAckData;
             tlc_assert(info->status == S_A_WAITING_D, "Status error!");
@@ -248,5 +249,21 @@ namespace tl_agent {
                 }
             }
         }
+    }
+
+    bool ULAgent::local_probe(paddr_t address) {
+        // can exist in either localboard or pendingA
+        // TODO: how about unaligned address?
+        if (pendingA.is_pending() && *pendingA.info->address == address)
+            return true;
+        for (int i = 0; i < NR_SOURCEID; i++) {
+            if (localBoard->haskey(i)) {
+                std::shared_ptr<tl_agent::UL_SBEntry> entry = localBoard->query(i);
+                if (entry->address == address && entry->status != S_INVALID && entry->status != S_VALID) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 }
