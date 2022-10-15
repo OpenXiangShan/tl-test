@@ -35,14 +35,17 @@ void CFuzzer::randomTest(bool do_alias) {
 
 void CFuzzer::caseTest() {
     if (*cycles == 100) {
-        this->cAgent->do_acquireBlock(0x1000, tl_agent::NtoT, rand() % 4);
+        this->cAgent->do_acquireBlock(0x1040, tl_agent::NtoT, 0);
     }
     if (*cycles == 300) {
         uint8_t* putdata = new uint8_t[DATASIZE];
         for (int i = 0; i < DATASIZE; i++) {
             putdata[i] = (uint8_t)rand();
         }
-        this->cAgent->do_releaseData(0x1000, tl_agent::TtoN, putdata, rand() % 4);
+        this->cAgent->do_releaseData(0x1040, tl_agent::TtoN, putdata, 0);
+    }
+    if (*cycles == 400) {
+      this->cAgent->do_acquireBlock(0x1040, tl_agent::NtoT, 0);
     }
 }
 
