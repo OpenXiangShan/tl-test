@@ -99,7 +99,7 @@ void Emu::execute(uint64_t nr_cycle) {
         }
 
         for (int i = 0; i < NR_AGENTS; i++) {
-            fuzzers[i]->tick();
+            fuzzers[i]->tick(agents);
         }
 
         for (int i = 0; i < NR_AGENTS; i++) {

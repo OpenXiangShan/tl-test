@@ -8,8 +8,24 @@ ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) {
     this->ulAgent = ulAgent;
 }
 
-void ULFuzzer::randomTest() {
-    paddr_t addr = (rand() % 10) * 0x100;
+void ULFuzzer::randomTest(tl_agent::BaseAgent ** agent) {
+    // address generation
+    paddr_t addr;
+    bool flag;
+    for (int i = 0; i < 10; i++) {
+        addr = (rand() % 0x8) * (rand() % 0x80) * 0x40; // Tag + Set + Offset
+        flag = true;
+        // probe all agents including itself
+        for (int j = 0; j < NR_CAGENTS+NR_ULAGENTS; j++) {
+            if (agent[j]->local_probe(addr)) {
+                flag = false;
+                break;
+            }
+        }
+        if (flag) break;
+    }
+    if (!flag) return;
+
     if (rand() % 2) {  // Get
         ulAgent->do_getAuto(addr);
     } else { // Put
@@ -53,7 +69,7 @@ void ULFuzzer::caseTest2() {
   }
 }
 
-void ULFuzzer::tick() {
-    this->randomTest();
+void ULFuzzer::tick(tl_agent::BaseAgent ** agent) {
+    this->randomTest(agent);
 //    this->caseTest();
 }
