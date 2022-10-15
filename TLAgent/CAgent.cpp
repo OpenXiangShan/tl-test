@@ -662,7 +662,7 @@ namespace tl_agent {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
                   printf("Now time:   %lu\n", *this->cycles);
                   printf("Last stamp: %lu\n", value->time_stamp);
-                  printf("Status:     %d\n",  value->status);
+                  printf("Status[0]:  %d\n",  value->status[0]);
                   tlc_assert(false,  "Transaction time out");
                 }
               }

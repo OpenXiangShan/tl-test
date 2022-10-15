@@ -41,9 +41,8 @@ Emu::Emu(int argc, char **argv) {
     Verilated::commandArgs(argc, argv);
     Cycles = 0;
     dut_ptr = new VTestTop();
-    globalBoard = new GlobalBoard<paddr_t>(); // address -> data
+    globalBoard = new GlobalBoard<paddr_t>(); // address indexed
 
-    // srand((unsigned)time(0));
     printf("[INFO] use seed: %ld\n", this->seed);
     srand(this->seed);
 
@@ -55,7 +54,7 @@ Emu::Emu(int argc, char **argv) {
         fuzzers[i] = new ULFuzzer(static_cast<ULAgent_t*>(agents[i]));
         fuzzers[i]->set_cycles(&Cycles);
     }
-    // tlc_assert(NR_ULAGENTS == 0, "Current version has not ul-agents");
+
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
         agents[i] = new CAgent_t(globalBoard, i, &Cycles);
         if (i == 0) {
