@@ -14,17 +14,19 @@ void Emu::parse_args(int argc, char **argv) {
         { "wave-begin", 1, NULL, 'b' },
         { "wave-end",   1, NULL, 'e' },
         { "cycles",     1, NULL, 'c' },
+        { "wave-full",  0, NULL, 'f' },
         { 0,            0, NULL,  0  }
     };
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:f", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
             case 'e': this->wave_end = atoll(optarg);   break;
             case 'c': this->exe_cycles = atoll(optarg); break;
+            case 'f': this->wave_full = true;                break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -105,11 +107,19 @@ void Emu::execute(uint64_t nr_cycle) {
         this->neg_edge();
 #if VM_TRACE == 1
         if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {
-            this->tfp->dump((vluint64_t)Cycles);
+            if (this->wave_full)
+                this->tfp->dump((vluint64_t)Cycles*2+1);
+            else
+                this->tfp->dump((vluint64_t)Cycles);
         }
 #endif
         this->pos_edge();
         this->update_cycles(1);
+#if VM_TRACE == 1
+        if (this->wave_full && this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {
+          this->tfp->dump((vluint64_t)Cycles*2);
+        }
+#endif
     }
 }
 
