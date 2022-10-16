@@ -673,6 +673,7 @@ namespace tl_agent {
                   printf("Now time:   %lu\n", *this->cycles);
                   printf("Last stamp: %lu\n", value->time_stamp);
                   printf("Status[0]:  %d\n",  value->status[0]);
+                  printf("Address:    %d\n",  it->first);
                   tlc_assert(false,  "Transaction time out");
                 }
               }
