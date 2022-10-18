@@ -329,6 +329,7 @@ namespace tl_agent {
                         global_SBEntry->data = this->globalBoard->get()[*pendingC.info->address]->data;
                     }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
+                    global_SBEntry->mask = FULLMASK;
                     this->globalBoard->update(*pendingC.info->address, global_SBEntry);
                 }
                 if (*chnC.opcode == ProbeAckData) {
@@ -339,12 +340,16 @@ namespace tl_agent {
                         global_SBEntry->pending_data = originEntry->pending_data;
                         if (originEntry->status == Global_SBEntry::SB_PENDING) {
                             global_SBEntry->status = Global_SBEntry::SB_PENDING;
+                            global_SBEntry->mask = this->globalBoard->get()[*pendingC.info->address]->mask;
                         } else {
                             global_SBEntry->status = Global_SBEntry::SB_VALID;
+                            global_SBEntry->mask = FULLMASK;
                         }
                     } else {
                         global_SBEntry->status = Global_SBEntry::SB_VALID;
+                        global_SBEntry->mask = FULLMASK;
                     }
+
                     this->globalBoard->update(*pendingC.info->address, global_SBEntry);
                 }
                 if (*chnC.opcode == ReleaseData || *chnC.opcode == Release) {

@@ -56,6 +56,30 @@ namespace tl_agent {
         return OK;
     }
 
+    /* Deprecated function */
+    uint8_t* mergePutPartialData(PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA, uint8_t* origin_data) {
+        if (*pendingA.info->opcode == Get || *pendingA.info->opcode == PutFullData) {
+            return pendingA.info->data;
+        } else {
+            for (int i = 0; i < BEATSIZE; i++) {
+                uint8_t validN = *pendingA.info->mask & ((uint32_t)1 << i);
+                if (!validN) {
+                    if (origin_data == nullptr)
+                        pendingA.info->data[i] = 0;
+                    else
+                        pendingA.info->data[i] = origin_data[i];
+                }
+            }
+            for (int i = BEATSIZE; i < DATASIZE; i++) {
+                if (origin_data == nullptr)
+                    pendingA.info->data[i] = 0;
+                else
+                    pendingA.info->data[i] = origin_data[i];
+            }
+            return pendingA.info->data;
+        }
+    }
+
     void ULAgent::fire_a() {
         if (this->port->a.fire()) {
             auto chnA = this->port->a;
@@ -68,6 +92,7 @@ namespace tl_agent {
                 if (hasData) {
                     std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
                     global_SBEntry->pending_data = pendingA.info->data;
+                    global_SBEntry->mask = (*pendingA.info->opcode == PutFullData) ? FULLMASK :*pendingA.info->mask;
                     if (this->globalBoard->get().count(*pendingA.info->address) == 0) {
                         global_SBEntry->data = nullptr;
                     } else {

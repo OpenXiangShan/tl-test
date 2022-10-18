@@ -22,6 +22,7 @@ enum {
     TIMEOUT_INTERVAL = 5000
 };
 
+const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;
 typedef uint16_t paddr_t;
 
 #define tlc_assert(cond, info) \

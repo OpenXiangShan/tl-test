@@ -37,6 +37,7 @@ public:
     int status;
     uint8_t* data;
     uint8_t* pending_data; // used for put&release
+    uint64_t mask;
 };
 
 template<typename T>
@@ -174,6 +175,27 @@ void GlobalBoard<T>::unpending(const T& key) {
     if (value->pending_data == nullptr) {
         return;
     }
+
+    // pending_data: data in PutPartialData or ReleaseData
+    // data:         data in current GlobalBoard
+    if (value->mask != FULLMASK) {
+        for (int i = 0; i < BEATSIZE; i++) {
+            uint32_t validN = value->mask & ((uint32_t)1 << i);
+            if (validN == 0) {
+                if (value->data == nullptr)
+                    value->pending_data[i] = 0;
+                else
+                    value->pending_data[i] = value->data[i];
+            }
+        }
+        for (int i = BEATSIZE; i < DATASIZE; i++) {
+            if (value->data == nullptr)
+                value->pending_data[i] = 0;
+            else
+                value->pending_data[i] = value->data[i];
+        }
+    }
+
     value->data = value->pending_data;
     value->pending_data = nullptr;
     value->status = Global_SBEntry::SB_VALID;

@@ -8,6 +8,25 @@ ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) {
     this->ulAgent = ulAgent;
 }
 
+uint8_t* genPutdata() {
+    uint8_t* putdata = new uint8_t[DATASIZE];
+    for (int i = 0; i < DATASIZE; i++) {
+        putdata[i] = (uint8_t)rand();
+    }
+    return putdata;
+}
+
+uint8_t* genPutPartialdata() {
+    uint8_t* putdata = new uint8_t[DATASIZE];
+    for (int i = 0; i < DATASIZE/2; i++) {
+        putdata[i] = (uint8_t)rand();
+    }
+    for (int i = DATASIZE/2; i < DATASIZE; i++) {
+        putdata[i] = putdata[i-DATASIZE/2];
+    }
+    return putdata;
+}
+
 void ULFuzzer::randomTest(tl_agent::BaseAgent ** agent) {
     // address generation
     paddr_t addr;
@@ -28,25 +47,29 @@ void ULFuzzer::randomTest(tl_agent::BaseAgent ** agent) {
 
     if (rand() % 2) {  // Get
         ulAgent->do_getAuto(addr);
-    } else { // Put
-        uint8_t* putdata = new uint8_t[DATASIZE];
-        for (int i = 0; i < DATASIZE; i++) {
-            putdata[i] = (uint8_t)rand();
+    } else {
+        if (rand() % 2) {  // PutFullData
+            ulAgent->do_putfulldata(addr, genPutdata());
+        } else {  // PutPartialData
+          switch (rand() % 3) {
+          case 0:
+              ulAgent->do_putpartialdata(addr, 3, 0x000000FF << (rand()%4*8), genPutPartialdata());
+              break;
+          case 1:
+              ulAgent->do_putpartialdata(addr, 4, 0x0000FFFF << (rand()%2*16), genPutPartialdata());
+              break;
+          case 2:
+              ulAgent->do_putpartialdata(addr, 5, 0xFFFFFFFF, genPutPartialdata());
+              break;
+          }
+
         }
-        ulAgent->do_putfulldata(addr, putdata);
     }
 }
 
 void ULFuzzer::caseTest() {
     if (*cycles == 500) {
-        uint8_t* putdata = new uint8_t[DATASIZE];
-        for (int i = 0; i < DATASIZE/2; i++) {
-            putdata[i] = (uint8_t)rand();
-        }
-        for (int i = DATASIZE/2; i < DATASIZE; i++) {
-            putdata[i] = putdata[i-DATASIZE/2];
-        }
-        ulAgent->do_putpartialdata(0x1070, 2, 0xf0000, putdata);
+        ulAgent->do_putpartialdata(0x1070, 2, 0xf0000, genPutPartialdata());
     }
     if (*cycles == 600) {
       ulAgent->do_getAuto(0x1040);
@@ -55,14 +78,7 @@ void ULFuzzer::caseTest() {
 
 void ULFuzzer::caseTest2() {
   if (*cycles == 100) {
-    uint8_t* putdata = new uint8_t[DATASIZE];
-    for (int i = 0; i < DATASIZE/2; i++) {
-      putdata[i] = (uint8_t)rand();
-    }
-    for (int i = DATASIZE/2; i < DATASIZE; i++) {
-      putdata[i] = putdata[i-DATASIZE/2];
-    }
-    ulAgent->do_putpartialdata(0x1000, 2, 0xf, putdata);
+    ulAgent->do_putpartialdata(0x1000, 2, 0xf, genPutPartialdata());
   }
   if (*cycles == 500) {
     ulAgent->do_get(0x1000, 2, 0xf);
