@@ -15,7 +15,7 @@ namespace tl_agent {
         localBoard = new ScoreBoard<int, UL_SBEntry>();
     }
 
-    Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a) {
+    Resp ULAgent::send_a(ChnA<ReqField, EchoField, DATASIZE>* a) {
         switch (*a->opcode) {
             case Get: {
                 std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(Get, S_SENDING_A, *a->address, *this->cycles));
@@ -52,7 +52,7 @@ namespace tl_agent {
         return OK;
     }
 
-    Resp ULAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c) {
+    Resp ULAgent::send_c(ChnC<ReqField, EchoField, DATASIZE>* c) {
         return OK;
     }
 
@@ -127,7 +127,7 @@ namespace tl_agent {
                 tlc_assert(*chnD.source == *pendingD.info->source, "Source mismatch among beats!");
                 pendingD.update();
             } else { // new D resp
-                std::shared_ptr<ChnD<RespField, EchoField, DATASIZE>> resp_d(new ChnD<RespField, EchoField, DATASIZE>());
+                ChnD<RespField, EchoField, DATASIZE>* resp_d = new ChnD<RespField, EchoField, DATASIZE>();
                 resp_d->opcode = new uint8_t(*chnD.opcode);
                 resp_d->param = new uint8_t(*chnD.param);
                 resp_d->source = new uint8_t(*chnD.source);
@@ -164,7 +164,7 @@ namespace tl_agent {
     void ULAgent::fire_e() {
     }
 
-    void ULAgent::handle_b(std::shared_ptr<ChnB> &b) {
+    void ULAgent::handle_b(ChnB* b) {
     }
     
     void ULAgent::handle_channel() {
@@ -190,7 +190,7 @@ namespace tl_agent {
     bool ULAgent::do_getAuto(paddr_t address) {
         if (pendingA.is_pending() || idpool.full())
             return false;
-        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        ChnA<ReqField, EchoField, DATASIZE>* req_a = new ChnA<ReqField, EchoField, DATASIZE>();
         req_a->opcode = new uint8_t(Get);
         req_a->address = new paddr_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
@@ -204,7 +204,7 @@ namespace tl_agent {
     bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
         if (pendingA.is_pending() || idpool.full())
             return false;
-        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        ChnA<ReqField, EchoField, DATASIZE>* req_a = new ChnA<ReqField, EchoField, DATASIZE>();
         req_a->opcode = new uint8_t(Get);
         req_a->address = new paddr_t(address);
         req_a->size = new uint8_t(size);
@@ -221,7 +221,7 @@ namespace tl_agent {
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
             return false;
         }
-        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        ChnA<ReqField, EchoField, DATASIZE>* req_a = new ChnA<ReqField, EchoField, DATASIZE>();
         req_a->opcode = new uint8_t(PutFullData);
         req_a->address = new paddr_t(address);
         req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
@@ -242,7 +242,7 @@ namespace tl_agent {
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
             return false;
-        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        ChnA<ReqField, EchoField, DATASIZE>* req_a = new ChnA<ReqField, EchoField, DATASIZE>();
         req_a->opcode = new uint8_t(PutPartialData);
         req_a->address = new paddr_t(address);
         req_a->size = new uint8_t(size);

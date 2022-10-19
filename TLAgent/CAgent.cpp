@@ -39,7 +39,7 @@ namespace tl_agent {
         this->idMap = new ScoreBoard<int, C_IDEntry>();
     }
 
-    Resp CAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a) {
+    Resp CAgent::send_a(ChnA<ReqField, EchoField, DATASIZE>* a) {
         switch (*a->opcode) {
             case AcquireBlock: {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*a->address, *a->alias));
@@ -92,7 +92,7 @@ namespace tl_agent {
         return OK;
     }
 
-    void CAgent::handle_b(std::shared_ptr<ChnB> &b) {
+    void CAgent::handle_b(ChnB* b) {
         if (pendingC.is_pending()) {
             Log("[info] B wanna pendingC\n");
             return;
@@ -112,7 +112,7 @@ namespace tl_agent {
             // Probe waits for releaseAck
             return;
         }
-        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
+        ChnC<ReqField, EchoField, DATASIZE>* req_c = new ChnC<ReqField, EchoField, DATASIZE>();
         req_c->address = new paddr_t(*b->address);
         req_c->size = new uint8_t(*b->size);
         req_c->source = new uint8_t(this->probeIDpool.getid());
@@ -192,7 +192,7 @@ namespace tl_agent {
         pendingB.update();
     }
 
-    Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c) {
+    Resp CAgent::send_c(ChnC<ReqField, EchoField, DATASIZE>* c) {
         switch (*c->opcode) {
             case ReleaseData: {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*c->address, *c->alias));
@@ -256,7 +256,7 @@ namespace tl_agent {
         return OK;
     }
 
-    Resp CAgent::send_e(std::shared_ptr<ChnE> &e) {
+    Resp CAgent::send_e(ChnE* e) {
         *this->port->e.sink = *e->sink;
         *this->port->e.valid = true;
         return OK;
@@ -279,7 +279,7 @@ namespace tl_agent {
         if (this->port->b.fire()) {
             auto chnB = this->port->b;
             // Log("[%ld] [B fire] addr: %hx\n", *cycles, *chnB.address);
-            std::shared_ptr<ChnB> req_b(new ChnB());
+            ChnB* req_b = new ChnB();
             req_b->opcode = new uint8_t(*chnB.opcode);
             req_b->address = new paddr_t(*chnB.address);
             req_b->param = new uint8_t(*chnB.param);
@@ -386,7 +386,7 @@ namespace tl_agent {
                 tlc_assert(*chnD.source == *pendingD.info->source, "Source mismatch among beats!");
                 pendingD.update();
             } else { // new D resp
-                std::shared_ptr<ChnD<RespField, EchoField, DATASIZE>> resp_d(new ChnD<RespField, EchoField, DATASIZE>());
+                ChnD<RespField, EchoField, DATASIZE>* resp_d = new ChnD<RespField, EchoField, DATASIZE>();
                 resp_d->opcode = new uint8_t(*chnD.opcode);
                 resp_d->param = new uint8_t(*chnD.param);
                 resp_d->source = new uint8_t(*chnD.source);
@@ -437,7 +437,7 @@ namespace tl_agent {
                 // Send E
                 if (grant) {
                     tlc_assert(exact_status != S_A_WAITING_D_INTR, "TODO: check this Ridiculous probe!");
-                    std::shared_ptr<ChnE> req_e(new ChnE());
+                    ChnE* req_e = new ChnE();
                     req_e->sink = new uint8_t(*chnD.sink);
                     req_e->addr = new paddr_t(addr);
                     req_e->alias = new uint8_t(alias);
@@ -517,7 +517,7 @@ namespace tl_agent {
                 if (privilege == INVALID && param == BtoT) return false;
             }
         }
-        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        ChnA<ReqField, EchoField, DATASIZE>* req_a = new ChnA<ReqField, EchoField, DATASIZE>();
         req_a->opcode = new uint8_t(AcquireBlock);
         req_a->address = new paddr_t(address);
         req_a->param = new uint8_t(param);
@@ -555,7 +555,7 @@ namespace tl_agent {
                 if (privilege == INVALID && param == BtoT) return false;
             }
         }
-        std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
+        ChnA<ReqField, EchoField, DATASIZE>* req_a = new ChnA<ReqField, EchoField, DATASIZE>();
         req_a->opcode = new uint8_t(AcquirePerm);
         req_a->address = new paddr_t(address);
         req_a->param = new uint8_t(param);
@@ -584,7 +584,7 @@ namespace tl_agent {
         if (privilege == BRANCH && param != BtoN) return false;
         if (privilege == TIP && param == BtoN) return false;
 
-        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
+        ChnC<ReqField, EchoField, DATASIZE>* req_c = new ChnC<ReqField, EchoField, DATASIZE>();
         req_c->opcode = new uint8_t(ReleaseData);
         req_c->address = new paddr_t(address);
         req_c->param = new uint8_t(param);
@@ -628,7 +628,7 @@ namespace tl_agent {
             return false;
         }
 
-        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
+        ChnC<ReqField, EchoField, DATASIZE>* req_c = new ChnC<ReqField, EchoField, DATASIZE>();
         req_c->opcode = new uint8_t(ReleaseData);
         req_c->address = new paddr_t(address);
         req_c->param = new uint8_t(param);

@@ -48,6 +48,7 @@ private:
 public:
     int verify(const T& key, const uint8_t* data);
     void unpending(const T& key);
+    void update(const T& key, std::shared_ptr<Global_SBEntry>& data);
 };
 
 /************************** Implementation **************************/
@@ -125,6 +126,23 @@ int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref, std::stri
         }
     }
     return 0;
+}
+
+template<typename T>
+void GlobalBoard<T>::update(const T& key, std::shared_ptr<Global_SBEntry>& data) {
+    if (this->mapping.count(key) != 0) {
+        if (this->mapping[key] != nullptr) {
+            if (this->mapping[key]->data != data->data) {
+                delete(this->mapping[key]->data);
+            }
+            if (this->mapping[key]->pending_data != data->pending_data) {
+                delete(this->mapping[key]->pending_data);
+            }
+        }
+        this->mapping[key]= data;
+    } else {
+        this->mapping.insert(std::make_pair(key, data));
+    }
 }
 
 template<typename T>

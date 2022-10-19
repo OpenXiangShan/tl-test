@@ -77,10 +77,10 @@ namespace tl_agent {
     public:
         CAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles);
         ~CAgent() = default;
-        Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
-        void handle_b(std::shared_ptr<ChnB> &b);
-        Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c);
-        Resp send_e(std::shared_ptr<ChnE> &e);
+        Resp send_a(ChnA<ReqField, EchoField, DATASIZE>* a);
+        void handle_b(ChnB* b);
+        Resp send_c(ChnC<ReqField, EchoField, DATASIZE>* c);
+        Resp send_e(ChnE* e);
         void fire_a();
         void fire_b();
         void fire_c();

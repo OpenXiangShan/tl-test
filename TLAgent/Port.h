@@ -76,6 +76,7 @@ namespace tl_agent {
         bool fire() const {
             return *valid && *ready;
         }
+        virtual void free() = 0;
     };
 
     template<class Usr, class Echo, std::size_t N>
@@ -92,6 +93,16 @@ namespace tl_agent {
         Echo *echo;
         uint8_t *corrupt;
         uint8_t *alias;
+
+        void free() {
+            delete(this->opcode);
+            delete(this->param);
+            delete(this->size);
+            delete(this->source);
+            delete(this->mask);
+            delete(this->address);
+            delete(this->alias);
+        }
     };
 
     class ChnB : public Decoupled {
@@ -104,6 +115,15 @@ namespace tl_agent {
         uint8_t *corrupt;
         uint8_t *alias;
         uint8_t *needdata;
+
+        void free() {
+            delete(this->opcode);
+            delete(this->param);
+            delete(this->size);
+            delete(this->source);
+            delete(this->address);
+            delete(this->alias);
+        }
     };
 
     template<class Usr, class Echo, std::size_t N>
@@ -120,6 +140,15 @@ namespace tl_agent {
         uint8_t *data;
         uint8_t *corrupt;
         uint8_t *alias;
+
+        void free() {
+            delete(this->opcode);
+            delete(this->param);
+            delete(this->size);
+            delete(this->source);
+            delete(this->address);
+            delete(this->alias);
+        }
     };
 
     template<class Usr, class Echo, std::size_t N>
@@ -136,6 +165,14 @@ namespace tl_agent {
         uint8_t *dirty;
         uint8_t *data;
         uint8_t *corrupt;
+
+        void free() {
+            delete(this->opcode);
+            delete(this->param);
+            delete(this->size);
+            delete(this->source);
+            delete(this->sink);
+        }
     };
 
     class ChnE : public Decoupled {
@@ -143,6 +180,12 @@ namespace tl_agent {
         uint8_t *sink;
         paddr_t *addr;  // used for index scoreboard
         uint8_t *alias;
+
+        void free() {
+            delete(this->sink);
+            delete(this->addr);
+            delete(this->alias);
+        }
     };
 
     template<class ReqField, class RespField, class EchoField, std::size_t N>
