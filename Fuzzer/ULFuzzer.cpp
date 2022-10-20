@@ -71,7 +71,7 @@ void ULFuzzer::randomTest(tl_agent::BaseAgent ** agent) {
 void ULFuzzer::caseTest() {
     uint8_t* putdata = new uint8_t[DATASIZE];
     if (*cycles == 500) {
-        ulAgent->do_putpartialdata(0x1070, 2, 0xf0000, genPutPartialdata(putdata));
+        ulAgent->do_putpartialdata(0x1070, 2, 0xf0000, genPutPartialData(putdata));
     }
     if (*cycles == 600) {
         ulAgent->do_getAuto(0x1040);
@@ -81,7 +81,7 @@ void ULFuzzer::caseTest() {
 void ULFuzzer::caseTest2() {
     uint8_t* putdata = new uint8_t[DATASIZE];
     if (*cycles == 100) {
-        ulAgent->do_putpartialdata(0x1000, 2, 0xf, genPutPartialdata(putdata));
+        ulAgent->do_putpartialdata(0x1000, 2, 0xf, genPutPartialData(putdata));
     }
     if (*cycles == 500) {
         ulAgent->do_get(0x1000, 2, 0xf);
