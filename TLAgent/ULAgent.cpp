@@ -92,7 +92,7 @@ namespace tl_agent {
                 if (hasData) {
                     std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
                     global_SBEntry->pending_data = pendingA.info->data;
-                    global_SBEntry->mask = (*pendingA.info->opcode == PutFullData) ? FULLMASK :*pendingA.info->mask;
+                    global_SBEntry->mask = (*pendingA.info->opcode == PutFullData && *pendingA.info->size == 6) ? FULLMASK :*pendingA.info->mask;
                     if (this->globalBoard->get().count(*pendingA.info->address) == 0) {
                         global_SBEntry->data = nullptr;
                     } else {
@@ -243,7 +243,7 @@ namespace tl_agent {
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
             return false;
         ChnA<ReqField, EchoField, DATASIZE>* req_a = new ChnA<ReqField, EchoField, DATASIZE>();
-        req_a->opcode = new uint8_t(PutPartialData);
+        req_a->opcode = (rand() % 3) ? new uint8_t(PutPartialData) : new uint8_t(PutFullData);
         req_a->address = new paddr_t(address);
         req_a->size = new uint8_t(size);
         req_a->mask = new uint32_t(mask);
