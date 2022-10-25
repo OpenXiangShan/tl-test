@@ -15,6 +15,10 @@ namespace tl_agent {
         localBoard = new ScoreBoard<int, UL_SBEntry>();
     }
 
+    inline paddr_t align_addr(paddr_t addr) {
+        return addr & 0xFFFFFFC0;
+    }
+
     Resp ULAgent::send_a(ChnA<ReqField, EchoField, DATASIZE>* a) {
         switch (*a->opcode) {
             case Get: {
@@ -23,7 +27,7 @@ namespace tl_agent {
                 break;
             }
             case PutFullData: {
-                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(PutFullData, S_SENDING_A, *a->address, *this->cycles));
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(PutFullData, S_SENDING_A, align_addr(*a->address), *this->cycles));
                 localBoard->update(*a->source, entry);
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
@@ -32,7 +36,7 @@ namespace tl_agent {
                 break;
             }
             case PutPartialData: {
-                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(PutPartialData, S_SENDING_A, *a->address, *this->cycles));
+                std::shared_ptr<UL_SBEntry> entry(new UL_SBEntry(PutPartialData, S_SENDING_A, align_addr(*a->address), *this->cycles));
                 localBoard->update(*a->source, entry);
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
@@ -82,6 +86,7 @@ namespace tl_agent {
 
     void ULAgent::fire_a() {
         if (this->port->a.fire()) {
+            *pendingA.info->address = align_addr(*pendingA.info->address);
             auto chnA = this->port->a;
             bool hasData = *chnA.opcode == PutFullData || *chnA.opcode == PutPartialData;
             *chnA.valid = false;
@@ -215,7 +220,7 @@ namespace tl_agent {
         return true;
     }
     
-    bool ULAgent::do_putfulldata(uint16_t address, uint8_t data[]) {
+    bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
@@ -237,7 +242,7 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_putpartialdata(uint16_t address, uint8_t size, uint32_t mask, uint8_t data[]) {
+    bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
