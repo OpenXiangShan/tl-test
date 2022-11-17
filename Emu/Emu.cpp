@@ -137,7 +137,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->a.source = &(dut_ptr->master_port_0_0_a_bits_source);
     port->a.mask = &(dut_ptr->master_port_0_0_a_bits_mask);
     port->a.data = (uint8_t*)&(dut_ptr->master_port_0_0_a_bits_data);
-    port->a.alias = (uint8_t*)&(dut_ptr->master_port_0_0_a_bits_user_alias);
+    // port->a.alias = (uint8_t*)&(dut_ptr->master_port_0_0_a_bits_user_alias);
 
     port->b.ready = &(dut_ptr->master_port_0_0_b_ready);
     port->b.valid = &(dut_ptr->master_port_0_0_b_valid);
@@ -156,7 +156,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->c.size = &(dut_ptr->master_port_0_0_c_bits_size);
     port->c.source = &(dut_ptr->master_port_0_0_c_bits_source);
     port->c.data = (uint8_t*)&(dut_ptr->master_port_0_0_c_bits_data);
-    port->c.dirty = &(dut_ptr->master_port_0_0_c_bits_echo_blockisdirty);
+    // port->c.dirty = &(dut_ptr->master_port_0_0_c_bits_echo_blockisdirty);
 
     port->d.ready = &(dut_ptr->master_port_0_0_d_ready);
     port->d.valid = &(dut_ptr->master_port_0_0_d_valid);
@@ -166,7 +166,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->d.sink = &(dut_ptr->master_port_0_0_d_bits_sink);
     port->d.source = &(dut_ptr->master_port_0_0_d_bits_source);
     port->d.data = (uint8_t*)&(dut_ptr->master_port_0_0_d_bits_data);
-    port->d.dirty = &(dut_ptr->master_port_0_0_d_bits_echo_blockisdirty);
+    // port->d.dirty = &(dut_ptr->master_port_0_0_d_bits_echo_blockisdirty);
 
     port->e.ready = &(dut_ptr->master_port_0_0_e_ready);
     port->e.valid = &(dut_ptr->master_port_0_0_e_valid);
@@ -185,7 +185,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->a.source = &(dut_ptr->master_port_1_0_a_bits_source);
     port->a.mask = &(dut_ptr->master_port_1_0_a_bits_mask);
     port->a.data = (uint8_t*)&(dut_ptr->master_port_1_0_a_bits_data);
-    port->a.alias = (uint8_t*)&(dut_ptr->master_port_1_0_a_bits_user_alias);
+    // port->a.alias = (uint8_t*)&(dut_ptr->master_port_1_0_a_bits_user_alias);
 
     port->b.ready = &(dut_ptr->master_port_1_0_b_ready);
     port->b.valid = &(dut_ptr->master_port_1_0_b_valid);
@@ -204,7 +204,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->c.size = &(dut_ptr->master_port_1_0_c_bits_size);
     port->c.source = &(dut_ptr->master_port_1_0_c_bits_source);
     port->c.data = (uint8_t*)&(dut_ptr->master_port_1_0_c_bits_data);
-    port->c.dirty = &(dut_ptr->master_port_1_0_c_bits_echo_blockisdirty);
+    // port->c.dirty = &(dut_ptr->master_port_1_0_c_bits_echo_blockisdirty);
 
     port->d.ready = &(dut_ptr->master_port_1_0_d_ready);
     port->d.valid = &(dut_ptr->master_port_1_0_d_valid);
@@ -214,7 +214,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->d.sink = &(dut_ptr->master_port_1_0_d_bits_sink);
     port->d.source = &(dut_ptr->master_port_1_0_d_bits_source);
     port->d.data = (uint8_t*)&(dut_ptr->master_port_1_0_d_bits_data);
-    port->d.dirty = &(dut_ptr->master_port_1_0_d_bits_echo_blockisdirty);
+    // port->d.dirty = &(dut_ptr->master_port_1_0_d_bits_echo_blockisdirty);
 
     port->e.ready = &(dut_ptr->master_port_1_0_e_ready);
     port->e.valid = &(dut_ptr->master_port_1_0_e_valid);
