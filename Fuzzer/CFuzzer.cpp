@@ -9,6 +9,7 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
 }
 
 void CFuzzer::randomTest(bool do_alias, tl_agent::BaseAgent ** agent) {
+    // if (rand() % 10) return;
     // address generation
     paddr_t addr;
     bool flag;

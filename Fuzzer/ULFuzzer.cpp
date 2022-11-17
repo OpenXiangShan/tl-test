@@ -26,6 +26,7 @@ uint8_t* genPutPartialData(uint8_t* putdata) {
 }
 
 void ULFuzzer::randomTest(tl_agent::BaseAgent ** agent) {
+    // if (rand() % 10) return;
     // address generation
     bool sent = false;
     paddr_t addr;
@@ -51,17 +52,24 @@ void ULFuzzer::randomTest(tl_agent::BaseAgent ** agent) {
         if (rand() % 2) {  // PutFullData
             sent = ulAgent->do_putfulldata(addr, genPutData(putdata));
         } else {  // PutPartialData
-          switch (rand() % 3) {
-          case 0:
-              sent = ulAgent->do_putpartialdata(addr, 3, 0x000000FF << (rand()%4*8), genPutPartialData(putdata));
-              break;
-          case 1:
-              sent = ulAgent->do_putpartialdata(addr, 4, 0x0000FFFF << (rand()%2*16), genPutPartialData(putdata));
-              break;
-          case 2:
-              sent = ulAgent->do_putpartialdata(addr, 5, 0xFFFFFFFF, genPutPartialData(putdata));
-              break;
-          }
+            uint32_t mask_raw = 0;
+            int offset;
+            for (int i = 0; i < 4; i++) {
+                mask_raw = (mask_raw << 8) + rand()%0xFF;
+            }
+            switch (rand() % 3) {
+            case 0:
+                offset = (rand() % 4) * 8;
+                sent = ulAgent->do_putpartialdata(addr + offset, 3, mask_raw & (0x000000FF<<offset), genPutPartialData(putdata));
+                break;
+            case 1:
+                offset = (rand() % 2) * 16;
+                sent = ulAgent->do_putpartialdata(addr + offset, 4, mask_raw & (0x0000FFFF << offset), genPutPartialData(putdata));
+                break;
+            case 2:
+                sent = ulAgent->do_putpartialdata(addr, 5, mask_raw & 0xFFFFFFFF, genPutPartialData(putdata));
+                break;
+            }
         }
     }
     if (!sent)
