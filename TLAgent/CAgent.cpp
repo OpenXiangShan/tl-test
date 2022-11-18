@@ -394,12 +394,12 @@ namespace tl_agent {
                         }
                         Dump("\n");
                         this->globalBoard->verify(addr, pendingD.info->data);
-                        info->update_dirty(*chnD.dirty, alias);
+                        // info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
                     case Grant: {
                         Log("[%ld] [Grant] addr: %hx\n", *cycles, addr);
-                        info->update_dirty(*chnD.dirty, alias);
+                        // info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
                     case ReleaseAck: {
