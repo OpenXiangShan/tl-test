@@ -13,6 +13,9 @@ if(DEFINED THREAD)
 endif()
 
 find_package(verilator)
+find_package (SQLite3)
+
+include_directories(${SQLite3_INCLUDE_DIRS})
 
 add_subdirectory(Emu)
 add_subdirectory(TLAgent)
@@ -20,7 +23,7 @@ add_subdirectory(Fuzzer)
 
 add_executable(tlc_test main.cpp)
 if(DEFINED THREAD)
-    target_link_libraries(tlc_test Emu TLAgent Fuzzer Threads::Threads)
+    target_link_libraries(tlc_test Emu TLAgent Fuzzer ${SQLite3_LIBRARIES} Threads::Threads)
 else()
-    target_link_libraries(tlc_test Emu TLAgent Fuzzer)
+    target_link_libraries(tlc_test Emu TLAgent Fuzzer ${SQLite3_LIBRARIES})
 endif()

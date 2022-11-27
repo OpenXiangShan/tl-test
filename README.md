@@ -40,3 +40,15 @@ Please check -DTRACE=1 is added to tl-test compiling cmake arguments before wave
 
 Tl-test will dump wave to directory tl-test/build/ if wave_begin < wave_end.
 ```
+
+# Use ChiselDB
+
+```
+Build HuanCun and clone tl-test...
+> First make sure that your HuanCun owns huancun.utils.ChiselDB, e.g. HuanCun of branch 'nanhu-chiseldb'.
+> Set env variable {HUANCUN_HOME} to your HuanCun repositary.
+> cd tl-test
+> make init (will copy chisel_db.h and chisel_db.cpp to ./Emu)
+
+Then do the same as step "Compile tl-test".
+```

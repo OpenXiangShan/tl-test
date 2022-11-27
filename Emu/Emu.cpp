@@ -3,6 +3,7 @@
 //
 
 #include "Emu.h"
+#include "chisel_db.h"
 
 uint64_t Cycles;
 bool Verbose = false;
@@ -17,6 +18,7 @@ void Emu::parse_args(int argc, char **argv) {
         { "cycles",     1, NULL, 'c' },
         { "wave-full",  0, NULL, 'f' },
         { "verbose",    0, NULL, 'v' },
+        { "dump-db",    0, NULL,  6  },
         { 0,            0, NULL,  0  }
     };
     int o;
@@ -30,6 +32,7 @@ void Emu::parse_args(int argc, char **argv) {
             case 'c': this->exe_cycles = atoll(optarg); break;
             case 'f': this->wave_full = true;                break;
             case 'v': Verbose = true;                        break;
+            case  6 : this->dump_db = true;             break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -80,6 +83,12 @@ Emu::Emu(int argc, char **argv) {
         tfp->open(cycle_wavefile(Cycles, now));
     }
 #endif
+
+    init_db(this->dump_db);
+    if(this->dump_db){
+        time_t now = time(NULL);
+        save_db(logdb_filename(now));
+    }
 
 }
 
