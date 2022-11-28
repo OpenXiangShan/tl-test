@@ -44,12 +44,25 @@ Tl-test will dump wave to directory tl-test/build/ if wave_begin < wave_end.
 # Use ChiselDB
 
 ```
-> First make sure that your HuanCun has huancun.utils.ChiselDB, e.g. HuanCun of branch 'nanhu-chiseldb'.
-> Set env variable {HUANCUN_HOME} to your HuanCun repositary.
-> Build HuanCun and clone tl-test...
+First make sure that your HuanCun has huancun.utils.ChiselDB, e.g. HuanCun of branch 'nanhu-chiseldb'.
+Build HuanCun and clone tl-test...
+Set env variable {TLTEST_HOME} and {HUANCUN_HOME} to your tl-test repositary and HuanCun repositary respectively.
 
 > cd tl-test
 > make init (will copy chisel_db.h and chisel_db.cpp to ./Emu)
+> mkdir build
+> cd build
 
-Then do the same as step "Compile tl-test".
+> cmake .. -DDUT_DIR=${PATH_TO_HUANCUN}/build [ARGS ...]
+> make
+> ./tlc_test --dump-db [opts]
+
+Then the .db file will write to ${TLTEST_HOME}/build.
+*Attention: it won't save the .db file until the tl-test program ends.
+
+Use the following commands to open .db file:
+> sqlite3 <database.db> "SELECT * FROM TLLOG"
+
+There is a script in ./script:
+> sqlite3 <database.db> "SELECT * FROM TLLOG" | sh ${TO_SCRIPT_DIR}/convert.sh
 ```

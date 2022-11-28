@@ -41,7 +41,7 @@ private:
 public:
     Emu(int argc, char **argv);
     ~Emu();
-    uint64_t exe_cycles = 10000000;
+    uint64_t exe_cycles = 50000;
     inline void reset(uint64_t n);
     inline void neg_edge();
     inline void pos_edge();
@@ -92,9 +92,9 @@ inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
 inline char* Emu::timestamp_filename(time_t t, char *buf) {
   char buf_time[64];
   strftime(buf_time, sizeof(buf_time), "%F@%T", localtime(&t));
-  char *huancun_home = getenv("HUANCUN_HOME");
-  assert(huancun_home != NULL);
-  int len = snprintf(buf, 1024, "%s/build/%s", huancun_home, buf_time);
+  char *tltest_home = getenv("TLTEST_HOME");
+  assert(tltest_home != NULL);
+  int len = snprintf(buf, 1024, "%s/build/%s", tltest_home, buf_time);
   return buf + len;
 }
 
