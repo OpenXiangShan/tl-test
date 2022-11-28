@@ -85,10 +85,6 @@ Emu::Emu(int argc, char **argv) {
 #endif
 
     init_db(this->dump_db);
-    if(this->dump_db){
-        time_t now = time(NULL);
-        save_db(logdb_filename(now));
-    }
 
 }
 
@@ -99,6 +95,10 @@ Emu::~Emu() {
         this->tfp->close();
     }
 #endif
+    if(this->dump_db){
+        time_t now = time(NULL);
+        save_db(logdb_filename(now));
+    }
 }
 
 void Emu::execute(uint64_t nr_cycle) {

@@ -44,9 +44,10 @@ Tl-test will dump wave to directory tl-test/build/ if wave_begin < wave_end.
 # Use ChiselDB
 
 ```
-Build HuanCun and clone tl-test...
-> First make sure that your HuanCun owns huancun.utils.ChiselDB, e.g. HuanCun of branch 'nanhu-chiseldb'.
+> First make sure that your HuanCun has huancun.utils.ChiselDB, e.g. HuanCun of branch 'nanhu-chiseldb'.
 > Set env variable {HUANCUN_HOME} to your HuanCun repositary.
+> Build HuanCun and clone tl-test...
+
 > cd tl-test
 > make init (will copy chisel_db.h and chisel_db.cpp to ./Emu)
 
