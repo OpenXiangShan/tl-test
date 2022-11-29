@@ -3,7 +3,9 @@
 //
 
 #include "Emu.h"
-#include "chisel_db.h"
+#ifdef TLLOG
+#include "../ChiselDB/chisel_db.h"
+#endif
 
 uint64_t Cycles;
 bool Verbose = false;
@@ -18,7 +20,9 @@ void Emu::parse_args(int argc, char **argv) {
         { "cycles",     1, NULL, 'c' },
         { "wave-full",  0, NULL, 'f' },
         { "verbose",    0, NULL, 'v' },
-        { "dump-db",    0, NULL,  6  },
+#ifdef TLLOG
+        { "dump-db",    0, NULL, 'd' },
+#endif
         { 0,            0, NULL,  0  }
     };
     int o;
@@ -32,7 +36,9 @@ void Emu::parse_args(int argc, char **argv) {
             case 'c': this->exe_cycles = atoll(optarg); break;
             case 'f': this->wave_full = true;                break;
             case 'v': Verbose = true;                        break;
-            case  6 : this->dump_db = true;             break;
+#ifdef TLLOG
+            case 'd': this->dump_db = true;             break;
+#endif
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -84,7 +90,9 @@ Emu::Emu(int argc, char **argv) {
     }
 #endif
 
+#ifdef TLLOG
     init_db(this->dump_db);
+#endif
 
 }
 
@@ -95,10 +103,13 @@ Emu::~Emu() {
         this->tfp->close();
     }
 #endif
+
+#ifdef TLLOG
     if(this->dump_db){
         time_t now = time(NULL);
-        save_db(logdb_filename(now));
+        save_db(timestamp_filename(now));
     }
+#endif
 }
 
 void Emu::execute(uint64_t nr_cycle) {

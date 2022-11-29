@@ -16,6 +16,7 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../Fuzzer/Fuzzer.h"
+#include "../ChiselDB/chisel_db.h"
 
 class Emu {
 private:
@@ -34,8 +35,7 @@ private:
     bool wave_full = false;
     bool dump_db = false;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
-    inline char* timestamp_filename(time_t t, char *buf);
-    inline char* logdb_filename(time_t t);
+    inline char* timestamp_filename(time_t t);
     void parse_args(int argc, char **argv);
 
 public:
@@ -89,20 +89,17 @@ inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
     return buf;
 }
 
-inline char* Emu::timestamp_filename(time_t t, char *buf) {
-  char buf_time[64];
-  strftime(buf_time, sizeof(buf_time), "%F@%T", localtime(&t));
-  char *tltest_home = getenv("TLTEST_HOME");
-  assert(tltest_home != NULL);
-  int len = snprintf(buf, 1024, "%s/build/%s", tltest_home, buf_time);
-  return buf + len;
+#ifdef TLLOG
+inline char* Emu::timestamp_filename(time_t t) {
+    static char buf[1024];
+    char buf_time[64];
+    strftime(buf_time, sizeof(buf_time), "%F@%T", localtime(&t));
+    char *pwd = getcwd(NULL, 0);
+    assert(pwd != NULL);
+    int len = snprintf(buf, 1024, "%s/%s", pwd, buf_time);
+    strcpy(buf + len, ".db");
+    return buf;
 }
-
-inline char* Emu::logdb_filename(time_t t) {
-  static char buf[1024];
-  char *p = timestamp_filename(t, buf);
-  strcpy(p, ".db");
-  return buf;
-}
+#endif
 
 #endif //TLC_TEST_EMU_H
