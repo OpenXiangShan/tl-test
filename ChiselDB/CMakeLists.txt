@@ -1,0 +1,1 @@
+add_library(ChiselDB chisel_db.h chisel_db.cpp)
