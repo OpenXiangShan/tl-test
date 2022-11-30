@@ -51,7 +51,9 @@ Tl-test will dump wave to directory tl-test/build/ if wave_begin < wave_end.
 TLLog is a method that can capture messages on TileLink bus, which may be helpful for debugging. To use TLLog:
 
 Make sure that your HuanCun has huancun.utils.ChiselDB(e.g. HuanCun on branch 'nanhu-chiseldb').
+
 Make sure that SQlite3 has been installed in your machine.
+
 Build HuanCun and clone tl-test following above steps.
 
 ```
@@ -61,6 +63,7 @@ Build HuanCun and clone tl-test following above steps.
 ```
 
 The .db file will write to tl-test/build.
+
 *Attention: it won't save the .db file until the tl-test program ends.
 
 Use the following commands to open .db file:
