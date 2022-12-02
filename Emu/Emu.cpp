@@ -9,6 +9,7 @@
 
 uint64_t Cycles;
 bool Verbose = false;
+bool dump_db = false;
 
 double sc_time_stamp() { return 0; }
 
@@ -37,7 +38,7 @@ void Emu::parse_args(int argc, char **argv) {
             case 'f': this->wave_full = true;                break;
             case 'v': Verbose = true;                        break;
 #ifdef TLLOG
-            case 'd': this->dump_db = true;             break;
+            case 'd': dump_db = true;             break;
 #endif
             default:
                 tlc_assert(false, "Unknown args!");
@@ -91,7 +92,7 @@ Emu::Emu(int argc, char **argv) {
 #endif
 
 #ifdef TLLOG
-    init_db(this->dump_db);
+    init_db(dump_db);
 #endif
 
 }
@@ -105,7 +106,7 @@ Emu::~Emu() {
 #endif
 
 #ifdef TLLOG
-    if(this->dump_db){
+    if(dump_db){
         time_t now = time(NULL);
         save_db(timestamp_filename(now));
     }

@@ -33,9 +33,7 @@ private:
     uint64_t seed = 0, wave_begin = 0, wave_end = 0;
     bool enable_wave = true;
     bool wave_full = false;
-    bool dump_db = false;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
-    inline char* timestamp_filename(time_t t);
     void parse_args(int argc, char **argv);
 
 public:
@@ -88,18 +86,5 @@ inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
     printf("dump wave to %s...\n", buf);
     return buf;
 }
-
-#ifdef TLLOG
-inline char* Emu::timestamp_filename(time_t t) {
-    static char buf[1024];
-    char buf_time[64];
-    strftime(buf_time, sizeof(buf_time), "%F@%T", localtime(&t));
-    char *pwd = getcwd(NULL, 0);
-    assert(pwd != NULL);
-    int len = snprintf(buf, 1024, "%s/%s", pwd, buf_time);
-    strcpy(buf + len, ".db");
-    return buf;
-}
-#endif
 
 #endif //TLC_TEST_EMU_H
