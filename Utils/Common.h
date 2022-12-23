@@ -59,6 +59,8 @@ typedef uint16_t paddr_t;
         if (Verbose) { \
             printf("#%d ", this->id); \
             printf(__VA_ARGS__); \
+            fflush(stdout); \
+            fflush(stderr); \
         } \
     } while(0)
 
@@ -66,15 +68,9 @@ typedef uint16_t paddr_t;
     do { \
         if (Verbose) { \
             printf(__VA_ARGS__); \
+            fflush(stdout); \
+            fflush(stderr); \
         } \
     } while(0)
-
-/*
-#define Log(...) \
-    do {} while(0)
-
-#define Dump(...) \
-    do {} while(0)
-*/
 
 #endif //TLC_TEST_COMMON_H
