@@ -7,8 +7,7 @@
 
 Next we need to generate a DUT wrapper. We provide two pre-written wrappers, you can also build new DUT wrappers.
 Please see https://github.com/OpenXiangShan/HuanCun/blob/non-inclusive/src/test/scala/huancun/TestTop.scala for more information.
-> make test-top-l2    // For StandAlone L2 test
-> make test-top-l2l3  // For L2-L3 test
+> make test-top-l2standalone
 ```
 
 # Compile tl-test
