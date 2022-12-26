@@ -81,6 +81,25 @@ Emu::Emu(int argc, char **argv) {
         fuzzers[i]->set_cycles(&Cycles);
     }
 
+
+
+    chan_a = new tl_agent::Channel_A();
+    chan_b = new tl_agent::Channel_B();
+    chan_c = new tl_agent::Channel_C();
+    chan_d = new tl_agent::Channel_D();
+    chan_e = new tl_agent::Channel_E();
+
+
+    scb     = new tl_agent::Slave_ScoreBoard();
+    in_mon  = new tl_agent::Input_Monitor(scb);
+    gen     = new tl_agent::Generator(scb);
+    drv     = new tl_agent::Driver(scb, chan_a, chan_b, chan_c, chan_d, chan_e);
+
+    tran_d = NULL;
+
+
+
+
 #if VM_TRACE == 1
     if (this->enable_wave) {
         Verilated::traceEverOn(true); // Verilator must compute traced signals
@@ -143,6 +162,74 @@ void Emu::execute(uint64_t nr_cycle) {
           this->tfp->dump((vluint64_t)Cycles*2);
         }
 #endif
+
+
+        chan_a->valid   = dut_ptr->master_port_1_0_a_valid;
+        chan_a->opcode  = dut_ptr->master_port_1_0_a_bits_opcode;
+        chan_a->param   = dut_ptr->master_port_1_0_a_bits_param;
+        chan_a->size    = dut_ptr->master_port_1_0_a_bits_size;
+        chan_a->source  = dut_ptr->master_port_1_0_a_bits_source;
+        chan_a->address = dut_ptr->master_port_1_0_a_bits_address;
+        chan_a->mask    = dut_ptr->master_port_1_0_a_bits_mask;
+        chan_a->corrupt = dut_ptr->master_port_1_0_a_bits_corrupt;
+        DATA_COPY(chan_a->data, dut_ptr->master_port_1_0_a_bits_data);  
+
+        chan_b->ready   = dut_ptr->master_port_1_0_b_ready;
+
+        chan_c->valid   = dut_ptr->master_port_1_0_c_valid;
+        chan_c->opcode  = dut_ptr->master_port_1_0_c_bits_opcode;
+        chan_c->param   = dut_ptr->master_port_1_0_c_bits_param;
+        chan_c->size    = dut_ptr->master_port_1_0_c_bits_size;
+        chan_c->source  = dut_ptr->master_port_1_0_c_bits_source;
+        chan_c->address = dut_ptr->master_port_1_0_c_bits_address;
+        chan_c->corrupt = dut_ptr->master_port_1_0_c_bits_corrupt;
+        DATA_COPY(chan_c->data, dut_ptr->master_port_1_0_c_bits_data);
+
+        chan_d->ready   = dut_ptr->master_port_1_0_d_ready;
+
+        chan_e->valid = dut_ptr->master_port_1_0_e_valid;
+        chan_e->sink  = dut_ptr->master_port_1_0_e_bits_sink;
+
+
+
+
+        in_mon->monitor_a(chan_a);
+        in_mon->monitor_c(chan_c);
+        in_mon->monitor_e(chan_e);
+
+        tran_d = gen->generator_d();
+
+        drv->driver_d(tran_d);
+        drv->driver_ready();
+
+
+
+        dut_ptr->master_port_1_0_a_ready = chan_a->ready;
+
+        dut_ptr->master_port_1_0_b_valid          = 0;
+        dut_ptr->master_port_1_0_b_bits_opcode    = chan_b->opcode;
+        dut_ptr->master_port_1_0_b_bits_param     = chan_b->param;
+        dut_ptr->master_port_1_0_b_bits_size      = chan_b->size;
+        dut_ptr->master_port_1_0_b_bits_source    = chan_b->source;
+        dut_ptr->master_port_1_0_b_bits_address   = chan_b->address;
+        dut_ptr->master_port_1_0_b_bits_mask      = chan_b->mask;
+        dut_ptr->master_port_1_0_b_bits_corrupt   = chan_b->corrupt;
+        DATA_COPY(dut_ptr->master_port_1_0_b_bits_data, chan_b->data);
+
+        dut_ptr->master_port_1_0_c_ready = chan_c->ready;
+
+        dut_ptr->master_port_1_0_d_valid        = chan_d->valid; 
+        dut_ptr->master_port_1_0_d_bits_opcode  = chan_d->opcode; 
+        dut_ptr->master_port_1_0_d_bits_param   = chan_d->param; 
+        dut_ptr->master_port_1_0_d_bits_size    = chan_d->size; 
+        dut_ptr->master_port_1_0_d_bits_source  = chan_d->source; 
+        dut_ptr->master_port_1_0_d_bits_sink    = chan_d->sink; 
+        dut_ptr->master_port_1_0_d_bits_denied  = chan_d->denied; 
+        dut_ptr->master_port_1_0_d_bits_corrupt = chan_d->corrupt;
+        DATA_COPY(dut_ptr->master_port_1_0_d_bits_data, chan_d->data);
+
+        dut_ptr->master_port_1_0_e_ready = chan_e->ready;
+
     }
 }
 

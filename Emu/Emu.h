@@ -17,6 +17,7 @@
 #include "../TLAgent/CAgent.h"
 #include "../Fuzzer/Fuzzer.h"
 #include "../ChiselDB/chisel_db.h"
+#include "../TLAgent/SAgent.h"
 
 class Emu {
 private:
@@ -35,6 +36,23 @@ private:
     bool wave_full = false;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
     void parse_args(int argc, char **argv);
+
+
+public:
+        tl_agent::Channel_A *chan_a;
+        tl_agent::Channel_B *chan_b;
+        tl_agent::Channel_C *chan_c;
+        tl_agent::Channel_D *chan_d;
+        tl_agent::Channel_E *chan_e;
+
+        
+        tl_agent::Slave_ScoreBoard     *scb;
+        tl_agent::Input_Monitor  *in_mon;
+        tl_agent::Generator      *gen;
+        tl_agent::Driver         *drv;
+
+        tl_agent::Trans *tran_d;
+
 
 public:
     Emu(int argc, char **argv);

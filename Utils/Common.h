@@ -8,6 +8,7 @@
 #include <memory>
 #include <cmath>
 #include <string>
+#include <vector>
 #include <cstring>
 #include <assert.h>
 #include "../ChiselDB/chisel_db.h"
