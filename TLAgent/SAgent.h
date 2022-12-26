@@ -41,7 +41,7 @@ class Channel_A{
     uint8_t   param;
     uint8_t   size;
     uint8_t   source;
-    uint64_t  address;
+    paddr_t   address;
     uint32_t  mask;
     bool      corrupt;
     uint32_t  data[8];
@@ -55,7 +55,7 @@ class Channel_B{
     uint8_t   param;
     uint8_t   size;
     uint8_t   source;
-    uint64_t  address;
+    paddr_t  address;
     uint32_t  mask;
     bool      corrupt;
     uint32_t  data[8];
@@ -69,7 +69,7 @@ class Channel_C{
     uint8_t   param;
     uint8_t   size;
     uint8_t   source;
-    uint64_t  address;
+    paddr_t  address;
     bool      corrupt;
     uint32_t  data[8];
 };
@@ -104,7 +104,7 @@ class Trans{
         uint8_t   param;
         uint8_t   size;
         uint8_t   source;
-        uint64_t  address;
+        paddr_t   address;
         uint32_t  mask;
         uint8_t   sink;
         bool      corrupt;

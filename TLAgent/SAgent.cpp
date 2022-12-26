@@ -140,9 +140,6 @@ Trans *Generator::generator_d(){
     static uint32_t sink = 1;
     if(sink == 15) sink = 1;
 
-    if(scb->releaseAck_q.size() > 0) rand_sel = 2;
-
-
     if(rand_sel == 1){
         if(scb->acquire_q.empty()) return NULL;
 
@@ -154,12 +151,12 @@ Trans *Generator::generator_d(){
         Trans *temp = new Trans();
         temp->has_data = (tran_acquire->opcode == OP_AcquireBlock);
         temp->opcode   = (tran_acquire->opcode == OP_AcquireBlock) ? OP_GrantData :
-                            (tran_acquire->opcode == OP_AcquirePerm)  ? OP_Grant : 
-                            -1;
+                         (tran_acquire->opcode == OP_AcquirePerm)  ? OP_Grant : 
+                         -1;
         temp->param    = (tran_acquire->param == PARAM_NtoB) ? PARAM_toB :
-                            (tran_acquire->param == PARAM_NtoT) ? PARAM_toT :
-                            (tran_acquire->param == PARAM_BtoT) ? PARAM_toT :
-                            -1;
+                         (tran_acquire->param == PARAM_NtoT) ? PARAM_toT :
+                         (tran_acquire->param == PARAM_BtoT) ? PARAM_toT :
+                         -1;
         temp->size     = 6;
         temp->source   = tran_acquire->source;
         temp->address  = tran_acquire->address;
@@ -167,8 +164,8 @@ Trans *Generator::generator_d(){
         temp->sink     = tran_acquire->sink;
         temp->corrupt  = 0;
         temp->denied   = 0;
-        DATA_COPY(temp->data1,scb->MEM[(temp->address >> 6) + 0]);
-        DATA_COPY(temp->data2,scb->MEM[(temp->address >> 6) + 1]);
+        DATA_COPY(temp->data1,scb->MEM[(temp->address >> 6)*2 + 0]);
+        DATA_COPY(temp->data2,scb->MEM[(temp->address >> 6)*2 + 1]);
 
         return temp;   
     }
@@ -190,8 +187,8 @@ Trans *Generator::generator_d(){
         temp->corrupt  = 0;
         temp->denied   = 0;
         if(temp->has_data){
-            DATA_COPY(scb->MEM[(temp->address >> 6) + 0], temp->data1);
-            DATA_COPY(scb->MEM[(temp->address >> 6) + 1], temp->data2);
+            DATA_COPY(scb->MEM[(temp->address >> 6)*2 + 0], temp->data1);
+            DATA_COPY(scb->MEM[(temp->address >> 6)*2 + 1], temp->data2);
         }
         
         return temp;
