@@ -55,7 +55,7 @@ class Channel_B{
     uint8_t   param;
     uint8_t   size;
     uint8_t   source;
-    paddr_t  address;
+    paddr_t   address;
     uint32_t  mask;
     bool      corrupt;
     uint32_t  data[8];
@@ -200,6 +200,7 @@ class Driver{
       this->chan_e = chan_e;
     }
 
+    void driver_b(Trans *tran);
     void driver_d(Trans *tran);
     void driver_ready();
 };

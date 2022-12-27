@@ -153,7 +153,7 @@ void Input_Monitor::monitor_e(Channel_E *chan_e){
 
 Trans *Generator::generator_b(){
     if(!scb->genetator_new_tran_b) return NULL;
-    
+
     uint32_t rand_sel = rand() % 40;
 
     if(rand_sel == 1){
@@ -246,6 +246,36 @@ Trans *Generator::generator_d(){
     return NULL;
 }
 
+
+
+
+
+void Driver::driver_b(Trans *tran){
+    static bool tran_finish = true;
+    static Trans *temp = NULL;
+
+    if(tran_finish){
+        chan_b->valid = false;
+        if(tran == NULL) return;
+
+        temp = tran;
+        chan_b->valid   = true;
+        chan_b->opcode  = tran->opcode;
+        chan_b->param   = tran->param;
+        chan_b->size    = tran->size;
+        chan_b->source  = tran->source;
+        chan_b->address = tran->address;
+        chan_b->mask    = tran->mask;
+        chan_b->corrupt = tran->corrupt;
+
+        tran_finish = false;
+    }
+
+    if(chan_b->valid && chan_b->ready){
+        tran_finish = true;
+        scb->genetator_new_tran_b = true;
+    }
+}
 
 
 
