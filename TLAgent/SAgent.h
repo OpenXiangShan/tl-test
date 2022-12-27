@@ -128,11 +128,13 @@ class Slave_ScoreBoard{
         vector<Trans*> probeAck_q;
         vector<Trans*> lib_probe;
 
-        bool generator_new_tran;
+        bool genetator_new_tran_b;
+        bool genetator_new_tran_d;
 
     public:
         Slave_ScoreBoard(){
-            generator_new_tran = true;
+            genetator_new_tran_b = true;
+            genetator_new_tran_d = true;
             for(int i = 0; i < 16*1024; i++){
                 for(int j = 0; j < 8; j++){
                     MEM[i][j] = 0;
@@ -173,6 +175,7 @@ class Generator{
       this->scb = scb;
     }
 
+    Trans *generator_b();
     Trans *generator_d();
 };
 
