@@ -75,6 +75,51 @@ namespace tl_agent{
                 }
                 break;
             }
+            case OP_ProbeAck:{
+                if(probeAck_q.empty()) assert(0);
+
+                Trans *temp = NULL;
+                for(int i = 0; i < probeAck_q.size(); i++){
+                    if(chan_c->source == probeAck_q[i]->source && chan_c->address == probeAck_q[i]->address){
+                        temp = probeAck_q[i];
+                        probeAck_q.erase(probeAck_q.begin() + i);
+                        break;
+                    }
+                }
+                if(temp == NULL) assert(0);
+
+                delete temp;
+                break;
+            }
+            case OP_ProbeAckData:{
+                if(probeAck_q.empty()) assert(0);
+
+                Trans *temp = NULL;
+                switch(beat){
+                    case 1:{
+                        DATA_COPY(MEM[(chan_c->address >> 6) * 2 + 0], chan_c->data);
+                        break;
+                    }
+                    case 2:{
+                        for(int i = 0; i < probeAck_q.size(); i++){
+                            if(chan_c->source == probeAck_q[i]->source && chan_c->address == probeAck_q[i]->address){
+                                temp = probeAck_q[i];
+                                probeAck_q.erase(probeAck_q.begin() + i);
+                                break;
+                            }
+                        }
+                        if(temp == NULL) assert(0);
+
+                        delete temp;
+                        break;
+                    }
+                    default:{
+                        assert(0);
+                        break;
+                    }
+                }
+                break;
+            }
             default:{
                 assert(0);
             }
@@ -110,11 +155,13 @@ void Input_Monitor::monitor_c(Channel_C *chan_c){
 
     if(chan_c->valid && chan_c->ready){
         switch(chan_c->opcode){
-            case OP_Release: {
+            case OP_Release: 
+            case OP_ProbeAck:{
                 scb->c_write(chan_c, 0);
                 break;                    
             }
-            case OP_ReleaseData:{
+            case OP_ReleaseData:
+            case OP_ProbeAckData:{
                 switch(beat){
                     case 1: {
                         scb->c_write(chan_c, beat++);
@@ -161,6 +208,8 @@ Trans *Generator::generator_b(){
 
         uint32_t index = rand() % scb->lib_probe.size();
         Trans *temp = scb->lib_probe[index];
+        scb->lib_probe.erase(scb->lib_probe.begin() + index);
+        scb->probeAck_q.push_back(temp);
 
         temp->has_data = (temp->opcode == OP_AcquireBlock);
         temp->opcode   = temp->has_data ? (OP_ProbeBlock + rand() % 2) : OP_ProbePerm;
