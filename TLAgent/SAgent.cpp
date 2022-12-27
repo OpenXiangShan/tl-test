@@ -18,6 +18,26 @@ namespace tl_agent{
 
     void Slave_ScoreBoard::c_write(Channel_C *chan_c, uint32_t beat){
         switch(chan_c->opcode){
+            case OP_Release:
+            case OP_ReleaseData:{
+                if((chan_c->opcode == OP_ReleaseData) && (beat == 2)) break;
+                Trans *temp = NULL;
+                for(int i = 0; i < lib_probe.size(); i++){
+                    if(chan_c->address == lib_probe[i]->address){
+                        temp = lib_probe[i];
+                        lib_probe.erase(lib_probe.begin() + i);
+                        break;
+                    }
+                }
+                if(temp == NULL) assert(0);
+                delete temp;
+                break;
+            }
+            default:{
+                break;
+            }
+        }
+        switch(chan_c->opcode){
             case OP_Release:{
                 Trans *temp = new Trans();
                 temp->state   = S_Finish;
@@ -71,7 +91,7 @@ namespace tl_agent{
         assert(0);
       }
 
-      delete temp;
+      lib_probe.push_back(temp);
     }
 
 
@@ -90,7 +110,7 @@ void Input_Monitor::monitor_c(Channel_C *chan_c){
     if(chan_c->valid && chan_c->ready){
         switch(chan_c->opcode){
             case OP_Release: {
-                scb->c_write(chan_c, 0); 
+                scb->c_write(chan_c, 0);
                 break;                    
             }
             case OP_ReleaseData:{
@@ -135,6 +155,7 @@ void Input_Monitor::monitor_e(Channel_E *chan_e){
 Trans *Generator::generator_d(){
     if(!scb->generator_new_tran) return NULL;
 
+    static vector<paddr_t> perm_addr;
 
     uint32_t rand_sel = rand() % 40;
     static uint32_t sink = 1;
@@ -157,6 +178,11 @@ Trans *Generator::generator_d(){
                          (tran_acquire->param == PARAM_NtoT) ? PARAM_toT :
                          (tran_acquire->param == PARAM_BtoT) ? PARAM_toT :
                          -1;
+        // if(tran_acquire->param == PARAM_NtoB) printf("\n>>>> XiaBin NtoB<<<<\n");
+        // if(tran_acquire->param == PARAM_NtoT) printf("\n>>>> XiaBin NtoT<<<<\n");
+        // if(tran_acquire->param == PARAM_BtoT) printf("\n>>>> XiaBin BtoT<<<<\n");
+        // if(tran_acquire->opcode == OP_AcquirePerm) printf("\n>>>> XiaBin AcquirePerm<<<<\n");
+        perm_addr.push_back(tran_acquire->address);
         temp->size     = 6;
         temp->source   = tran_acquire->source;
         temp->address  = tran_acquire->address;
@@ -174,6 +200,25 @@ Trans *Generator::generator_d(){
 
         Trans *temp = scb->releaseAck_q[0];
         if(temp->state != S_Finish) return NULL;
+        // if(temp->param == PARAM_TtoB) printf("\n>>>> XiaBin TtoB <<<<\n");
+        // if(temp->param == PARAM_TtoN) printf("\n>>>> XiaBin TtoN <<<<\n");
+        // if(temp->param == PARAM_BtoN) printf("\n>>>> XiaBin TtoB <<<<\n");
+        // if(temp->param == PARAM_TtoT) printf("\n>>>> XiaBin TtoT <<<<\n");
+        // if(temp->param == PARAM_BtoB) printf("\n>>>> XiaBin BtoB <<<<\n");
+        // if(temp->param == PARAM_NtoN) printf("\n>>>> XiaBin NtoN <<<<\n");
+        // if(temp->opcode == OP_Release) printf("\n>>>> XiaBin Release <<<<<\n");
+        if(temp->opcode == OP_Release) {
+            bool has_addr = false;
+            for(int i = 0; i < perm_addr.size(); i++){
+                if(temp->address == perm_addr[i]){
+                    printf("Has Addr %d\n", temp->address);
+                    perm_addr.erase(perm_addr.begin() + i);
+                    has_addr = true;
+                    break;
+                }
+            }
+            if(!has_addr)    printf("No Addr %d\n", temp->address);
+        }
 
         scb->releaseAck_q.erase(scb->releaseAck_q.begin());
         temp->has_data = (temp->opcode == OP_ReleaseData);

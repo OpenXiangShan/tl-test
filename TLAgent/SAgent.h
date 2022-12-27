@@ -126,6 +126,7 @@ class Slave_ScoreBoard{
         vector<Trans*> releaseAck_q;
 
         vector<Trans*> probeAck_q;
+        vector<Trans*> lib_probe;
 
         bool generator_new_tran;
 
