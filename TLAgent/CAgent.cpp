@@ -87,7 +87,7 @@ namespace tl_agent {
         *this->port->a.param = *a->param;
         *this->port->a.mask = *a->mask;
         *this->port->a.source = *a->source;
-        // *this->port->a.alias = *a->alias;
+        *this->port->a.alias = *a->alias;
         *this->port->a.valid = true;
         return OK;
     }
