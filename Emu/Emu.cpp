@@ -183,7 +183,7 @@ void Emu::execute(uint64_t nr_cycle) {
         drv->driver_b(tran_b);
         drv->driver_d(tran_d);
         drv->driver_ready();
-
+        scb->update_age();
 
         dut_ptr->slave_port_0_a_ready = chan_a->ready;
 

@@ -98,6 +98,7 @@ class Channel_E{
 
 class Trans{
     public:
+        uint32_t  tran_age;
         bool      has_data;
         uint8_t   state;
         uint8_t   opcode;
@@ -127,11 +128,15 @@ class Slave_ScoreBoard{
 
         vector<Trans*> probeAck_q;
 
+        uint32_t clk_count;
+        void update_age();
+
         bool genetator_new_tran_b;
         bool genetator_new_tran_d;
 
     public:
         Slave_ScoreBoard(){
+            clk_count = 0;
             genetator_new_tran_b = true;
             genetator_new_tran_d = true;
             for(int i = 0; i < 16*1024; i++){

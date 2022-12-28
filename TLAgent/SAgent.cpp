@@ -8,10 +8,12 @@ namespace tl_agent{
 
     void Slave_ScoreBoard::a_write(Channel_A *chan_a){
         Trans *temp = new Trans();
+        temp->tran_age = 0;
         temp->opcode  = chan_a->opcode;
         temp->param   = chan_a->param;
         temp->source  = chan_a->source;
         temp->address = chan_a->address;
+
         acquire_q.push_back(temp);
     }
 
@@ -19,6 +21,7 @@ namespace tl_agent{
         switch(chan_c->opcode){
             case OP_Release:{
                 Trans *temp = new Trans();
+                temp->tran_age = 0;
                 temp->state   = S_Finish;
                 temp->opcode  = chan_c->opcode;
                 temp->param   = chan_c->param;
@@ -31,6 +34,7 @@ namespace tl_agent{
                 switch(beat){
                     case 1:{
                         Trans *temp = new Trans();
+                        temp->tran_age = 0;
                         temp->state   = S_Wait;
                         temp->opcode  = chan_c->opcode;
                         temp->param   = chan_c->param;
@@ -124,6 +128,39 @@ namespace tl_agent{
 
 
 
+    void Slave_ScoreBoard::update_age(){
+        clk_count++;
+        if(clk_count % 1000 != 0) return;
+
+        uint32_t age = 0;
+        for(int i = 0; i < acquire_q.size(); i++){
+            age = acquire_q[i]->tran_age++;
+            if(age > 4000){
+                assert(0);
+            }
+        }
+        for(int i = 0; i < grantAck_q.size(); i++){
+            age = grantAck_q[i]->tran_age++;
+            if(age > 4000){
+                assert(0);
+            }
+        }
+        for(int i = 0; i < releaseAck_q.size(); i++){
+            age = releaseAck_q[i]->tran_age++;
+            if(age > 4000){
+                assert(0);
+            }
+        }
+        for(int i = 0; i < probeAck_q.size(); i++){
+            age = probeAck_q[i]->tran_age++;
+            if(age > 4000){
+                assert(0);
+            }
+        }
+    }
+
+
+
 
 
 void Input_Monitor::monitor_a(Channel_A *chan_a){
@@ -187,9 +224,10 @@ Trans *Generator::generator_b(){
     static uint8_t source = 1;
     if(source == 15) source = 1;
 
-    if(rand_sel == 1){
+    if(rand_sel == 1 && scb->probeAck_q.size() < 10){
         Trans *temp = new Trans();
         // generator probe
+        temp->tran_age = 0;
         temp->opcode   = (rand() % 2 == 0) ? OP_ProbeBlock : OP_ProbePerm;
         temp->param    = PARAM_toN;
         temp->size     = 6;
@@ -241,8 +279,19 @@ Trans *Generator::generator_d(){
         if(scb->acquire_q.empty()) return NULL;
 
         Trans *tran_acquire = scb->acquire_q[0];
+        // Address check
+        bool addr_is_legal = true;
+        for(int i = 0; i < scb->probeAck_q.size(); i++){
+            if(tran_acquire->address == scb->probeAck_q[i]->address){
+                addr_is_legal = false;
+                break;
+            }
+        }
+        if(!addr_is_legal) return NULL;
+
         tran_acquire->sink = sink++;
         scb->acquire_q.erase(scb->acquire_q.begin());
+        tran_acquire->tran_age = 0;
         scb->grantAck_q.push_back(tran_acquire);
 
         Trans *temp = new Trans();
@@ -264,7 +313,7 @@ Trans *Generator::generator_d(){
         DATA_COPY(temp->data1,scb->MEM[(temp->address >> 6)*2 + 0]);
         DATA_COPY(temp->data2,scb->MEM[(temp->address >> 6)*2 + 1]);
 
-        return temp;   
+        return temp;
     }
     else if(rand_sel == 2){
         if(scb->releaseAck_q.empty()) return NULL;
