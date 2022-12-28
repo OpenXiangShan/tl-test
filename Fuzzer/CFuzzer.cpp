@@ -50,6 +50,6 @@ void CFuzzer::caseTest() {
 }
 
 void CFuzzer::tick() {
-    this->randomTest(false);
+    this->randomTest(true);
 //    this->caseTest();
 }
