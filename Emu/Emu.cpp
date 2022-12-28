@@ -95,6 +95,7 @@ Emu::Emu(int argc, char **argv) {
     gen     = new tl_agent::Generator(scb);
     drv     = new tl_agent::Driver(scb, chan_a, chan_b, chan_c, chan_d, chan_e);
 
+    tran_b = NULL;
     tran_d = NULL;
 
 
@@ -176,14 +177,17 @@ void Emu::execute(uint64_t nr_cycle) {
         in_mon->monitor_c(chan_c);
         in_mon->monitor_e(chan_e);
 
+        tran_b = gen->generator_b();
         tran_d = gen->generator_d();
 
+        drv->driver_b(tran_b);
         drv->driver_d(tran_d);
         drv->driver_ready();
 
+
         dut_ptr->slave_port_0_a_ready = chan_a->ready;
 
-        dut_ptr->slave_port_0_b_valid          = 0;
+        dut_ptr->slave_port_0_b_valid          = chan_b->valid;
         dut_ptr->slave_port_0_b_bits_opcode    = chan_b->opcode;
         dut_ptr->slave_port_0_b_bits_param     = chan_b->param;
         dut_ptr->slave_port_0_b_bits_size      = chan_b->size;
@@ -206,6 +210,8 @@ void Emu::execute(uint64_t nr_cycle) {
         DATA_COPY(dut_ptr->slave_port_0_d_bits_data, chan_d->data);
 
         dut_ptr->slave_port_0_e_ready = chan_e->ready;
+        // printf("XiaBin ---- 03\n");
+
 
         this->neg_edge();
 #if VM_TRACE == 1

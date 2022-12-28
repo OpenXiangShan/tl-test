@@ -7,37 +7,15 @@ namespace tl_agent{
 
 
     void Slave_ScoreBoard::a_write(Channel_A *chan_a){
-      Trans *temp = new Trans();
-      temp->opcode  = chan_a->opcode;
-      temp->param   = chan_a->param;
-      temp->source  = chan_a->source;
-      temp->address = chan_a->address;
-      
-      acquire_q.push_back(temp);
+        Trans *temp = new Trans();
+        temp->opcode  = chan_a->opcode;
+        temp->param   = chan_a->param;
+        temp->source  = chan_a->source;
+        temp->address = chan_a->address;
+        acquire_q.push_back(temp);
     }
 
     void Slave_ScoreBoard::c_write(Channel_C *chan_c, uint32_t beat){
-        switch(chan_c->opcode){
-            case OP_Release:
-            case OP_ReleaseData:{
-                if((chan_c->opcode == OP_ReleaseData) && (beat == 2)) break;
-                Trans *temp = NULL;
-                for(int i = 0; i < lib_probe.size(); i++){
-                    if(chan_c->address == lib_probe[i]->address){
-                        temp = lib_probe[i];
-                        lib_probe.erase(lib_probe.begin() + i);
-                        break;
-                    }
-                }
-                if(temp == NULL) assert(0);
-                delete temp;
-                break;
-            }
-            default:{
-                break;
-            }
-        }
-
         switch(chan_c->opcode){
             case OP_Release:{
                 Trans *temp = new Trans();
@@ -75,12 +53,12 @@ namespace tl_agent{
                 }
                 break;
             }
-            case OP_ProbeAck:{
+            case OP_ProbeAck:{                
                 if(probeAck_q.empty()) assert(0);
 
                 Trans *temp = NULL;
                 for(int i = 0; i < probeAck_q.size(); i++){
-                    if(chan_c->source == probeAck_q[i]->source && chan_c->address == probeAck_q[i]->address){
+                    if(chan_c->address == probeAck_q[i]->address){
                         temp = probeAck_q[i];
                         probeAck_q.erase(probeAck_q.begin() + i);
                         break;
@@ -97,12 +75,13 @@ namespace tl_agent{
                 Trans *temp = NULL;
                 switch(beat){
                     case 1:{
-                        DATA_COPY(MEM[(chan_c->address >> 6) * 2 + 0], chan_c->data);
+                        DATA_COPY(MEM[(chan_c->address >> 6)*2 + 0], chan_c->data);
                         break;
                     }
                     case 2:{
+                        DATA_COPY(MEM[(chan_c->address >> 6)*2 + 1], chan_c->data);
                         for(int i = 0; i < probeAck_q.size(); i++){
-                            if(chan_c->source == probeAck_q[i]->source && chan_c->address == probeAck_q[i]->address){
+                            if(chan_c->address == probeAck_q[i]->address){
                                 temp = probeAck_q[i];
                                 probeAck_q.erase(probeAck_q.begin() + i);
                                 break;
@@ -127,17 +106,20 @@ namespace tl_agent{
     }
 
     void Slave_ScoreBoard::e_write(Channel_E *chan_e){
-      Trans *temp = NULL;
-      for(int i = 0; i < grantAck_q.size(); i++){
-        if(chan_e->sink == grantAck_q[i]->sink){
-          temp = grantAck_q[i];
-          grantAck_q.erase(grantAck_q.begin() + i);
-          break;
-        }
-        assert(0);
-      }
+        Trans *temp = NULL;
+        bool no_find_sink = true;
 
-      lib_probe.push_back(temp);
+        for(int i = 0; i < grantAck_q.size(); i++){
+            if(chan_e->sink == grantAck_q[i]->sink){
+                temp = grantAck_q[i];
+                grantAck_q.erase(grantAck_q.begin() + i);
+                no_find_sink = false;
+                break;
+            }
+        }
+        if(no_find_sink) assert(0);
+
+        delete temp;
     }
 
 
@@ -202,27 +184,43 @@ Trans *Generator::generator_b(){
     if(!scb->genetator_new_tran_b) return NULL;
 
     uint32_t rand_sel = rand() % 40;
+    static uint8_t source = 1;
+    if(source == 15) source = 1;
 
     if(rand_sel == 1){
-        if(scb->lib_probe.empty()) return NULL;
-
-        uint32_t index = rand() % scb->lib_probe.size();
-        Trans *temp = scb->lib_probe[index];
-        scb->lib_probe.erase(scb->lib_probe.begin() + index);
-        scb->probeAck_q.push_back(temp);
-
-        temp->has_data = (temp->opcode == OP_AcquireBlock);
-        temp->opcode   = temp->has_data ? (OP_ProbeBlock + rand() % 2) : OP_ProbePerm;
+        Trans *temp = new Trans();
+        // generator probe
+        temp->opcode   = (rand() % 2 == 0) ? OP_ProbeBlock : OP_ProbePerm;
         temp->param    = PARAM_toN;
         temp->size     = 6;
-        temp->source   = temp->source;
-        temp->address  = temp->address;
+        temp->source   = source++;
+        temp->address  = (paddr_t)rand() << 6;
         temp->mask     = 0xffffffff;
         temp->sink     = 0;
         temp->corrupt  = 0;
         temp->denied   = 0;
+        // address check
+        bool addr_is_legal1 = true;
+        bool addr_is_legal2 = true;
+        for(int i = 0; i < scb->grantAck_q.size(); i++){
+            if(temp->address == scb->grantAck_q[i]->address){
+                addr_is_legal1 = false;
+                break;
+            }
+        }
+        for(int i = 0; i < scb->probeAck_q.size(); i++){
+            if(temp->address == scb->probeAck_q[i]->address){
+                addr_is_legal2 = false;
+            }
+        }
+        
+        if(addr_is_legal1 && addr_is_legal2){
+            scb->probeAck_q.push_back(temp);
+            return temp;
+        }
 
-        return temp;
+        delete temp;
+        return NULL;
     }
     return NULL;
 }
@@ -316,14 +314,13 @@ void Driver::driver_b(Trans *tran){
         chan_b->address = tran->address;
         chan_b->mask    = tran->mask;
         chan_b->corrupt = tran->corrupt;
-
         tran_finish = false;
     }
 
     if(chan_b->valid && chan_b->ready){
         tran_finish = true;
-        scb->genetator_new_tran_b = true;
     }
+    scb->genetator_new_tran_b = tran_finish;
 }
 
 
@@ -342,16 +339,15 @@ void Driver::driver_d(Trans *tran){
         if(tran == NULL) return;
 
         temp = tran;
-        chan_d->valid = true;
-        chan_d->opcode = temp->opcode;
-        chan_d->param  = temp->param;
-        chan_d->size   = temp->size;
-        chan_d->source = temp->source;
-        chan_d->sink   = temp->sink;
-        chan_d->denied = temp->denied;
+        chan_d->valid   = true;
+        chan_d->opcode  = temp->opcode;
+        chan_d->param   = temp->param;
+        chan_d->size    = temp->size;
+        chan_d->source  = temp->source;
+        chan_d->sink    = temp->sink;
+        chan_d->denied  = temp->denied;
         chan_d->corrupt = temp->corrupt;
         DATA_COPY(chan_d->data, temp->data1);
-
         tran_finish = false;
     }
 

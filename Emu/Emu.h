@@ -51,6 +51,7 @@ public:
         tl_agent::Generator      *gen;
         tl_agent::Driver         *drv;
 
+        tl_agent::Trans *tran_b;
         tl_agent::Trans *tran_d;
 
 

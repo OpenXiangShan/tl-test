@@ -126,7 +126,6 @@ class Slave_ScoreBoard{
         vector<Trans*> releaseAck_q;
 
         vector<Trans*> probeAck_q;
-        vector<Trans*> lib_probe;
 
         bool genetator_new_tran_b;
         bool genetator_new_tran_d;
