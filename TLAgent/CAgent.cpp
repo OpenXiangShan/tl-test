@@ -656,10 +656,12 @@ namespace tl_agent {
             return;
         }
         for (auto it = this->localBoard->get().begin(); it != this->localBoard->get().end(); it++) {
+            auto addr = it->first;
             auto value = it->second;
             for(int i = 0; i < 4; i++){
               if (value->status[i] != S_INVALID && value->status[i] != S_VALID) {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
+                  printf("addr: %lx\n", addr);
                   printf("Now time:   %lu\n", *this->cycles);
                   printf("Last stamp: %lu\n", value->time_stamp);
                   printf("Status[0]:  %d\n",  value->status[0]);
