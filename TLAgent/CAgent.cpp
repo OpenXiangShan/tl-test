@@ -87,7 +87,7 @@ namespace tl_agent {
         *this->port->a.param = *a->param;
         *this->port->a.mask = *a->mask;
         *this->port->a.source = *a->source;
-        // *this->port->a.alias = *a->alias;
+        *this->port->a.alias = *a->alias;
         *this->port->a.valid = true;
         return OK;
     }
@@ -124,7 +124,7 @@ namespace tl_agent {
             req_c->opcode = new uint8_t(ProbeAck);
             req_c->param = new uint8_t(NtoN);
             pendingC.init(req_c, 1);
-            Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *b->address);
+            Log("[%ld] [ProbeAck NtoN] addr: %x alias: %x\n", *cycles, *b->address, *b->alias);
         } else {
             int dirty = (exact_privilege == TIP) && (info->dirty[*b->alias] || rand() % 3);
             // When should we probeAck with data? request need_data or dirty itself
@@ -168,15 +168,15 @@ namespace tl_agent {
             }
 
             if (*req_c->param == TtoN) {
-                Log("[%ld] [ProbeAck TtoN] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck TtoN] addr: %x alias: %x data: ", *cycles, *b->address, *b->alias);
             } else if (*req_c->param == TtoB) {
-                Log("[%ld] [ProbeAck TtoB] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck TtoB] addr: %x alias: %x data: ", *cycles, *b->address, *b->alias);
             } else if (*req_c->param == NtoN) {
-                Log("[%ld] [ProbeAck NtoN] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck NtoN] addr: %x alias: %x data: ", *cycles, *b->address, *b->alias);
             } else if (*req_c->param == BtoN) {
-                Log("[%ld] [ProbeAck BtoN] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck BtoN] addr: %x alias: %x data: ", *cycles, *b->address, *b->alias);
             } else if (*req_c->param == BtoB) {
-                Log("[%ld] [ProbeAck BtoB] addr: %x data: ", *cycles, *b->address);
+                Log("[%ld] [ProbeAck BtoB] addr: %x alias: %x data: ", *cycles, *b->address, *b->alias);
             } else {
                 tlc_assert(false, "What the hell is req_c's param?");
             }
@@ -388,7 +388,7 @@ namespace tl_agent {
             if (!pendingD.is_pending()) {
                 switch (*chnD.opcode) {
                     case GrantData: {
-                        Log("[%ld] [GrantData] addr: %hx data: ", *cycles, addr);
+                        Log("[%ld] [GrantData] addr: %hx alias: %hx data: ", *cycles, addr, alias);
                         for(int i = 0; i < DATASIZE; i++) {
                             Dump("%02hhx", pendingD.info->data[i]);
                         }
@@ -398,12 +398,12 @@ namespace tl_agent {
                         break;
                     }
                     case Grant: {
-                        Log("[%ld] [Grant] addr: %hx\n", *cycles, addr);
+                        Log("[%ld] [Grant] addr: %hx alias: %hx\n", *cycles, addr, alias);
                         // info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
                     case ReleaseAck: {
-                        Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
+                        Log("[%ld] [ReleaseAck] addr: %hx alias: %hx\n", *cycles, addr, alias);
                         if (exact_status == S_C_WAITING_D) {
                             info->update_status(S_INVALID, *cycles, alias);
                             info->update_dirty(0, alias);
@@ -580,7 +580,7 @@ namespace tl_agent {
         req_c->data = data;
         req_c->alias = new uint8_t(alias);
         pendingC.init(req_c, DATASIZE / BEATSIZE);
-        Log("[%ld] [ReleaseData] addr: %x data: ", *cycles, address);
+        Log("[%ld] [ReleaseData] addr: %x alias: %x data: ", *cycles, address, alias);
         for(int i = 0; i < DATASIZE; i++) {
             Dump("%02hhx", data[i]);
         }
@@ -637,10 +637,10 @@ namespace tl_agent {
         pendingC.init(req_c, DATASIZE / BEATSIZE);
         switch (param) {
         case BtoN:
-            Log("[%ld] [ReleaseData BtoN] addr: %x data: ", *cycles, address);
+            Log("[%ld] [ReleaseData BtoN] addr: %x alias: %x data: ", *cycles, address, alias);
             break;
         case TtoN:
-            Log("[%ld] [ReleaseData TtoN] addr: %x data: ", *cycles, address);
+            Log("[%ld] [ReleaseData TtoN] addr: %x alias: %x data: ", *cycles, address, alias);
             break;
         }
 
