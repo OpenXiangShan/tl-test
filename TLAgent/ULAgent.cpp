@@ -275,7 +275,7 @@ namespace tl_agent {
                     printf("Now time:   %lu\n", *this->cycles);
                     printf("Last stamp: %lu\n", value->time_stamp);
                     printf("Status:     %d\n", value->status);
-                    printf("Address:    %d\n", value->address);
+                    printf("Address:    %lx\n", value->address);
                     tlc_assert(false,  "Transaction time out");
                 }
             }

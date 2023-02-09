@@ -93,6 +93,7 @@ namespace tl_agent {
         Echo *echo;
         uint8_t *corrupt;
         uint8_t *alias;
+        uint8_t *needHint;
 
         void free() {
             delete(this->opcode);
@@ -140,6 +141,7 @@ namespace tl_agent {
         uint8_t *data;
         uint8_t *corrupt;
         uint8_t *alias;
+        uint8_t *needHint;
 
         void free() {
             delete(this->opcode);

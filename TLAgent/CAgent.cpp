@@ -251,7 +251,7 @@ namespace tl_agent {
         *this->port->c.address = *c->address;
         *this->port->c.size = *c->size;
         *this->port->c.source = *c->source;
-        *this->port->c.dirty = *c->dirty;
+        // *this->port->c.dirty = *c->dirty;
         *this->port->c.valid = true;
         return OK;
     }
@@ -409,19 +409,19 @@ namespace tl_agent {
                         }
                         Dump("\n");
                         this->globalBoard->verify(addr, pendingD.info->data);
-                        info->update_dirty(*chnD.dirty, alias);
+                        // info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
                     case Grant: {
                         Log("[%ld] [Grant] addr: %hx\n", *cycles, addr);
-                        info->update_dirty(*chnD.dirty, alias);
+                        // info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
                     case ReleaseAck: {
                         Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
                         if (exact_status == S_C_WAITING_D) {
                             info->update_status(S_INVALID, *cycles, alias);
-                            info->update_dirty(0, alias);
+                            // info->update_dirty(0, alias);
                         } else {
                             tlc_assert(exact_status == S_C_WAITING_D_INTR, "Status error!");
                             info->update_status(S_SENDING_C, *cycles, alias);
@@ -525,6 +525,7 @@ namespace tl_agent {
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
         req_a->alias = new uint8_t(alias);
+        req_a->needHint = new uint8_t(1);
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
         switch (param) {
@@ -563,6 +564,7 @@ namespace tl_agent {
         req_a->mask = new uint32_t(0xffffffffUL);
         req_a->source = new uint8_t(this->idpool.getid());
         req_a->alias = new uint8_t(alias);
+        req_a->needHint = new uint8_t(1);
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
         Log("[%ld] [AcquirePerm] addr: %x alias: %d\n", *cycles, address, alias);
@@ -594,6 +596,7 @@ namespace tl_agent {
         // Log("== id == release %d\n", *req_c->source);
         req_c->data = data;
         req_c->alias = new uint8_t(alias);
+        req_c->needHint = new uint8_t(0);
         pendingC.init(req_c, DATASIZE / BEATSIZE);
         Log("[%ld] [ReleaseData] addr: %x data: ", *cycles, address);
         for(int i = 0; i < DATASIZE; i++) {
@@ -636,6 +639,7 @@ namespace tl_agent {
         req_c->source = new uint8_t(this->idpool.getid());
         req_c->dirty = new uint8_t(1);
         req_c->alias = new uint8_t(alias);
+        req_c->needHint = new uint8_t(0);
         if (param == BtoN) {
             uint8_t* data = globalBoard->query(address)->data;
             req_c->data = data;
@@ -678,7 +682,7 @@ namespace tl_agent {
                   printf("Now time:   %lu\n", *this->cycles);
                   printf("Last stamp: %lu\n", value->time_stamp);
                   printf("Status[0]:  %d\n",  value->status[0]);
-                  printf("Address:    %d\n",  it->first);
+                  printf("Address:    %lx\n",  it->first);
                   tlc_assert(false,  "Transaction time out");
                 }
               }

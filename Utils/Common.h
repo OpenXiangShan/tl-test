@@ -17,13 +17,13 @@ enum {
     DATASIZE = 64, // Cache line is 64B
     BEATSIZE = 32,
     NR_ULAGENTS = 1,
-    NR_CAGENTS = 2,
+    NR_CAGENTS = 1,
     NR_SOURCEID = 16,
     TIMEOUT_INTERVAL = 5000
 };
 
 const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;
-typedef uint32_t paddr_t;
+typedef uint16_t paddr_t;
 
 #define tlc_assert(cond, info) \
     do { \
