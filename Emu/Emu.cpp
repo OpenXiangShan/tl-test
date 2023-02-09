@@ -60,13 +60,13 @@ Emu::Emu(int argc, char **argv) {
 
     for (int i = NR_ULAGENTS; i < NR_AGENTS; i++) {
         agents[i] = new CAgent_t(globalBoard, i, &Cycles);
-        // if (i == 0) {
+        if (i == 0) {
             auto port = naive_gen_port();
             agents[i]->connect(port);
-        // } else {
-        //     auto port = naive_gen_port2();
-        //     agents[i]->connect(port);
-        // }
+        } else {
+            auto port = naive_gen_port2();
+            agents[i]->connect(port);
+        }
         fuzzers[i] = new CFuzzer(static_cast<CAgent_t*>(agents[i]));
         fuzzers[i]->set_cycles(&Cycles);
     }
@@ -185,7 +185,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->a.source = &(dut_ptr->master_port_1_0_a_bits_source);
     port->a.mask = &(dut_ptr->master_port_1_0_a_bits_mask);
     port->a.data = (uint8_t*)&(dut_ptr->master_port_1_0_a_bits_data);
-    // port->a.alias = (uint8_t*)&(dut_ptr->master_port_1_0_a_bits_user_alias);
+    port->a.alias = (uint8_t*)&(dut_ptr->master_port_1_0_a_bits_user_alias);
 
     port->b.ready = &(dut_ptr->master_port_1_0_b_ready);
     port->b.valid = &(dut_ptr->master_port_1_0_b_valid);
