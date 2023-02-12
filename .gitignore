@@ -1,3 +1,5 @@
 build
 cmake-build-debug
 .idea
+env/rtl/*
+env/sram/*
