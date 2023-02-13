@@ -4,9 +4,9 @@
 
 #include "Fuzzer.h"
 
-CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) { this->cAgent = cAgent; }
+CFuzzer::CFuzzer(std::shared_ptr<tl_agent::CAgent>cAgent) { this->cAgent = cAgent; }
 
-void CFuzzer::randomTest(bool do_alias, tl_agent::BaseAgent **agent) {
+void CFuzzer::randomTest(bool do_alias, std::shared_ptr<tl_agent::BaseAgent> *agent) {
   // if (rand() % 10) return;
   // address generation
   paddr_t addr;
@@ -62,7 +62,7 @@ void CFuzzer::caseTest() {
   }
 }
 
-void CFuzzer::tick(tl_agent::BaseAgent **agent) {
+void CFuzzer::tick(std::shared_ptr<tl_agent::BaseAgent> *agent) {
   this->randomTest(false, agent);
   //    this->caseTest();
 }

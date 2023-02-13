@@ -145,5 +145,5 @@ module tb_top(
     .dft_l3dataramclk_bypass(dft_l3dataramclk_bypass),
     .dft_cgen(dft_cgen)
 );
-  `include "mem_conn  .v"
+  `include "mem_conn.v"
 endmodule

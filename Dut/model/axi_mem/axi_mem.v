@@ -126,7 +126,7 @@ rom #(.DATA_WD(DATA_WD),.ADDR_WD(ADDR_WD-ADDR_LSB))u_rom(
            .r_data(rom_r_data)  
           );
 
-   axi_to_rom_ram #(.ID_WD(ID_WD),.ADDR_WD(ADDR_WD),.DATA_WD(DATA_WD),.BASE_ADDR(32'h0000),.LEN_WD(8))u_axi_to_rom_ram(
+   axi_to_rom_ram #(.ID_WD(ID_WD),.ADDR_WD(ADDR_WD),.DATA_WD(DATA_WD),.BASE_ADDR(BASE_ADDR),.LEN_WD(8))u_axi_to_rom_ram(
      //. ACLK    (axi_if.master_if[0].internal_aclk),
      . ACLK    (ACLK),
      . ARESETn (ARESETn),
@@ -139,6 +139,8 @@ rom #(.DATA_WD(DATA_WD),.ADDR_WD(ADDR_WD-ADDR_LSB))u_rom(
      . AWLOCK  (AWLOCK  ), // no use
      . AWCACHE (AWCACHE ), // no use
      . AWPROT  (AWPROT  ), // no use
+     . AWREGION(AWREGION), // no use
+     . AWQOS   (AWQOS   ), // no use
      . AWID    (AWID    ),
      . AWREADY (AWREADY ),
                         
@@ -161,6 +163,8 @@ rom #(.DATA_WD(DATA_WD),.ADDR_WD(ADDR_WD-ADDR_LSB))u_rom(
      . ARLOCK  (ARLOCK  ), // no use
      . ARCACHE (ARCACHE ), // no use
      . ARPROT  (ARPROT  ), // no use
+     . ARREGION(ARREGION), // no use
+     . ARQOS   (ARQOS   ), // no use
      . ARID    (ARID    ),
      . ARREADY (ARREADY ),
                         

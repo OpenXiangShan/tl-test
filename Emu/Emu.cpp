@@ -53,7 +53,7 @@ Emu::Emu(int argc, char **argv) {
   this->parse_args(argc, argv);
   Verilated::commandArgs(argc, argv);
   Cycles = 0;
-  dut_ptr = new VTestTop();
+  dut_ptr = new Vtb_top();
   globalBoard = new GlobalBoard<paddr_t>(); // address indexed
 
   printf("[INFO] use seed: %ld\n", this->seed);
@@ -61,8 +61,8 @@ Emu::Emu(int argc, char **argv) {
 
   // Init agents
   for (int i = 0; i < NR_CAGENTS; i++) {
-    agents[i] = new CAgent_t(globalBoard, i, &Cycles, i / 2, i % 2);
-    fuzzers[i] = new CFuzzer(static_cast<CAgent_t *>(agents[i]));
+    agents[i].reset(new CAgent_t(globalBoard, i, &Cycles, i / 2, i % 2));
+    fuzzers[i].reset(new CFuzzer(std::dynamic_pointer_cast<tl_agent::CAgent>(agents[i])));
     fuzzers[i]->set_cycles(&Cycles);
   }
 
@@ -86,12 +86,6 @@ Emu::Emu(int argc, char **argv) {
 }
 
 Emu::~Emu() {
-  int32_t idx;
-  idx = NR_AGENTS;
-  while(idx -- > 0){
-    delete fuzzers[idx];
-    delete agents[idx];
-  }
   delete dut_ptr;
 #if VM_TRACE == 1
   if (this->enable_wave) {
@@ -135,30 +129,30 @@ void Emu::execute(uint64_t nr_cycle) {
   }
 }
 
-tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField,
-               BEATSIZE> *
-Emu::naive_gen_port_dma() {
-  auto port = new tl_agent::Port<tl_agent::ReqField, tl_agent::RespField,
-                                 tl_agent::EchoField, BEATSIZE>();
+// tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField,
+//                BEATSIZE> *
+// Emu::naive_gen_port_dma() {
+//   auto port = new tl_agent::Port<tl_agent::ReqField, tl_agent::RespField,
+//                                  tl_agent::EchoField, BEATSIZE>();
 
-  port->a.ready = &(dut_ptr->master_port_2_0_a_ready);
-  port->a.valid = &(dut_ptr->master_port_2_0_a_valid);
-  port->a.opcode = &(dut_ptr->master_port_2_0_a_bits_opcode);
-  port->a.param = &(dut_ptr->master_port_2_0_a_bits_param);
-  port->a.address = &(dut_ptr->master_port_2_0_a_bits_address);
-  port->a.size = &(dut_ptr->master_port_2_0_a_bits_size);
-  port->a.source = &(dut_ptr->master_port_2_0_a_bits_source);
-  port->a.mask = &(dut_ptr->master_port_2_0_a_bits_mask);
-  port->a.data = (uint8_t *)&(dut_ptr->master_port_2_0_a_bits_data);
+//   port->a.ready = &(dut_ptr->master_port_2_0_a_ready);
+//   port->a.valid = &(dut_ptr->master_port_2_0_a_valid);
+//   port->a.opcode = &(dut_ptr->master_port_2_0_a_bits_opcode);
+//   port->a.param = &(dut_ptr->master_port_2_0_a_bits_param);
+//   port->a.address = &(dut_ptr->master_port_2_0_a_bits_address);
+//   port->a.size = &(dut_ptr->master_port_2_0_a_bits_size);
+//   port->a.source = &(dut_ptr->master_port_2_0_a_bits_source);
+//   port->a.mask = &(dut_ptr->master_port_2_0_a_bits_mask);
+//   port->a.data = (uint8_t *)&(dut_ptr->master_port_2_0_a_bits_data);
 
-  port->d.ready = &(dut_ptr->master_port_2_0_d_ready);
-  port->d.valid = &(dut_ptr->master_port_2_0_d_valid);
-  port->d.opcode = &(dut_ptr->master_port_2_0_d_bits_opcode);
-  port->d.param = &(dut_ptr->master_port_2_0_d_bits_param);
-  port->d.size = &(dut_ptr->master_port_2_0_d_bits_size);
-  port->d.sink = &(dut_ptr->master_port_2_0_d_bits_sink);
-  port->d.source = &(dut_ptr->master_port_2_0_d_bits_source);
-  port->d.data = (uint8_t *)&(dut_ptr->master_port_2_0_d_bits_data);
+//   port->d.ready = &(dut_ptr->master_port_2_0_d_ready);
+//   port->d.valid = &(dut_ptr->master_port_2_0_d_valid);
+//   port->d.opcode = &(dut_ptr->master_port_2_0_d_bits_opcode);
+//   port->d.param = &(dut_ptr->master_port_2_0_d_bits_param);
+//   port->d.size = &(dut_ptr->master_port_2_0_d_bits_size);
+//   port->d.sink = &(dut_ptr->master_port_2_0_d_bits_sink);
+//   port->d.source = &(dut_ptr->master_port_2_0_d_bits_source);
+//   port->d.data = (uint8_t *)&(dut_ptr->master_port_2_0_d_bits_data);
 
-  return port;
-}
+//   return port;
+// }

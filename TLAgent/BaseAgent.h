@@ -5,7 +5,6 @@
 #ifndef TLC_TEST_BASEAGENT_H
 #define TLC_TEST_BASEAGENT_H
 
-#include "../Interface/Interface.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
 #include "Port.h"
@@ -47,7 +46,7 @@ template <typename T> class PendingTrans {
 public:
   int beat_cnt;
   int nr_beat;
-  T *info = nullptr;
+  std::shared_ptr<T> info;
 
   PendingTrans() {
     nr_beat = 0;
@@ -59,8 +58,7 @@ public:
   bool is_pending() { return (beat_cnt != 0); }
   void init(std::shared_ptr<T> info, int nr_beat) {
     if (this->info != nullptr) {
-      dynamic_cast<Decoupled *>(this->info)->free();
-      delete (this->info);
+      this->info->free();
     }
     this->info = info;
     this->nr_beat = nr_beat;
@@ -122,9 +120,9 @@ protected:
   int id;
 
 public:
-  virtual Resp send_a(ChnA<ReqField, EchoField, DATASIZE> *a) = 0;
-  virtual void handle_b(ChnB *b) = 0;
-  virtual Resp send_c(ChnC<ReqField, EchoField, DATASIZE> *c) = 0;
+  virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) = 0;
+  virtual void handle_b(std::shared_ptr<ChnB>b) = 0;
+  virtual Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) = 0;
   virtual void fire_a() = 0;
   virtual void fire_b() = 0;
   virtual void fire_c() = 0;

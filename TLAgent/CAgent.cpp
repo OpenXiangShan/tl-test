@@ -50,7 +50,7 @@ CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles,
   this->tlc_info.connect(this->port);
 }
 
-Resp CAgent::send_a(ChnA<ReqField, EchoField, DATASIZE> *a) {
+Resp CAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
   switch (*a->opcode) {
   case AcquireBlock: {
     std::shared_ptr<C_IDEntry> idmap_entry(
@@ -109,7 +109,7 @@ Resp CAgent::send_a(ChnA<ReqField, EchoField, DATASIZE> *a) {
   return OK;
 }
 
-void CAgent::handle_b(ChnB *b) {
+void CAgent::handle_b(std::shared_ptr<ChnB>b) {
   if (pendingC.is_pending()) {
     Log("[info] B wanna pendingC\n");
     return;
@@ -143,7 +143,7 @@ void CAgent::handle_b(ChnB *b) {
     req_c->opcode = new uint8_t(ProbeAck);
     req_c->param = new uint8_t(NtoN);
     pendingC.init(req_c, 1);
-    Log("[%ld] [ProbeAck NtoN] addr: %x\n", *cycles, *b->address);
+    Log("[%ld] [ProbeAck NtoN] addr: %lx\n", *cycles, *b->address);
   } else {
     int dirty =
         (exact_privilege == TIP) && (info->dirty[*b->alias] || rand() % 3);
@@ -199,15 +199,15 @@ void CAgent::handle_b(ChnB *b) {
     }
 
     if (*req_c->param == TtoN) {
-      Log("[%ld] [ProbeAck TtoN] addr: %x data: ", *cycles, *b->address);
+      Log("[%ld] [ProbeAck TtoN] addr: %lx data: ", *cycles, *b->address);
     } else if (*req_c->param == TtoB) {
-      Log("[%ld] [ProbeAck TtoB] addr: %x data: ", *cycles, *b->address);
+      Log("[%ld] [ProbeAck TtoB] addr: %lx data: ", *cycles, *b->address);
     } else if (*req_c->param == NtoN) {
-      Log("[%ld] [ProbeAck NtoN] addr: %x data: ", *cycles, *b->address);
+      Log("[%ld] [ProbeAck NtoN] addr: %lx data: ", *cycles, *b->address);
     } else if (*req_c->param == BtoN) {
-      Log("[%ld] [ProbeAck BtoN] addr: %x data: ", *cycles, *b->address);
+      Log("[%ld] [ProbeAck BtoN] addr: %lx data: ", *cycles, *b->address);
     } else if (*req_c->param == BtoB) {
-      Log("[%ld] [ProbeAck BtoB] addr: %x data: ", *cycles, *b->address);
+      Log("[%ld] [ProbeAck BtoB] addr: %lx data: ", *cycles, *b->address);
     } else {
       tlc_assert(false, "What the hell is req_c's param?");
     }
@@ -223,7 +223,7 @@ void CAgent::handle_b(ChnB *b) {
   pendingB.update();
 }
 
-Resp CAgent::send_c(ChnC<ReqField, EchoField, DATASIZE> *c) {
+Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) {
   switch (*c->opcode) {
   case ReleaseData: {
     std::shared_ptr<C_IDEntry> idmap_entry(
@@ -292,7 +292,7 @@ Resp CAgent::send_c(ChnC<ReqField, EchoField, DATASIZE> *c) {
   return OK;
 }
 
-Resp CAgent::send_e(ChnE *e) {
+Resp CAgent::send_e(std::shared_ptr<ChnE>e) {
   *this->port->e.sink = *e->sink;
   *this->port->e.valid = true;
   return OK;
@@ -301,7 +301,7 @@ Resp CAgent::send_e(ChnE *e) {
 void CAgent::fire_a() {
   if (this->port->a.fire()) {
     auto chnA = this->port->a;
-    // Log("[%ld] [A fire] addr: %hx\n", *cycles, *chnA.address);
+    // Log("[%ld] [A fire] addr: %lx\n", *cycles, *chnA.address);
     *chnA.valid = false;
     tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
     pendingA.update();
@@ -315,7 +315,7 @@ void CAgent::fire_a() {
 void CAgent::fire_b() {
   if (this->port->b.fire()) {
     auto chnB = this->port->b;
-    // Log("[%ld] [B fire] addr: %hx\n", *cycles, *chnB.address);
+    // Log("[%ld] [B fire] addr: %lx\n", *cycles, *chnB.address);
     std::shared_ptr<ChnB>req_b(new ChnB());
     req_b->opcode = new uint8_t(*chnB.opcode);
     req_b->address = new paddr_t(*chnB.address);
@@ -325,7 +325,7 @@ void CAgent::fire_b() {
     req_b->alias = new uint8_t((*chnB.alias) >> 1);
     req_b->needdata = new uint8_t((*chnB.alias) & 0x1);
     pendingB.init(req_b, 1);
-    Log("[%ld] [Probe] addr: %hx alias: %d\n", *cycles, *chnB.address,
+    Log("[%ld] [Probe] addr: %lx alias: %d\n", *cycles, *chnB.address,
         (*chnB.alias) >> 1);
   }
 }
@@ -341,7 +341,7 @@ void CAgent::fire_c() {
     pendingC.update();
     if (!pendingC.is_pending()) { // req C finished
       *chnC.valid = false;
-      // Log("[%ld] [C fire] addr: %hx opcode: %hx\n", *cycles, *chnC.address,
+      // Log("[%ld] [C fire] addr: %lx opcode: %lx\n", *cycles, *chnC.address,
       // *chnC.opcode);
       auto info = this->localBoard->query(*pendingC.info->address);
       auto exact_status = info->status[*pendingC.info->alias];
@@ -423,7 +423,7 @@ void CAgent::fire_d() {
           exact_status == S_C_WAITING_D_INTR ||
           exact_status == S_A_WAITING_D_INTR || exact_status == S_INVALID)) {
       printf("fire_d: status of localboard is %d\n", exact_status);
-      printf("addr: 0x%hx\n", addr);
+      printf("addr: 0x%lx\n", addr);
       tlc_assert(false, "Status error!");
     }
     if (pendingD.is_pending()) { // following beats
@@ -454,7 +454,7 @@ void CAgent::fire_d() {
     if (!pendingD.is_pending()) {
       switch (*chnD.opcode) {
       case GrantData: {
-        Log("[%ld] [GrantData] addr: %hx data: ", *cycles, addr);
+        Log("[%ld] [GrantData] addr: %lx data: ", *cycles, addr);
         for (int i = 0; i < DATASIZE; i++) {
           Dump("%02hhx", pendingD.info->data[i]);
         }
@@ -464,12 +464,12 @@ void CAgent::fire_d() {
         break;
       }
       case Grant: {
-        Log("[%ld] [Grant] addr: %hx\n", *cycles, addr);
+        Log("[%ld] [Grant] addr: %lx\n", *cycles, addr);
         info->update_dirty(*chnD.dirty, alias);
         break;
       }
       case ReleaseAck: {
-        Log("[%ld] [ReleaseAck] addr: %hx\n", *cycles, addr);
+        Log("[%ld] [ReleaseAck] addr: %lx\n", *cycles, addr);
         if (exact_status == S_C_WAITING_D) {
           info->update_status(S_INVALID, *cycles, alias);
           info->update_dirty(0, alias);
@@ -585,11 +585,11 @@ bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
   pendingA.init(req_a, 1);
   switch (param) {
   case NtoB:
-    Log("[%ld] [AcquireData NtoB] addr: %x alias: %d\n", *cycles, address,
+    Log("[%ld] [AcquireData NtoB] addr: %lx alias: %d\n", *cycles, address,
         alias);
     break;
   case NtoT:
-    Log("[%ld] [AcquireData NtoT] addr: %x alias: %d\n", *cycles, address,
+    Log("[%ld] [AcquireData NtoT] addr: %lx alias: %d\n", *cycles, address,
         alias);
     break;
   }
@@ -627,7 +627,7 @@ bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
   req_a->alias = new uint8_t(alias);
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
-  Log("[%ld] [AcquirePerm] addr: %x alias: %d\n", *cycles, address, alias);
+  Log("[%ld] [AcquirePerm] addr: %lx alias: %d\n", *cycles, address, alias);
   return true;
 }
 
@@ -662,7 +662,7 @@ bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
   req_c->data = data;
   req_c->alias = new uint8_t(alias);
   pendingC.init(req_c, DATASIZE / BEATSIZE);
-  Log("[%ld] [ReleaseData] addr: %x data: ", *cycles, address);
+  Log("[%ld] [ReleaseData] addr: %lx data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[i]);
   }
@@ -720,10 +720,10 @@ bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
   pendingC.init(req_c, DATASIZE / BEATSIZE);
   switch (param) {
   case BtoN:
-    Log("[%ld] [ReleaseData BtoN] addr: %x data: ", *cycles, address);
+    Log("[%ld] [ReleaseData BtoN] addr: %lx data: ", *cycles, address);
     break;
   case TtoN:
-    Log("[%ld] [ReleaseData TtoN] addr: %x data: ", *cycles, address);
+    Log("[%ld] [ReleaseData TtoN] addr: %lx data: ", *cycles, address);
     break;
   }
 
@@ -747,7 +747,7 @@ void CAgent::timeout_check() {
           printf("Now time:   %lu\n", *this->cycles);
           printf("Last stamp: %lu\n", value->time_stamp);
           printf("Status[0]:  %d\n", value->status[0]);
-          printf("Address:    %d\n", it->first);
+          printf("Address:    %lu\n", it->first);
           tlc_assert(false, "Transaction time out");
         }
       }

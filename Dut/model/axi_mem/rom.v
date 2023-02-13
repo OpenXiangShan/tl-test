@@ -13,7 +13,7 @@ output[DATA_WD-1:0]r_data;
 reg[DATA_WD-1:0]mem[0:2047];
 wire[DATA_WD-1:0]out;
 reg[DATA_WD-1:0]r_data;
-assign out=rd_en?mem[addr]:{(DATA_WD){1'bx}};
+assign out=rd_en?mem[addr[10:0]]:{(DATA_WD){1'bx}};
 always@(posedge clk)
   r_data<=out;
 initial begin

@@ -1,5 +1,5 @@
-#ifndef INCLUDED_INTERFACE_H
-#define INCLUDED_INTERFACE_H
+#ifndef TLC_TEST_INTERFACE_H
+#define TLC_TEST_INTERFACE_H
 #include "svdpi.h"
 #include "../Utils/Common.h"
 #include "../TLAgent/Port.h"
@@ -67,11 +67,14 @@ namespace tl_interface{
     void connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port);
   };
 
-  static std::shared_ptr<TLCInfo> tlc_info_array[NR_CAGENTS + NR_ULAGENTS];
+  static std::shared_ptr<TLCInfo> tlc_info_array[NR_CAGENTS];
   static int32_t tlc_info_array_counter = 0;
   static std::shared_ptr<TLCInfo> find_tlc_info(uint64_t cid, uint8_t ct);
 }
 
+#ifdef __cplusplus
+extern "C" {
+#endif
 void tlc_agent_eval (
   const svBitVecVal*    core_id,
   svBit                 cache_type,
@@ -124,5 +127,8 @@ void tlc_agent_eval (
   svBit*                e_valid,
   svBit                 e_ready
   );
-
+#ifdef __cplusplus
+}
 #endif
+
+#endif //TLC_TEST_INTERFACE_H

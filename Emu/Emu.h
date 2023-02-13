@@ -5,7 +5,7 @@
 #ifndef TLC_TEST_EMU_H
 #define TLC_TEST_EMU_H
 
-#include "VTestTop.h"
+#include "Vtb_top.h"
 #include "verilated.h"
 #include <getopt.h>
 #if VM_TRACE == 1
@@ -24,11 +24,11 @@ private:
   typedef tl_agent::CAgent CAgent_t;
 
   const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
-  VTestTop *dut_ptr;
+  Vtb_top *dut_ptr;
   VerilatedVcdC *tfp;
   GlobalBoard<paddr_t> *globalBoard;
-  BaseAgent_t **const agents = new BaseAgent_t *[NR_AGENTS];
-  Fuzzer **const fuzzers = new Fuzzer *[NR_AGENTS];
+  std::shared_ptr<BaseAgent_t>agents[NR_AGENTS];
+  std::shared_ptr<Fuzzer>fuzzers[NR_AGENTS];
   uint64_t seed = 0, wave_begin = 0, wave_end = 0;
   bool enable_wave = true;
   bool wave_full = false;

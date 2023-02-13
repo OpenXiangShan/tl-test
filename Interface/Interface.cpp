@@ -21,7 +21,6 @@ namespace tl_interface{
     b_param = 0;
     b_address = 0;
     memset(b_data, 0, BEATSIZE);
-    b_data[BEATSIZE] = 0;
     b_valid = 0;
     b_ready = 0;
 
@@ -132,7 +131,9 @@ namespace tl_interface{
   }
 
 }
-
+#ifdef __cplusplus
+extern "C" {
+#endif
 void tlc_agent_eval (
   const svBitVecVal*    core_id,
   svBit                 cache_type,
@@ -240,3 +241,6 @@ void tlc_agent_eval (
   *e_valid                    = info->e_valid;
   info->e_ready               = e_ready;
 }
+#ifdef __cplusplus
+}
+#endif

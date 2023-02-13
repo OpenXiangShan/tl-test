@@ -23,7 +23,7 @@ uint8_t *genPutPartialData(uint8_t *putdata) {
   return putdata;
 }
 
-void ULFuzzer::randomTest(tl_agent::BaseAgent **agent) {
+void ULFuzzer::randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent) {
   // if (rand() % 10) return;
   // address generation
   bool sent = false;
@@ -101,7 +101,7 @@ void ULFuzzer::caseTest2() {
   }
 }
 
-void ULFuzzer::tick(tl_agent::BaseAgent **agent) {
+void ULFuzzer::tick(std::shared_ptr<tl_agent::BaseAgent> *agent) {
   this->randomTest(agent);
   //    this->caseTest();
 }

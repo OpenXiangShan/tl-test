@@ -1,0 +1,1 @@
+add_library(Interface Interface.h Interface.cpp svdpi.h)
