@@ -63,6 +63,20 @@ public:
   uint8_t *corrupt;
   uint8_t *alias;
 
+  ChnA(){
+    opcode = nullptr;
+    param = nullptr;
+    size = nullptr;
+    source = nullptr;
+    mask = nullptr;
+    address = nullptr;
+    data = nullptr;
+    usr = nullptr;
+    echo = nullptr;
+    corrupt = nullptr;
+    alias = nullptr;
+  }
+
   void free() {
     delete (this->opcode);
     delete (this->param);
@@ -84,6 +98,17 @@ public:
   uint8_t *corrupt;
   uint8_t *alias;
   uint8_t *needdata;
+
+  ChnB(){
+    opcode = nullptr;
+    param = nullptr;
+    size = nullptr;
+    source = nullptr;
+    address = nullptr;
+    corrupt = nullptr;
+    alias = nullptr;
+    needdata = nullptr;
+  }
 
   void free() {
     delete (this->opcode);
@@ -109,6 +134,20 @@ public:
   uint8_t *corrupt;
   uint8_t *alias;
 
+  ChnC(){
+    opcode = nullptr;
+    param = nullptr;
+    size = nullptr;
+    source = nullptr;
+    address = nullptr;
+    usr = nullptr;
+    echo = nullptr;
+    dirty = nullptr;
+    data = nullptr;
+    corrupt = nullptr;
+    alias = nullptr;
+  }
+
   void free() {
     delete (this->opcode);
     delete (this->param);
@@ -133,6 +172,20 @@ public:
   uint8_t *data;
   uint8_t *corrupt;
 
+  ChnD(){
+    opcode = nullptr;
+    param = nullptr;
+    size = nullptr;
+    source = nullptr;
+    sink = nullptr;
+    denied = nullptr;
+    usr = nullptr;
+    echo = nullptr;
+    dirty = nullptr;
+    data = nullptr;
+    corrupt = nullptr;    
+  }
+
   void free() {
     delete (this->opcode);
     delete (this->param);
@@ -147,6 +200,12 @@ public:
   uint8_t *sink;
   paddr_t *addr; // used for index scoreboard
   uint8_t *alias;
+
+  ChnE(){
+    sink = nullptr;
+    addr = nullptr; // used for index scoreboard
+    alias = nullptr;
+  }
 
   void free() {
     delete (this->sink);

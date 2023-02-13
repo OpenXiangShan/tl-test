@@ -1,25 +1,31 @@
 # Compile HuanCun
 
 ```
-> git clone https://github.com/OpenXiangShan/HuanCun.git
-> git checkout BRANCH_UNDER_TEST
+> git clone https://github.com/OpenXiangShan/XiangShan.git
+> git checkout nanhu-v2
+> cd XiangShan
 > make init
 
 Next we need to generate a DUT wrapper. We provide two pre-written wrappers, you can also build new DUT wrappers.
-Please see https://github.com/OpenXiangShan/HuanCun/blob/non-inclusive/src/test/scala/huancun/TestTop.scala for more information.
-> make test-top-l2       // For StandAlone L2 test
-> make test-top-l2l3     // For L2-L3 test
-> make test-top-fullsys  // For full cache hierarchy system test
+> make verilog
+> python3 scripts/parser.py --config DefaultConfig XSTop
 ```
 
 # Compile tl-test
 
 ```
 > git clone https://github.com/OpenXiangShan/tl-test.git
+> git checkout nanhu-v2-fullsys
+> cd tl-test
+> mkdir Dut/rtl
+> mkdir Dut/sram
+> cp ${PATH_TO_XIANGSHAN}/XSTop-*/XSTop/* Dut/rtl/
+> cp ${PATH_TO_XIANGSHAN}/XSTop-*/SRAM/* Dut/sram/
+> rm Dut/rtl/XSCore.v
 > mkdir build
 > cd build
 
-> cmake .. -DDUT_DIR=${PATH_TO_HUANCUN}/build
+> cmake ..
 For trace-dump, add -DTRACE=1
 For multi-thread, add -DTHREAD=${NR_THREADS}
 
@@ -35,7 +41,6 @@ For multi-thread, add -DTHREAD=${NR_THREADS}
 -c --cycle=N       Simulate for N cycles
 -b --wave-begin=N  Wave dump starts from cycle N
 -e --wave-end=N    Wave dump ends to cycle N
--f --wave-full     Dump wave in full cycles
 -v --verbose       Verbose mode
 Please check -DTRACE=1 is added to tl-test compiling cmake arguments before wave dump.
 

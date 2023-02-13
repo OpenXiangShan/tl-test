@@ -108,24 +108,8 @@ void Emu::execute(uint64_t nr_cycle) {
       agents[i]->update_signal();
     }
 
-    this->neg_edge();
-#if VM_TRACE == 1
-    if (this->enable_wave && Cycles >= this->wave_begin &&
-        Cycles <= this->wave_end) {
-      if (this->wave_full)
-        this->tfp->dump((vluint64_t)Cycles * 2 + 1);
-      else
-        this->tfp->dump((vluint64_t)Cycles);
-    }
-#endif
-    this->pos_edge();
+    this->step();
     this->update_cycles(1);
-#if VM_TRACE == 1
-    if (this->wave_full && this->enable_wave && Cycles >= this->wave_begin &&
-        Cycles <= this->wave_end) {
-      this->tfp->dump((vluint64_t)Cycles * 2);
-    }
-#endif
   }
 }
 

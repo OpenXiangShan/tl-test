@@ -42,14 +42,9 @@ public:
   inline void reset(uint64_t n);
   inline void neg_edge();
   inline void pos_edge();
+  inline void step();
   inline void update_cycles(uint64_t inc);
   void execute(uint64_t nr_cycle);
-  tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField,
-                 BEATSIZE> *
-  naive_gen_port();
-  tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField,
-                 BEATSIZE> *
-  naive_gen_port2();
   tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField,
                  BEATSIZE> *
   naive_gen_port_dma();
@@ -63,17 +58,33 @@ inline void Emu::reset(uint64_t n) {
     dut_ptr->clock = 1;
     dut_ptr->eval();
   }
+  printf("reset is done!");
   dut_ptr->reset = 0;
 }
 
 inline void Emu::neg_edge() {
   dut_ptr->clock = 0;
   dut_ptr->eval();
+#if VM_TRACE == 1
+  if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {
+    this->tfp->dump((vluint64_t)Cycles * 2);
+  }
+#endif
 }
 
 inline void Emu::pos_edge() {
   dut_ptr->clock = 1;
   dut_ptr->eval();
+#if VM_TRACE == 1
+  if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {
+    this->tfp->dump((vluint64_t)Cycles * 2 + 1);
+  }
+#endif
+}
+
+inline void Emu::step(){
+  neg_edge();
+  pos_edge();
 }
 
 inline void Emu::update_cycles(uint64_t inc) {

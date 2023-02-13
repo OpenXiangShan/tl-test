@@ -16,7 +16,7 @@ ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t *cycles)
 
 inline paddr_t align_addr(paddr_t addr) { return addr & 0xFFFFFFC0; }
 
-Resp ULAgent::send_a(ChnA<ReqField, EchoField, DATASIZE> *a) {
+Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
   switch (*a->opcode) {
   case Get: {
     std::shared_ptr<UL_SBEntry> entry(
@@ -56,7 +56,7 @@ Resp ULAgent::send_a(ChnA<ReqField, EchoField, DATASIZE> *a) {
   return OK;
 }
 
-Resp ULAgent::send_c(ChnC<ReqField, EchoField, DATASIZE> *c) { return OK; }
+Resp ULAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) { return OK; }
 
 /* Deprecated function */
 uint8_t *
@@ -138,8 +138,7 @@ void ULAgent::fire_d() {
                  "Source mismatch among beats!");
       pendingD.update();
     } else { // new D resp
-      ChnD<RespField, EchoField, DATASIZE> *resp_d =
-          new ChnD<RespField, EchoField, DATASIZE>();
+      std::shared_ptr<ChnD<RespField, EchoField, DATASIZE> >resp_d(new ChnD<RespField, EchoField, DATASIZE>());
       resp_d->opcode = new uint8_t(*chnD.opcode);
       resp_d->param = new uint8_t(*chnD.param);
       resp_d->source = new uint8_t(*chnD.source);
@@ -160,7 +159,7 @@ void ULAgent::fire_d() {
     if (!pendingD.is_pending()) {
       // ULAgent needn't care about endurance
       if (hasData) {
-        Log("[%ld] [AccessAckData] addr: %hx data: ", *cycles, info->address);
+        Log("[%ld] [AccessAckData] addr: %lx data: ", *cycles, info->address);
         for (int i = 0; i < DATASIZE; i++) {
           Dump("%02hhx", pendingD.info->data[i]);
         }
@@ -168,7 +167,7 @@ void ULAgent::fire_d() {
         this->globalBoard->verify(info->address, pendingD.info->data);
       } else if (*chnD.opcode ==
                  AccessAck) { // finish pending status in GlobalBoard
-        Log("[%ld] [AccessAck] addr: %hx\n", *cycles, info->address);
+        Log("[%ld] [AccessAck] addr: %lx\n", *cycles, info->address);
         this->globalBoard->unpending(info->address);
       }
       localBoard->erase(*chnD.source);
@@ -179,7 +178,7 @@ void ULAgent::fire_d() {
 
 void ULAgent::fire_e() {}
 
-void ULAgent::handle_b(ChnB *b) {}
+void ULAgent::handle_b(std::shared_ptr<ChnB>b) {}
 
 void ULAgent::handle_channel() {
   fire_a();
@@ -204,30 +203,28 @@ void ULAgent::update_signal() {
 bool ULAgent::do_getAuto(paddr_t address) {
   if (pendingA.is_pending() || idpool.full())
     return false;
-  ChnA<ReqField, EchoField, DATASIZE> *req_a =
-      new ChnA<ReqField, EchoField, DATASIZE>();
+  std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
   req_a->opcode = new uint8_t(Get);
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
   req_a->source = new uint8_t(this->idpool.getid());
   pendingA.init(req_a, 1);
-  Log("[%ld] [Get] addr: %x\n", *cycles, address);
+  Log("[%ld] [Get] addr: %lx\n", *cycles, address);
   return true;
 }
 
 bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
   if (pendingA.is_pending() || idpool.full())
     return false;
-  ChnA<ReqField, EchoField, DATASIZE> *req_a =
-      new ChnA<ReqField, EchoField, DATASIZE>();
+  std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
   req_a->opcode = new uint8_t(Get);
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(size);
   req_a->mask = new uint32_t(mask);
   req_a->source = new uint8_t(this->idpool.getid());
   pendingA.init(req_a, 1);
-  Log("[%ld] [Get] addr: %x size: %x\n", *cycles, address, size);
+  Log("[%ld] [Get] addr: %lx size: %x\n", *cycles, address, size);
   return true;
 }
 
@@ -238,8 +235,7 @@ bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
       this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
     return false;
   }
-  ChnA<ReqField, EchoField, DATASIZE> *req_a =
-      new ChnA<ReqField, EchoField, DATASIZE>();
+  std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
   req_a->opcode = new uint8_t(PutFullData);
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
@@ -247,7 +243,7 @@ bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
   req_a->source = new uint8_t(this->idpool.getid());
   req_a->data = data;
   pendingA.init(req_a, DATASIZE / BEATSIZE);
-  Log("[%ld] [PutFullData] addr: %x data: ", *cycles, address);
+  Log("[%ld] [PutFullData] addr: %lx data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[i]);
   }
@@ -262,8 +258,7 @@ bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
   if (this->globalBoard->haskey(address) &&
       this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
     return false;
-  ChnA<ReqField, EchoField, DATASIZE> *req_a =
-      new ChnA<ReqField, EchoField, DATASIZE>();
+  std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
   req_a->opcode =
       (rand() % 3) ? new uint8_t(PutPartialData) : new uint8_t(PutFullData);
   req_a->address = new paddr_t(address);
@@ -273,7 +268,7 @@ bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
   req_a->data = data;
   int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
   pendingA.init(req_a, nrBeat);
-  Log("[%ld] [PutPartialData] addr: %x data: ", *cycles, address);
+  Log("[%ld] [PutPartialData] addr: %lx data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[i]);
   }
@@ -293,7 +288,7 @@ void ULAgent::timeout_check() {
         printf("Now time:   %lu\n", *this->cycles);
         printf("Last stamp: %lu\n", value->time_stamp);
         printf("Status:     %d\n", value->status);
-        printf("Address:    %d\n", value->address);
+        printf("Address:    %lx\n", value->address);
         tlc_assert(false, "Transaction time out");
       }
     }

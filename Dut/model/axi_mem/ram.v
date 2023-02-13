@@ -27,7 +27,7 @@ reg [ADDR_MSB-1:0] mem_idx;
 integer file;
 
 initial begin
-  file = $fopen(preloadfile);
+  file = $fopen(preloadfile, "r");
   if(file != 0)begin
     $readmemh(preloadfile,file_mem);
     for(idx = 0;idx<MAX_ADDR;idx=idx+1)
