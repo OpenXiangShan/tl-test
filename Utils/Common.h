@@ -5,51 +5,55 @@
 #ifndef TLC_TEST_COMMON_H
 #define TLC_TEST_COMMON_H
 
-#include <memory>
-#include <cmath>
-#include <string>
 #include <assert.h>
+#include <cmath>
+#include <memory>
+#include <string>
 
 extern uint64_t Cycles;
 extern bool Verbose;
 
 enum {
-    DATASIZE = 64, // Cache line is 64B
-    BEATSIZE = 32,
-    NR_ULAGENTS = 1,
-    NR_CAGENTS = 2,
-    NR_SOURCEID = 16,
-    TIMEOUT_INTERVAL = 5000
+  DATASIZE = 64, // Cache line is 64B
+  BEATSIZE = 32,
+  NR_ULAGENTS = 0,
+  NR_CAGENTS = 4,
+  NR_SOURCEID = 16,
+  TIMEOUT_INTERVAL = 5000
+};
+enum {
+  DCACHE_TYPE = 0, 
+  ICACHE_TYPE = 1
 };
 
 const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;
-typedef uint32_t paddr_t;
+typedef uint64_t paddr_t;
 
-#define tlc_assert(cond, info) \
-    do { \
-        if (!(cond)) { \
-            printf("\33[1;34m%s\n", info); \
-            printf("Cycles: %ld\33[0m\n", Cycles); \
-            fflush(stdout); \
-            fflush(stderr); \
-            assert(cond); \
-        } \
-    } while (0)
+#define tlc_assert(cond, info)                                                 \
+  do {                                                                         \
+    if (!(cond)) {                                                             \
+      printf("\33[1;34m%s\n", info);                                           \
+      printf("Cycles: %ld\33[0m\n", Cycles);                                   \
+      fflush(stdout);                                                          \
+      fflush(stderr);                                                          \
+      assert(cond);                                                            \
+    }                                                                          \
+  } while (0)
 
-#define Log(...) \
-    do { \
-        if (Verbose) { \
-            printf("#%d ", this->id); \
-            printf(__VA_ARGS__); \
-        } \
-    } while(0)
+#define Log(...)                                                               \
+  do {                                                                         \
+    if (Verbose) {                                                             \
+      printf("#%d ", this->id);                                                \
+      printf(__VA_ARGS__);                                                     \
+    }                                                                          \
+  } while (0)
 
-#define Dump(...) \
-    do { \
-        if (Verbose) { \
-            printf(__VA_ARGS__); \
-        } \
-    } while(0)
+#define Dump(...)                                                              \
+  do {                                                                         \
+    if (Verbose) {                                                             \
+      printf(__VA_ARGS__);                                                     \
+    }                                                                          \
+  } while (0)
 
 /*
 #define Log(...) \
@@ -59,4 +63,4 @@ typedef uint32_t paddr_t;
     do {} while(0)
 */
 
-#endif //TLC_TEST_COMMON_H
+#endif // TLC_TEST_COMMON_H
