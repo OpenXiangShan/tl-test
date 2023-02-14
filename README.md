@@ -28,6 +28,7 @@ Next we need to generate a DUT wrapper. We provide two pre-written wrappers, you
 > cmake ..
 For trace-dump, add -DTRACE=1
 For multi-thread, add -DTHREAD=${NR_THREADS}
+For enable Tilelink-C monitors, add -DTLCMON=1
 
 > make
 ```

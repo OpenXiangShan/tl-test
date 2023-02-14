@@ -97,6 +97,7 @@ public:
   bool do_acquirePerm(paddr_t address, int param, int alias);
   bool do_releaseData(paddr_t address, int param, uint8_t data[], int alias);
   bool do_releaseDataAuto(paddr_t address, int alias);
+  std::string type_to_string();
 };
 
 } // namespace tl_agent

@@ -58,7 +58,7 @@ inline void Emu::reset(uint64_t n) {
     dut_ptr->clock = 1;
     dut_ptr->eval();
   }
-  printf("reset is done!");
+  printf("reset is done!\n");
   dut_ptr->reset = 0;
 }
 
@@ -89,8 +89,8 @@ inline void Emu::step(){
 
 inline void Emu::update_cycles(uint64_t inc) {
   Cycles += inc;
-  if (Cycles % 1000000 == 0) {
-    printf("*\n");
+  if (Cycles % 100000 == 0) {
+    printf("%lu cycles have passed!\n", Cycles);
   }
 }
 

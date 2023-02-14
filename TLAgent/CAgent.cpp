@@ -49,6 +49,14 @@ CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles,
   this->port.reset(new Port<ReqField, RespField, EchoField, BEATSIZE>);
   this->tlc_info.connect(this->port);
 }
+std::string CAgent::type_to_string(){
+  using namespace std;
+  string mhartid = "core " + to_string(this->core_id);
+  string type;
+  if(this->cache_type == DCACHE_TYPE) type = " d$";
+  else type = " i$";
+  return mhartid + type;
+}
 
 Resp CAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
   switch (*a->opcode) {

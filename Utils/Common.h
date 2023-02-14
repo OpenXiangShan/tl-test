@@ -23,7 +23,9 @@ enum {
 };
 enum {
   DCACHE_TYPE = 0, 
-  ICACHE_TYPE = 1
+  ICACHE_TYPE = 1,
+  PTW_TYPE = 0,
+  DMA_TYPE = 1
 };
 
 const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;
@@ -43,7 +45,7 @@ typedef uint64_t paddr_t;
 #define Log(...)                                                               \
   do {                                                                         \
     if (Verbose) {                                                             \
-      printf("#%d ", this->id);                                                \
+      printf("%s: ",this->type_to_string().c_str());                               \
       printf(__VA_ARGS__);                                                     \
     }                                                                          \
   } while (0)

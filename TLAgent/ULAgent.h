@@ -50,6 +50,8 @@ private:
   void timeout_check();
 
 public:
+  uint64_t core_id;
+  uint8_t agt_type;
   ULAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles);
   ~ULAgent() = default;
   Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a);
@@ -69,6 +71,7 @@ public:
   bool do_putfulldata(paddr_t address, uint8_t data[]);
   bool do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
                          uint8_t data[]);
+  std::string type_to_string();
 };
 
 } // namespace tl_agent

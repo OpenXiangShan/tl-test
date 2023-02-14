@@ -120,6 +120,7 @@ protected:
   int id;
 
 public:
+  virtual std::string type_to_string() = 0;
   virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) = 0;
   virtual void handle_b(std::shared_ptr<ChnB>b) = 0;
   virtual Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) = 0;

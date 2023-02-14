@@ -448,5 +448,108 @@ module XSCore(
 //MISC end
   `undef ICACHE
   `undef DCACHE
+
+//Monitor
+`ifdef INTF_MONITOR
+  tlc_monitor tlc_dcache(
+    clock,
+    io_hartId,
+    dcache_type,
+
+    auto_memBlock_dcache_client_out_a_bits_opcode,
+    auto_memBlock_dcache_client_out_a_bits_param,
+    auto_memBlock_dcache_client_out_a_bits_size,
+    auto_memBlock_dcache_client_out_a_bits_source,
+    auto_memBlock_dcache_client_out_a_bits_address,
+    auto_memBlock_dcache_client_out_a_bits_mask,
+    auto_memBlock_dcache_client_out_a_bits_user_alias,
+    auto_memBlock_dcache_client_out_a_bits_user_preferCache,
+    auto_memBlock_dcache_client_out_a_bits_user_needHint,
+    auto_memBlock_dcache_client_out_a_valid,
+    auto_memBlock_dcache_client_out_a_ready,
+
+    auto_memBlock_dcache_client_out_b_bits_param,
+    auto_memBlock_dcache_client_out_b_bits_address,
+    auto_memBlock_dcache_client_out_b_bits_data,
+    auto_memBlock_dcache_client_out_b_valid,
+    auto_memBlock_dcache_client_out_b_ready,
+
+    auto_memBlock_dcache_client_out_c_bits_opcode,
+    auto_memBlock_dcache_client_out_c_bits_param,
+    auto_memBlock_dcache_client_out_c_bits_size,
+    auto_memBlock_dcache_client_out_c_bits_source,
+    auto_memBlock_dcache_client_out_c_bits_address,
+    auto_memBlock_dcache_client_out_c_bits_data,
+    auto_memBlock_dcache_client_out_c_bits_echo_blockisdirty,
+    auto_memBlock_dcache_client_out_c_valid,
+    auto_memBlock_dcache_client_out_c_ready,
+
+    auto_memBlock_dcache_client_out_d_bits_opcode,
+    auto_memBlock_dcache_client_out_d_bits_param,
+    auto_memBlock_dcache_client_out_d_bits_size,
+    auto_memBlock_dcache_client_out_d_bits_source,
+    auto_memBlock_dcache_client_out_d_bits_sink,
+    auto_memBlock_dcache_client_out_d_bits_denied,
+    auto_memBlock_dcache_client_out_d_bits_data,
+    auto_memBlock_dcache_client_out_d_bits_corrupt,
+    auto_memBlock_dcache_client_out_d_bits_echo_blockisdirty,
+    auto_memBlock_dcache_client_out_d_valid,
+    auto_memBlock_dcache_client_out_d_ready,
+
+    auto_memBlock_dcache_client_out_e_bits_sink,
+    auto_memBlock_dcache_client_out_e_valid,
+    auto_memBlock_dcache_client_out_e_ready
+  );
+
+  tlc_monitor tlc_icache(
+    clock,
+    io_hartId,
+    icache_type,
+
+    auto_frontend_icache_client_out_a_bits_opcode,
+    auto_frontend_icache_client_out_a_bits_param,
+    auto_frontend_icache_client_out_a_bits_size,
+    tmp_a_source,
+    auto_frontend_icache_client_out_a_bits_address,
+    auto_frontend_icache_client_out_a_bits_mask,
+    auto_frontend_icache_client_out_a_bits_user_alias,
+    auto_frontend_icache_client_out_a_bits_user_preferCache,
+    auto_frontend_icache_client_out_a_bits_user_needHint,
+    auto_frontend_icache_client_out_a_valid,
+    auto_frontend_icache_client_out_a_ready,
+
+    auto_frontend_icache_client_out_b_bits_param,
+    auto_frontend_icache_client_out_b_bits_address,
+    auto_frontend_icache_client_out_b_bits_data,
+    auto_frontend_icache_client_out_b_valid,
+    auto_frontend_icache_client_out_b_ready,
+
+    auto_frontend_icache_client_out_c_bits_opcode,
+    auto_frontend_icache_client_out_c_bits_param,
+    auto_frontend_icache_client_out_c_bits_size,
+    auto_frontend_icache_client_out_c_bits_source,
+    auto_frontend_icache_client_out_c_bits_address,
+    auto_frontend_icache_client_out_c_bits_data,
+    auto_frontend_icache_client_out_c_bits_echo_blockisdirty,
+    auto_frontend_icache_client_out_c_valid,
+    auto_frontend_icache_client_out_c_ready,
+
+    auto_frontend_icache_client_out_d_bits_opcode,
+    auto_frontend_icache_client_out_d_bits_param,
+    auto_frontend_icache_client_out_d_bits_size,
+    {3'b000, auto_frontend_icache_client_out_d_bits_source},
+    auto_frontend_icache_client_out_d_bits_sink,
+    auto_frontend_icache_client_out_d_bits_denied,
+    auto_frontend_icache_client_out_d_bits_data,
+    auto_frontend_icache_client_out_d_bits_corrupt,
+    auto_frontend_icache_client_out_d_bits_echo_blockisdirty,
+    auto_frontend_icache_client_out_d_valid,
+    auto_frontend_icache_client_out_d_ready,
+
+    auto_frontend_icache_client_out_e_bits_sink,
+    auto_frontend_icache_client_out_e_valid,
+    auto_frontend_icache_client_out_e_ready
+  );
+`endif
 endmodule
 

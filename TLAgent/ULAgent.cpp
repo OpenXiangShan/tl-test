@@ -14,6 +14,15 @@ ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t *cycles)
   localBoard = new ScoreBoard<int, UL_SBEntry>();
 }
 
+std::string ULAgent::type_to_string(){
+  using namespace std;
+  string mhartid = "core " + to_string(this->agt_type);
+  string res;
+  if(this->agt_type == PTW_TYPE) res = mhartid + "PTW";
+  else res = "DMA";
+  return res;
+}
+
 inline paddr_t align_addr(paddr_t addr) { return addr & 0xFFFFFFC0; }
 
 Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
