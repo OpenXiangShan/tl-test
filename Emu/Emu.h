@@ -99,7 +99,7 @@ inline char *Emu::cycle_wavefile(uint64_t cycles, time_t t) {
   char buf_time[64];
   strftime(buf_time, sizeof(buf_time), "%F@%T", localtime(&t));
   char *pwd = getcwd(NULL, 0);
-  assert(pwd != NULL);
+  tlc_assert(pwd != NULL, "Wavefile cannot be opened!");
   int len = snprintf(buf, 1024, "%s/%s_%lu", pwd, buf_time, cycles);
   strcpy(buf + len, ".vcd");
   printf("dump wave to %s...\n", buf);

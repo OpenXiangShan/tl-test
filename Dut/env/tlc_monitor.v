@@ -68,7 +68,7 @@ module tlc_monitor(
   task print_agt_info;
     input [63:0]  cid;
     input [0:0]   ct;
-    $write("INTF: core %3d ", cid);
+    $write("INTF: core %1d ", cid);
     if(ct == 1'b0) $write("d$: ");
     else $write("i$: ");
   endtask
@@ -175,10 +175,16 @@ module tlc_monitor(
     $write("sink:%d ", sink);
   endtask
 
+  task print_data;
+    input [255:0] data;
+    $write("data:%h ", data);
+  endtask
+
 
   always @ (posedge clock)begin
     if(a_valid && a_ready)begin
       print_agt_info(core_id, cache_type);
+      $write("[A]");
       print_op(3'd0, a_opcode);
       print_param(3'd0, a_opcode, a_param);
       print_target_addr(a_address);
@@ -188,6 +194,7 @@ module tlc_monitor(
     end
     if(b_valid && b_ready)begin
       print_agt_info(core_id, cache_type);
+      $write("[B]");
       print_op(3'd1, 3'd6);
       print_param(3'd1, 3'd6, {1'b0, b_param});
       print_target_addr(b_address);
@@ -195,22 +202,27 @@ module tlc_monitor(
     end
     if(c_valid && c_ready)begin
       print_agt_info(core_id, cache_type);
+      $write("[C]");
       print_op(3'd2, c_opcode);
       print_param(3'd2, c_opcode, c_param);
       print_target_addr(c_address);
       print_source(c_source);
+      print_data(c_data);
       $write("\n");
     end
     if(d_valid && d_ready)begin
       print_agt_info(core_id, cache_type);
+      $write("[D]");
       print_op(3'd3, d_opcode);
       print_param(3'd3, d_opcode, {1'b0, d_param});
       print_source(d_source);
       print_sink(d_sink);
+      print_data(d_data);
       $write("\n");
     end
     if(e_valid && e_ready)begin
       print_agt_info(core_id, cache_type);
+      $write("[E]");
       print_op(3'd4, 3'd0);
       print_param(3'd4, 3'd0, 3'd0);
       print_sink(e_sink);

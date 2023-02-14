@@ -170,7 +170,7 @@ void ULAgent::fire_d() {
       if (hasData) {
         Log("[%ld] [AccessAckData] addr: %lx data: ", *cycles, info->address);
         for (int i = 0; i < DATASIZE; i++) {
-          Dump("%02hhx", pendingD.info->data[i]);
+          Dump("%02hhx", pendingD.info->data[DATASIZE - 1 - i]);
         }
         Dump("\n");
         this->globalBoard->verify(info->address, pendingD.info->data);
@@ -254,7 +254,7 @@ bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
   pendingA.init(req_a, DATASIZE / BEATSIZE);
   Log("[%ld] [PutFullData] addr: %lx data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
-    Dump("%02hhx", data[i]);
+    Dump("%02hhx", data[DATASIZE - 1 - i]);
   }
   Dump("\n");
   return true;
@@ -279,7 +279,7 @@ bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
   pendingA.init(req_a, nrBeat);
   Log("[%ld] [PutPartialData] addr: %lx data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
-    Dump("%02hhx", data[i]);
+    Dump("%02hhx", data[DATASIZE - 1 - i]);
   }
   Dump("\n");
   return true;

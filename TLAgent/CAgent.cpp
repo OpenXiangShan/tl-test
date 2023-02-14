@@ -221,7 +221,7 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
     }
     if (*req_c->opcode == ProbeAckData) {
       for (int i = 0; i < DATASIZE; i++) {
-        Dump("%02hhx", req_c->data[i]);
+        Dump("%02hhx", req_c->data[DATASIZE - 1 - i]);
       }
     } else {
       Dump("no data");
@@ -464,7 +464,7 @@ void CAgent::fire_d() {
       case GrantData: {
         Log("[%ld] [GrantData] addr: %lx data: ", *cycles, addr);
         for (int i = 0; i < DATASIZE; i++) {
-          Dump("%02hhx", pendingD.info->data[i]);
+          Dump("%02hhx", pendingD.info->data[DATASIZE - 1 - i]);
         }
         Dump("\n");
         this->globalBoard->verify(addr, pendingD.info->data);
@@ -672,7 +672,7 @@ bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
   pendingC.init(req_c, DATASIZE / BEATSIZE);
   Log("[%ld] [ReleaseData] addr: %lx data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
-    Dump("%02hhx", data[i]);
+    Dump("%02hhx", data[DATASIZE - 1 - i]);
   }
   Dump("\n");
   return true;
@@ -736,7 +736,7 @@ bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
   }
 
   for (int i = 0; i < DATASIZE; i++) {
-    Dump("%02hhx", req_c->data[i]);
+    Dump("%02hhx", req_c->data[DATASIZE - i - 1]);
   }
   Dump("\n");
   return true;

@@ -5,7 +5,6 @@
 #ifndef TLC_TEST_COMMON_H
 #define TLC_TEST_COMMON_H
 
-#include <assert.h>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -38,7 +37,7 @@ typedef uint64_t paddr_t;
       printf("Cycles: %ld\33[0m\n", Cycles);                                   \
       fflush(stdout);                                                          \
       fflush(stderr);                                                          \
-      assert(cond);                                                            \
+      throw(1);                                                            \
     }                                                                          \
   } while (0)
 

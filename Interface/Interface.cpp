@@ -117,7 +117,7 @@ namespace tl_interface{
   }
 
   std::shared_ptr<TLCInfo> find_tlc_info(uint64_t cid, uint8_t ct){
-    assert(tlc_info_array_counter != 0);
+    tlc_assert(tlc_info_array_counter != 0, "No TLC agent was created!");
     bool found = false;
     int32_t idx = tlc_info_array_counter;
     while(idx --> 0){
@@ -126,7 +126,7 @@ namespace tl_interface{
         break;
       }
     }
-    assert(found);
+    tlc_assert(found, "core ID or cache type not found!");
     return tlc_info_array[idx];
   }
 
