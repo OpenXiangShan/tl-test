@@ -54,7 +54,7 @@ public:
   uint8_t *opcode;
   uint8_t *param;
   uint8_t *size;
-  uint8_t *source;
+  uint32_t *source;
   uint32_t *mask;
   paddr_t *address;
   uint8_t *data;
@@ -93,7 +93,7 @@ public:
   uint8_t *opcode;
   uint8_t *param;
   uint8_t *size;
-  uint8_t *source;
+  uint32_t *source;
   paddr_t *address;
   uint8_t *corrupt;
   uint8_t *alias;
@@ -125,7 +125,7 @@ public:
   uint8_t *opcode;
   uint8_t *param;
   uint8_t *size;
-  uint8_t *source;
+  uint32_t *source;
   paddr_t *address;
   Usr *usr;
   Echo *echo;
@@ -163,7 +163,7 @@ public:
   uint8_t *opcode;
   uint8_t *param;
   uint8_t *size;
-  uint8_t *source;
+  uint32_t *source;
   uint8_t *sink;
   uint8_t *denied;
   Usr *usr;

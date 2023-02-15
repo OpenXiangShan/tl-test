@@ -38,8 +38,8 @@ int shrinkGenPriv(int param) {
 CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles,
                uint64_t cid, uint8_t ct):
   pendingA(), pendingB(), pendingC(), pendingD(), pendingE(),
-  probeIDpool(GET_ID_UPBOUND(ct), GET_ID_UPBOUND(ct) + 1),
-  BaseAgent(0, GET_ID_UPBOUND(ct)){
+  probeIDpool(GET_CA_ID_UPBOUND(ct), GET_CA_ID_UPBOUND(ct) + 1),
+  BaseAgent(0, GET_CA_ID_UPBOUND(ct)){
   using namespace tl_interface;
   this->core_id = cid;
   this->cache_type = ct;
@@ -145,7 +145,7 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
   std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >req_c(new ChnC<ReqField, EchoField, DATASIZE>());
   req_c->address = new paddr_t(*b->address);
   req_c->size = new uint8_t(*b->size);
-  req_c->source = new uint8_t(this->probeIDpool.getid());
+  req_c->source = new uint32_t(this->probeIDpool.getid());
   req_c->dirty = new uint8_t(1);
   req_c->alias = new uint8_t(*b->alias);
   // Log("== id == handleB %d\n", *req_c->source);
@@ -333,7 +333,7 @@ void CAgent::fire_b() {
     req_b->address = new paddr_t(*chnB.address);
     req_b->param = new uint8_t(*chnB.param);
     req_b->size = new uint8_t(*chnB.size);
-    req_b->source = new uint8_t(*chnB.source);
+    req_b->source = new uint32_t(*chnB.source);
     req_b->alias = new uint8_t((*chnB.alias) >> 1);
     req_b->needdata = new uint8_t((*chnB.alias) & 0x1);
     pendingB.init(req_b, 1);
@@ -450,7 +450,7 @@ void CAgent::fire_d() {
       std::shared_ptr<ChnD<RespField, EchoField, DATASIZE> >resp_d(new ChnD<RespField, EchoField, DATASIZE>());
       resp_d->opcode = new uint8_t(*chnD.opcode);
       resp_d->param = new uint8_t(*chnD.param);
-      resp_d->source = new uint8_t(*chnD.source);
+      resp_d->source = new uint32_t(*chnD.source);
       resp_d->data = grant ? new uint8_t[DATASIZE] : nullptr;
       int nr_beat = (*chnD.opcode == Grant || *chnD.opcode == ReleaseAck)
                         ? 0
@@ -466,7 +466,7 @@ void CAgent::fire_d() {
     if (!pendingD.is_pending()) {
       switch (*chnD.opcode) {
       case GrantData: {
-        Log("[%ld] [GrantData] addr: %lx data: ", *cycles, addr);
+        Log("[%ld] [GrantData] addr: %lx source: %d data: ", *cycles, addr, *(chnD.source));
         for (int i = 0; i < DATASIZE; i++) {
           Dump("%02hhx", pendingD.info->data[DATASIZE - 1 - i]);
         }
@@ -476,12 +476,12 @@ void CAgent::fire_d() {
         break;
       }
       case Grant: {
-        Log("[%ld] [Grant] addr: %lx\n", *cycles, addr);
+        Log("[%ld] [Grant] addr: %lx source: %d \n", *cycles, addr, *(chnD.source));
         info->update_dirty(*chnD.dirty, alias);
         break;
       }
       case ReleaseAck: {
-        Log("[%ld] [ReleaseAck] addr: %lx\n", *cycles, addr);
+        Log("[%ld] [ReleaseAck] addr: %lx source: %d \n", *cycles, addr, *(chnD.source));
         if (exact_status == S_C_WAITING_D) {
           info->update_status(S_INVALID, *cycles, alias);
           info->update_dirty(0, alias);
@@ -591,7 +591,7 @@ bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
   req_a->param = new uint8_t(param);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint8_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->idpool.getid());
   req_a->alias = new uint8_t(alias);
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
@@ -635,7 +635,7 @@ bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
   req_a->param = new uint8_t(param);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint8_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->idpool.getid());
   req_a->alias = new uint8_t(alias);
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
@@ -668,7 +668,7 @@ bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
   req_c->address = new paddr_t(address);
   req_c->param = new uint8_t(param);
   req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_c->source = new uint8_t(this->idpool.getid());
+  req_c->source = new uint32_t(this->idpool.getid());
   req_c->dirty = new uint8_t(1);
   // Log("== id == release %d\n", *req_c->source);
   req_c->data = data;
@@ -713,7 +713,7 @@ bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
   req_c->address = new paddr_t(address);
   req_c->param = new uint8_t(param);
   req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_c->source = new uint8_t(this->idpool.getid());
+  req_c->source = new uint32_t(this->idpool.getid());
   req_c->dirty = new uint8_t(1);
   req_c->alias = new uint8_t(alias);
   if (param == BtoN) {

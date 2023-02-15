@@ -21,6 +21,9 @@ namespace tl_interface{
     //Channel B
     b_param = 0;
     b_address = 0;
+    b_opcode = 0;
+    b_size = 0;
+    b_source = 0;
     memset(b_data, 0, BEATSIZE);
     b_valid = 0;
     b_ready = 0;
@@ -63,7 +66,7 @@ namespace tl_interface{
     port->a.param     = (uint8_t *)(&a_param);
     port->a.address   = &a_address;
     port->a.size      = (uint8_t *)(&a_size);
-    port->a.source    = (uint8_t *)(&a_source);
+    port->a.source    = &a_source;
     port->a.mask      = &a_mask;
     port->a.data      = nullptr;
     port->a.alias     = (uint8_t *)(&a_user_alias);
@@ -73,11 +76,11 @@ namespace tl_interface{
     //Channel B
     port->b.ready     = &b_ready;
     port->b.valid     = &b_valid;
-    port->b.opcode    = nullptr;
+    port->b.opcode    = (uint8_t *)&b_opcode;
     port->b.param     = (uint8_t *)(&b_param);
     port->b.address   = &b_address;
-    port->b.size      = nullptr;
-    port->b.source    = nullptr;
+    port->b.size      = &b_size;
+    port->b.source    = &b_source;
     port->b.alias     = &b_alias;
     port->b.needdata  = &b_needdata;
     port->b.corrupt   = nullptr;
@@ -88,7 +91,7 @@ namespace tl_interface{
     port->c.param     = (uint8_t *)(&c_param);
     port->c.address   = &c_address;
     port->c.size      = (uint8_t *)(&c_size);
-    port->c.source    = (uint8_t *)(&c_source);
+    port->c.source    = &c_source;
     port->c.data      = c_data;
     port->c.dirty     = &c_echo_blockisdirty;
     port->c.corrupt   = nullptr;
@@ -101,7 +104,7 @@ namespace tl_interface{
     port->d.opcode    = (uint8_t *)(&d_opcode);
     port->d.param     = (uint8_t *)(&d_param);
     port->d.size      = (uint8_t *)(&d_size);
-    port->d.source    = (uint8_t *)(&d_source);
+    port->d.source    = &d_source;
     port->d.sink      = (uint8_t *)(&d_sink);
     port->d.denied    = &d_denied;
     port->d.dirty     = &d_echo_blockisdirty;
@@ -135,6 +138,78 @@ namespace tl_interface{
     tlc_info_array[tlc_info_array_counter++] = p;
   }
 
+  std::shared_ptr<TLUInfo> tlu_info_array[NR_ULAGENTS];
+  int32_t tlu_info_array_counter = 0;
+
+  TLUInfo::TLUInfo(uint64_t cid, uint8_t at):
+    core_id(cid), agt_type(at){
+    a_ready = 0;
+    a_valid = 0;
+    a_opcode = 0;
+    a_param = 0;
+    a_size = 0;
+    a_source = 0;
+    a_address = 0;
+    a_user_preferCache = 1;
+    a_mask = 0;
+    memset(a_data, 0, BEATSIZE);
+    d_ready = 0;
+    d_valid = 0;
+    d_opcode = 0;
+    d_param = 0;
+    d_size = 0;
+    d_source = 0;
+    d_denied = 0;
+    memset(d_data, 0, BEATSIZE);
+    d_corrupt = 0;
+  }
+  
+  void TLUInfo::connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port){
+    port->a.ready     = &a_ready;
+    port->a.valid     = &a_valid;
+    port->a.opcode    = (uint8_t *)(&a_opcode);
+    port->a.param     = (uint8_t *)(&a_param);
+    port->a.address   = &a_address;
+    port->a.size      = (uint8_t *)(&a_size);
+    port->a.source    = &a_source;
+    port->a.mask      = &a_mask;
+    port->a.data      = a_data;
+    port->a.alias     = nullptr;
+    port->a.corrupt   = nullptr;
+    port->a.usr       = nullptr;
+    port->a.echo      = nullptr;
+
+    port->d.ready     = &d_ready;
+    port->d.valid     = &d_valid;
+    port->d.opcode    = (uint8_t *)(&d_opcode);
+    port->d.param     = (uint8_t *)(&d_param);
+    port->d.size      = (uint8_t *)(&d_size);
+    port->d.source    = &d_source;
+    port->d.sink      = nullptr;
+    port->d.denied    = &d_denied;
+    port->d.dirty     = nullptr;
+    port->d.data      = d_data;
+    port->d.corrupt   = &d_corrupt;
+    port->d.usr       = nullptr;
+    port->d.echo      = nullptr;
+  }
+  std::shared_ptr<TLUInfo> find_tlu_info(uint64_t cid, uint8_t at){
+    tlc_assert(tlu_info_array_counter != 0, "No TLU agent was created!");
+    bool found = false;
+    int32_t idx = tlu_info_array_counter;
+    while(idx --> 0){
+      if(tlu_info_array[idx]->core_id == cid && tlu_info_array[idx]->agt_type == at){
+        found = true;
+        break;
+      }
+    }
+    
+    tlc_assert(found, "core ID or agent type not found!");
+    return tlu_info_array[idx];
+  }
+  void register_tlu_info(std::shared_ptr<TLUInfo> p){
+    tlu_info_array[tlu_info_array_counter++] = p;
+  }
 }
 #ifdef __cplusplus
 extern "C" {
@@ -191,7 +266,7 @@ void tlc_agent_eval (
   svBit*                e_valid,
   svBit                 e_ready
   ){
-  uint64_t cid = *core_id;
+  uint64_t cid = *(const uint64_t*)core_id;
   uint8_t  ct  = cache_type;
   std::shared_ptr<tl_interface::TLCInfo> info = tl_interface::find_tlc_info(cid, ct);
 
@@ -246,6 +321,58 @@ void tlc_agent_eval (
   *e_valid                    = info->e_valid;
   info->e_ready               = e_ready;
 }
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void tlu_agent_eval(
+  const svBitVecVal*    core_id,
+  const svBitVecVal*    agt_type,         
+  svBit                 a_ready,
+  svBit*                a_valid,
+  svBitVecVal*          a_opcode,
+  svBitVecVal*          a_param,
+  svBitVecVal*          a_size,
+  svBitVecVal*          a_source,
+  svBitVecVal*          a_address,
+  svBit*                a_user_preferCache,
+  svBitVecVal*          a_mask,
+  svBitVecVal*          a_data,
+  svBit*                d_ready,
+  svBit                 d_valid,
+  const svBitVecVal*    d_opcode,
+  const svBitVecVal*    d_size,
+  const svBitVecVal*    d_source,
+  svBit                 d_denied,
+  const svBitVecVal*    d_data,
+  svBit                 d_corrupt
+  ){
+    uint64_t cid = *(const uint64_t*)core_id;
+    uint8_t  at  = *(const uint8_t*)agt_type;
+    std::shared_ptr<tl_interface::TLUInfo> info = tl_interface::find_tlu_info(cid, at);
+    info->a_ready         = a_ready;
+    *a_valid              = info->a_valid;
+    *a_opcode             = info->a_opcode;
+    *a_param              = info->a_param;
+    *a_size               = info->a_size;
+    *a_source             = info->a_source;
+    *(paddr_t*)a_address  = info->a_address;
+    *a_user_preferCache   = info->a_user_preferCache;
+    *a_mask               = info->a_mask;
+    memcpy(a_data, info->a_data, BEATSIZE);
+
+    *d_ready              = info->d_ready;
+    info->d_valid         = d_valid;
+    info->d_opcode        = *d_opcode;
+    info->d_size          = *d_size;
+    info->d_source        = *d_source;
+    info->d_denied        = d_denied;
+    info->d_corrupt       = d_corrupt;
+    memcpy(info->d_data, d_data, BEATSIZE);
+  }
 #ifdef __cplusplus
 }
 #endif

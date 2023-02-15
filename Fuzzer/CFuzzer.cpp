@@ -12,7 +12,7 @@ void CFuzzer::randomTest(bool do_alias, std::shared_ptr<tl_agent::BaseAgent> *ag
   paddr_t addr;
   bool flag;
   for (int i = 0; i < 10; i++) {
-    addr = (rand() % 0x8) * (rand() % 0x80) * 0x40; // Tag + Set + Offset
+    addr = (rand() % 0x8) * (rand() % 0x80) * 0x40 + DRAM_OFFSET; // Tag + Set + Offset
     flag = true;
     // probe all ul-agents
     for (int j = NR_CAGENTS; j < NR_CAGENTS + NR_ULAGENTS; j++) {

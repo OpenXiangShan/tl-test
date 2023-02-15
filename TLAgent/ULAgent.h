@@ -8,6 +8,7 @@
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
 #include "BaseAgent.h"
+#include "../Interface/Interface.h"
 
 namespace tl_agent {
 
@@ -52,7 +53,8 @@ private:
 public:
   uint64_t core_id;
   uint8_t agt_type;
-  ULAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles);
+  std::shared_ptr<tl_interface::TLUInfo> tlu_info;
+  ULAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles, uint64_t cid, uint8_t ct);
   ~ULAgent() = default;
   Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a);
   void handle_b(std::shared_ptr<ChnB>b);

@@ -21,7 +21,7 @@ Next we need to generate a DUT wrapper. We provide two pre-written wrappers, you
 > mkdir Dut/sram
 > cp ${PATH_TO_XIANGSHAN}/XSTop-*/XSTop/* Dut/rtl/
 > cp ${PATH_TO_XIANGSHAN}/XSTop-*/SRAM/* Dut/sram/
-> rm Dut/rtl/XSCore.v
+> rm Dut/rtl/XSCore.v Dut/rtl/AXI4ToTL.v
 > mkdir build
 > cd build
 

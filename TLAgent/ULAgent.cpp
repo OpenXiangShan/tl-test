@@ -6,19 +6,27 @@
 
 namespace tl_agent {
 
-ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t *cycles)
-    : BaseAgent(0, NR_SOURCEID), pendingA(), pendingD() {
+ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t *cycles,
+    uint64_t cid, uint8_t at):
+    BaseAgent(0, GET_UA_ID_UPBOUND(at)), pendingA(), pendingD() {
+  using namespace tl_interface;
+  this->core_id = cid;
+  this->agt_type = at;
   this->globalBoard = gb;
   this->id = id;
   this->cycles = cycles;
   localBoard = new ScoreBoard<int, UL_SBEntry>();
+  this->tlu_info.reset(new TLUInfo(cid,at));
+  register_tlu_info(this->tlu_info);
+  this->port.reset(new Port<ReqField, RespField, EchoField, BEATSIZE>);
+  this->tlu_info->connect(this->port);
 }
 
 std::string ULAgent::type_to_string(){
   using namespace std;
   string mhartid = "core " + to_string(this->agt_type);
   string res;
-  if(this->agt_type == PTW_TYPE) res = mhartid + "PTW";
+  if(this->agt_type == PTW_TYPE) res = mhartid + " PTW";
   else res = "DMA";
   return res;
 }
@@ -39,7 +47,7 @@ Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
     localBoard->update(*a->source, entry);
     int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
     for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
-      this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
+      this->port->a.data[i] = a->data[i];
     }
     break;
   }
@@ -49,7 +57,7 @@ Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
     localBoard->update(*a->source, entry);
     int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
     for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
-      this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
+      this->port->a.data[i] = a->data[i];
     }
     break;
   }
@@ -150,7 +158,7 @@ void ULAgent::fire_d() {
       std::shared_ptr<ChnD<RespField, EchoField, DATASIZE> >resp_d(new ChnD<RespField, EchoField, DATASIZE>());
       resp_d->opcode = new uint8_t(*chnD.opcode);
       resp_d->param = new uint8_t(*chnD.param);
-      resp_d->source = new uint8_t(*chnD.source);
+      resp_d->source = new uint32_t(*chnD.source);
       resp_d->data = hasData ? new uint8_t[DATASIZE] : nullptr;
       int nr_beat = (*chnD.opcode == Grant || *chnD.opcode == AccessAck ||
                      *chnD.size <= 5)
@@ -168,7 +176,7 @@ void ULAgent::fire_d() {
     if (!pendingD.is_pending()) {
       // ULAgent needn't care about endurance
       if (hasData) {
-        Log("[%ld] [AccessAckData] addr: %lx data: ", *cycles, info->address);
+        Log("[%ld] [AccessAckData] addr: %lx source: %d data: ", *cycles, info->address, *(chnD.source));
         for (int i = 0; i < DATASIZE; i++) {
           Dump("%02hhx", pendingD.info->data[DATASIZE - 1 - i]);
         }
@@ -176,7 +184,7 @@ void ULAgent::fire_d() {
         this->globalBoard->verify(info->address, pendingD.info->data);
       } else if (*chnD.opcode ==
                  AccessAck) { // finish pending status in GlobalBoard
-        Log("[%ld] [AccessAck] addr: %lx\n", *cycles, info->address);
+        Log("[%ld] [AccessAck] addr: %lx source: %d\n", *cycles, info->address, *(chnD.source));
         this->globalBoard->unpending(info->address);
       }
       localBoard->erase(*chnD.source);
@@ -217,9 +225,9 @@ bool ULAgent::do_getAuto(paddr_t address) {
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint8_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->idpool.getid());
   pendingA.init(req_a, 1);
-  Log("[%ld] [Get] addr: %lx\n", *cycles, address);
+  Log("[%ld] [Get] addr: %lx source: %d\n", *cycles, address, *(req_a->source));
   return true;
 }
 
@@ -231,7 +239,7 @@ bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(size);
   req_a->mask = new uint32_t(mask);
-  req_a->source = new uint8_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->idpool.getid());
   pendingA.init(req_a, 1);
   Log("[%ld] [Get] addr: %lx size: %x\n", *cycles, address, size);
   return true;
@@ -249,10 +257,10 @@ bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint8_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->idpool.getid());
   req_a->data = data;
   pendingA.init(req_a, DATASIZE / BEATSIZE);
-  Log("[%ld] [PutFullData] addr: %lx data: ", *cycles, address);
+  Log("[%ld] [PutFullData] addr: %lx source: %d data: ", *cycles, address, *(req_a->source));
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[DATASIZE - 1 - i]);
   }
@@ -273,11 +281,11 @@ bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(size);
   req_a->mask = new uint32_t(mask);
-  req_a->source = new uint8_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->idpool.getid());
   req_a->data = data;
   int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
   pendingA.init(req_a, nrBeat);
-  Log("[%ld] [PutPartialData] addr: %lx data: ", *cycles, address);
+  Log("[%ld] [PutPartialData] addr: %lx source:%d data: ", *cycles, address, *(req_a->source));
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[DATASIZE - 1 - i]);
   }

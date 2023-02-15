@@ -4,7 +4,7 @@
 
 #include "Fuzzer.h"
 
-ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) { this->ulAgent = ulAgent; }
+ULFuzzer::ULFuzzer(std::shared_ptr<tl_agent::ULAgent> ulAgent) { this->ulAgent = ulAgent; }
 
 uint8_t *genPutData(uint8_t *putdata) {
   for (int i = 0; i < DATASIZE; i++) {
@@ -31,7 +31,7 @@ void ULFuzzer::randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent) {
   bool flag;
   uint8_t *putdata = new uint8_t[DATASIZE];
   for (int i = 0; i < 10; i++) {
-    addr = (rand() % 0x8) * (rand() % 0x80) * 0x40; // Tag + Set + Offset
+    addr = (rand() % 0x8) * (rand() % 0x80) * 0x40 + DRAM_OFFSET; // Tag + Set + Offset
     flag = true;
     // probe all agents including itself
     for (int j = 0; j < NR_CAGENTS + NR_ULAGENTS; j++) {

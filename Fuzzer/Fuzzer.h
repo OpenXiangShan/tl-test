@@ -21,10 +21,10 @@ public:
 
 class ULFuzzer : public Fuzzer {
 private:
-  tl_agent::ULAgent *ulAgent;
+  std::shared_ptr<tl_agent::ULAgent> ulAgent;
 
 public:
-  ULFuzzer(tl_agent::ULAgent *ulAgent);
+  ULFuzzer(std::shared_ptr<tl_agent::ULAgent> ulAgent);
   void randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent);
   void caseTest();
   void caseTest2();

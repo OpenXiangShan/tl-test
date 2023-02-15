@@ -72,15 +72,15 @@ public:
 
 class IDPool {
 private:
-  std::set<int> *idle_ids;
-  std::set<int> *used_ids;
-  int pending_freeid;
+  std::set<uint32_t> *idle_ids;
+  std::set<uint32_t> *used_ids;
+  uint32_t pending_freeid;
 
 public:
-  IDPool(int start, int end) {
-    idle_ids = new std::set<int>();
-    used_ids = new std::set<int>();
-    for (int i = start; i < end; i++) {
+  IDPool(uint32_t start, uint32_t end) {
+    idle_ids = new std::set<uint32_t>();
+    used_ids = new std::set<uint32_t>();
+    for (uint32_t i = start; i < end; i++) {
       idle_ids->insert(i);
     }
     used_ids->clear();
@@ -90,15 +90,15 @@ public:
     delete idle_ids;
     delete used_ids;
   }
-  int getid() {
+  uint32_t getid() {
     if (idle_ids->size() == 0)
       return -1;
-    int ret = *idle_ids->begin();
+    uint32_t ret = *idle_ids->begin();
     used_ids->insert(ret);
     idle_ids->erase(ret);
     return ret;
   }
-  void freeid(int id) { this->pending_freeid = id; }
+  void freeid(uint32_t id) { this->pending_freeid = id; }
   void update() {
     if (pending_freeid != -1) {
       tlc_assert(used_ids->count(pending_freeid) > 0,

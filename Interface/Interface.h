@@ -12,12 +12,13 @@ namespace tl_interface{
     public:
     uint64_t    core_id;
     uint8_t     cache_type;
+
     //Channel A
     uint32_t    a_opcode;
     uint32_t    a_param;
     uint32_t    a_size;
     uint32_t    a_source;
-    uint64_t    a_address;
+    paddr_t     a_address;
     uint32_t    a_mask;
     uint32_t    a_user_alias;
     uint8_t     a_user_preferCache;
@@ -27,8 +28,11 @@ namespace tl_interface{
 
     //Channel B
     uint32_t    b_param;
-    uint64_t    b_address;
+    uint8_t     b_opcode;
+    uint8_t     b_size;
+    paddr_t     b_address;
     uint8_t     b_data[BEATSIZE];
+    uint32_t    b_source;
     uint8_t     b_alias;
     uint8_t     b_needdata;
     uint8_t     b_valid;
@@ -39,7 +43,7 @@ namespace tl_interface{
     uint32_t    c_param;
     uint32_t    c_size;
     uint32_t    c_source;
-    uint64_t    c_address;
+    paddr_t     c_address;
     uint8_t     c_data[BEATSIZE];
     uint8_t     c_echo_blockisdirty;
     uint8_t     c_valid;
@@ -71,6 +75,40 @@ namespace tl_interface{
   extern int32_t tlc_info_array_counter;
   std::shared_ptr<TLCInfo> find_tlc_info(uint64_t cid, uint8_t ct);
   void register_tlc_info(std::shared_ptr<TLCInfo>);
+
+  class TLUInfo{
+    public:
+    uint64_t  core_id;
+    uint8_t   agt_type;
+
+    uint8_t   a_ready;
+    uint8_t   a_valid;
+    uint32_t  a_opcode;
+    uint32_t  a_param;
+    uint32_t  a_size;
+    uint32_t  a_source;
+    paddr_t   a_address;
+    uint8_t   a_user_preferCache;
+    uint32_t  a_mask;
+    uint8_t   a_data[BEATSIZE];
+
+    uint8_t   d_ready;
+    uint8_t   d_valid;
+    uint32_t  d_opcode;
+    uint32_t  d_param;
+    uint32_t  d_size;
+    uint32_t  d_source;
+    uint8_t   d_denied;
+    uint8_t   d_data[BEATSIZE];
+    uint8_t   d_corrupt;
+
+    TLUInfo(uint64_t cit, uint8_t at);
+    void connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port);
+  };
+  extern std::shared_ptr<TLUInfo> tlu_info_array[NR_ULAGENTS];
+  extern int32_t tlu_info_array_counter;
+  std::shared_ptr<TLUInfo> find_tlu_info(uint64_t cid, uint8_t at);
+  void register_tlu_info(std::shared_ptr<TLUInfo>);
 }
 
 #ifdef __cplusplus
@@ -127,6 +165,35 @@ void tlc_agent_eval (
   svBitVecVal*          e_sink,
   svBit*                e_valid,
   svBit                 e_ready
+  );
+#ifdef __cplusplus
+}
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+void tlu_agent_eval(
+  const svBitVecVal*    core_id,
+  const svBitVecVal*    agt_type,         
+  svBit                 a_ready,
+  svBit*                a_valid,
+  svBitVecVal*          a_opcode,
+  svBitVecVal*          a_param,
+  svBitVecVal*          a_size,
+  svBitVecVal*          a_source,
+  svBitVecVal*          a_address,
+  svBit*                a_user_preferCache,
+  svBitVecVal*          a_mask,
+  svBitVecVal*          a_data,
+  svBit*                d_ready,
+  svBit                 d_valid,
+  const svBitVecVal*    d_opcode,
+  const svBitVecVal*    d_size,
+  const svBitVecVal*    d_source,
+  svBit                 d_denied,
+  const svBitVecVal*    d_data,
+  svBit                 d_corrupt
   );
 #ifdef __cplusplus
 }

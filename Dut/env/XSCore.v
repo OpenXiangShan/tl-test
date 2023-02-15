@@ -432,16 +432,6 @@ module XSCore(
   assign auto_frontend_instrUncache_client_out_a_valid = 0;
   assign auto_frontend_instrUncache_client_out_a_bits_address = 0;
   assign auto_frontend_instrUncache_client_out_d_ready = 1;
-  assign auto_ptw_to_l2_buffer_out_a_valid = 0;
-  assign auto_ptw_to_l2_buffer_out_a_bits_opcode = 0;
-  assign auto_ptw_to_l2_buffer_out_a_bits_param = 0;
-  assign auto_ptw_to_l2_buffer_out_a_bits_size = 0;
-  assign auto_ptw_to_l2_buffer_out_a_bits_source = 0;
-  assign auto_ptw_to_l2_buffer_out_a_bits_address = 0;
-  assign auto_ptw_to_l2_buffer_out_a_bits_user_preferCache = 0;
-  assign auto_ptw_to_l2_buffer_out_a_bits_mask = 0;
-  assign auto_ptw_to_l2_buffer_out_a_bits_data = 0;
-  assign auto_ptw_to_l2_buffer_out_d_ready = 1;
   assign auto_memBlock_pf_sender_out_addr = 0;
   assign auto_memBlock_pf_sender_out_addr_valid = 0;
   assign auto_memBlock_pf_sender_out_l2_pf_en = 0;
@@ -551,5 +541,64 @@ module XSCore(
     auto_frontend_icache_client_out_e_ready
   );
 `endif
+
+  `define PTW_TYPE 0
+  `define DMA_TYPE 1
+  wire [7:0] ptw_type;
+  assign ptw_type = `PTW_TYPE;
+
+  import "DPI-C" function void tlu_agent_eval(
+    input   bit[63:0]   core_id,
+    input   bit[7:0]    agt_type,         
+    input   bit         a_ready,
+    output  bit         a_valid,
+    output  bit[2:0]    a_opcode,
+    output  bit[2:0]    a_param,
+    output  bit[2:0]    a_size,
+    output  bit[8:0]    a_source,
+    output  bit[35:0]   a_address,
+    output  bit         a_user_preferCache,
+    output  bit[31:0]   a_mask,
+    output  bit[255:0]  a_data,
+    output  bit         d_ready,
+    input   bit         d_valid,
+    input   bit[2:0]    d_opcode,
+    input   bit[2:0]    d_size,
+    input   bit[8:0]    d_source,
+    input   bit         d_denied,
+    input   bit[255:0]  d_data,
+    input   bit         d_corrupt
+  );
+  wire [8:0] tmp_ptw_a_source;
+  assign auto_ptw_to_l2_buffer_out_a_bits_source = tmp_ptw_a_source[2:0];
+  always @ (posedge clock or negedge clock)begin
+    tlu_agent_eval(
+      io_hartId,
+      ptw_type,
+
+      auto_ptw_to_l2_buffer_out_a_ready,
+      auto_ptw_to_l2_buffer_out_a_valid,
+      auto_ptw_to_l2_buffer_out_a_bits_opcode,
+      auto_ptw_to_l2_buffer_out_a_bits_param,
+      auto_ptw_to_l2_buffer_out_a_bits_size,
+      tmp_ptw_a_source,
+      auto_ptw_to_l2_buffer_out_a_bits_address,
+      auto_ptw_to_l2_buffer_out_a_bits_user_preferCache,
+      auto_ptw_to_l2_buffer_out_a_bits_mask,
+      auto_ptw_to_l2_buffer_out_a_bits_data,
+
+      auto_ptw_to_l2_buffer_out_d_ready,
+      auto_ptw_to_l2_buffer_out_d_valid,
+      auto_ptw_to_l2_buffer_out_d_bits_opcode,
+      auto_ptw_to_l2_buffer_out_d_bits_size,
+      {6'd0,auto_ptw_to_l2_buffer_out_d_bits_source},
+      1'b0,
+      auto_ptw_to_l2_buffer_out_d_bits_data,
+      1'b0
+    );
+  end
+
+  `undef PTW_TYPE
+  `undef DMA_TYPE
 endmodule
 
