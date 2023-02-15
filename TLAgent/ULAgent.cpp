@@ -7,7 +7,7 @@
 namespace tl_agent {
 
 ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t *cycles)
-    : BaseAgent(), pendingA(), pendingD() {
+    : BaseAgent(0, NR_SOURCEID), pendingA(), pendingD() {
   this->globalBoard = gb;
   this->id = id;
   this->cycles = cycles;

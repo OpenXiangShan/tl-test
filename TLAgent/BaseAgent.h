@@ -132,7 +132,7 @@ public:
   virtual void handle_channel() = 0;
   virtual void update_signal() = 0;
   virtual bool local_probe(paddr_t address) = 0;
-  BaseAgent() : idpool(0, NR_SOURCEID){};
+  BaseAgent(int begin, int end) : idpool(begin, end){};
   virtual ~BaseAgent() = default;
 };
 

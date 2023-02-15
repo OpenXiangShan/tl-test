@@ -24,7 +24,9 @@ enum {
   DCACHE_TYPE = 0, 
   ICACHE_TYPE = 1,
   PTW_TYPE = 0,
-  DMA_TYPE = 1
+  DMA_TYPE = 1,
+  DCACHE_SOURCE_WD = 6,
+  ICACHE_SOURCE_WD = 3
 };
 
 const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;
@@ -56,6 +58,8 @@ typedef uint64_t paddr_t;
     }                                                                          \
   } while (0)
 
+#define GET_ID_UPBOUND(ct)                                                     \
+  (((ct == DCACHE_TYPE)? (1 << DCACHE_SOURCE_WD):(1 << ICACHE_SOURCE_WD))) \
 /*
 #define Log(...) \
     do {} while(0)

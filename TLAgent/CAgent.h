@@ -62,7 +62,7 @@ private:
   uint64_t *cycles;
   uint64_t core_id;
   uint8_t cache_type;
-  tl_interface::TLCInfo tlc_info;
+  std::shared_ptr<tl_interface::TLCInfo> tlc_info;
   PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA;
   PendingTrans<ChnB> pendingB;
   PendingTrans<ChnC<ReqField, EchoField, DATASIZE>> pendingC;

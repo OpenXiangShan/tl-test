@@ -36,9 +36,11 @@ int shrinkGenPriv(int param) {
 }
 
 CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles,
-               uint64_t cid, uint8_t ct)
-    : BaseAgent(), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(),
-      probeIDpool(NR_SOURCEID, NR_SOURCEID + 1), tlc_info(cid, ct) {
+               uint64_t cid, uint8_t ct):
+  pendingA(), pendingB(), pendingC(), pendingD(), pendingE(),
+  probeIDpool(GET_ID_UPBOUND(ct), GET_ID_UPBOUND(ct) + 1),
+  BaseAgent(0, GET_ID_UPBOUND(ct)){
+  using namespace tl_interface;
   this->core_id = cid;
   this->cache_type = ct;
   this->globalBoard = gb;
@@ -46,8 +48,10 @@ CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles,
   this->cycles = cycles;
   this->localBoard = new ScoreBoard<paddr_t, C_SBEntry>();
   this->idMap = new ScoreBoard<int, C_IDEntry>();
+  this->tlc_info.reset(new TLCInfo(cid,ct));
+  register_tlc_info(this->tlc_info);
   this->port.reset(new Port<ReqField, RespField, EchoField, BEATSIZE>);
-  this->tlc_info.connect(this->port);
+  this->tlc_info->connect(this->port);
 }
 std::string CAgent::type_to_string(){
   using namespace std;
@@ -670,7 +674,7 @@ bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
   req_c->data = data;
   req_c->alias = new uint8_t(alias);
   pendingC.init(req_c, DATASIZE / BEATSIZE);
-  Log("[%ld] [ReleaseData] addr: %lx data: ", *cycles, address);
+  Log("[%ld] [ReleaseData] addr: %lx, data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[DATASIZE - 1 - i]);
   }
@@ -728,10 +732,10 @@ bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
   pendingC.init(req_c, DATASIZE / BEATSIZE);
   switch (param) {
   case BtoN:
-    Log("[%ld] [ReleaseData BtoN] addr: %lx data: ", *cycles, address);
+    Log("[%ld] [ReleaseData BtoN] addr: %lx source: %d data: ", *cycles, address, *(req_c->source));
     break;
   case TtoN:
-    Log("[%ld] [ReleaseData TtoN] addr: %lx data: ", *cycles, address);
+    Log("[%ld] [ReleaseData TtoN] addr: %lx source: %d data: ", *cycles, address, *(req_c->source));
     break;
   }
 

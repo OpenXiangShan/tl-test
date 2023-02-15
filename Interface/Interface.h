@@ -67,9 +67,10 @@ namespace tl_interface{
     void connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port);
   };
 
-  static std::shared_ptr<TLCInfo> tlc_info_array[NR_CAGENTS];
-  static int32_t tlc_info_array_counter = 0;
-  static std::shared_ptr<TLCInfo> find_tlc_info(uint64_t cid, uint8_t ct);
+  extern std::shared_ptr<TLCInfo> tlc_info_array[NR_CAGENTS];
+  extern int32_t tlc_info_array_counter;
+  std::shared_ptr<TLCInfo> find_tlc_info(uint64_t cid, uint8_t ct);
+  void register_tlc_info(std::shared_ptr<TLCInfo>);
 }
 
 #ifdef __cplusplus

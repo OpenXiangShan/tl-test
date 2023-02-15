@@ -1,10 +1,11 @@
 #include "Interface.h"
 namespace tl_interface{
+  std::shared_ptr<TLCInfo> tlc_info_array[NR_CAGENTS];
+  int32_t tlc_info_array_counter = 0;
   using namespace tl_agent;
   TLCInfo::TLCInfo(uint64_t cid, uint8_t ct):
     core_id(cid), cache_type(ct)
   {
-    tlc_info_array[tlc_info_array_counter++].reset(this);
     a_opcode = 0;
     a_param = 0;
     a_size = 0;
@@ -128,6 +129,10 @@ namespace tl_interface{
     }
     tlc_assert(found, "core ID or cache type not found!");
     return tlc_info_array[idx];
+  }
+
+  void register_tlc_info(std::shared_ptr<TLCInfo> p){
+    tlc_info_array[tlc_info_array_counter++] = p;
   }
 
 }
