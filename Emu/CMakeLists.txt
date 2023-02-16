@@ -1,4 +1,4 @@
-add_library(Emu Emu.h Emu.cpp)
+add_library(Emu Emu.h Emu.cpp ../TLAgent/SAgent.cpp ../TLAgent/SAgent.h)
 
 if(DEFINED TRACE)
     set(ARG_TRACE TRACE)
@@ -10,7 +10,7 @@ else()
 endif()
 
 if(DEFINED TLLOG)
-    verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" "${DUT_DIR}/TLLogWriter.v" "${DUT_DIR}/STD_CLKGT_func.v" ${ARG_TRACE} THREADS ${ARG_THREAD} VERILATOR_ARGS -Wno-WIDTH)
+    verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" "${DUT_DIR}/TLLogWriter.v" ${ARG_TRACE} THREADS ${ARG_THREAD} VERILATOR_ARGS -Wno-WIDTH)
 else()
-    verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" "${DUT_DIR}/STD_CLKGT_func.v" ${ARG_TRACE} THREADS ${ARG_THREAD} VERILATOR_ARGS -Wno-WIDTH)
+    verilate(Emu SOURCES "${DUT_DIR}/TestTop.v" ${ARG_TRACE} THREADS ${ARG_THREAD} VERILATOR_ARGS -Wno-WIDTH)
 endif()

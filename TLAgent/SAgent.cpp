@@ -1,10 +1,92 @@
-
-
 #include "SAgent.h"
 
 namespace tl_agent{
 
+    SAgent::SAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles) {
+        this->chan_a = new tl_agent::Channel_A();
+        this->chan_b = new tl_agent::Channel_B();
+        this->chan_c = new tl_agent::Channel_C();
+        this->chan_d = new tl_agent::Channel_D();
+        this->chan_e = new tl_agent::Channel_E();
 
+        this->scb     = new tl_agent::Slave_ScoreBoard();
+        this->in_mon  = new tl_agent::Input_Monitor(scb);
+        this->gen     = new tl_agent::Generator(scb);
+        this->drv     = new tl_agent::Driver(scb, chan_a, chan_b, chan_c, chan_d, chan_e);
+
+        this->tran_b = NULL;
+        this->tran_d = NULL;
+    }
+
+    void SAgent::handle_channel(VTestTop *dut_ptr) {
+        chan_a->valid   = dut_ptr->slave_port_0_a_valid;
+        chan_a->opcode  = dut_ptr->slave_port_0_a_bits_opcode;
+        chan_a->param   = dut_ptr->slave_port_0_a_bits_param;
+        chan_a->size    = dut_ptr->slave_port_0_a_bits_size;
+        chan_a->source  = dut_ptr->slave_port_0_a_bits_source;
+        chan_a->address = dut_ptr->slave_port_0_a_bits_address;
+        chan_a->mask    = dut_ptr->slave_port_0_a_bits_mask;
+        chan_a->corrupt = dut_ptr->slave_port_0_a_bits_corrupt;
+        DATA_COPY(chan_a->data, dut_ptr->slave_port_0_a_bits_data);
+
+        chan_b->ready   = dut_ptr->slave_port_0_b_ready;
+
+        chan_c->valid   = dut_ptr->slave_port_0_c_valid;
+        chan_c->opcode  = dut_ptr->slave_port_0_c_bits_opcode;
+        chan_c->param   = dut_ptr->slave_port_0_c_bits_param;
+        chan_c->size    = dut_ptr->slave_port_0_c_bits_size;
+        chan_c->source  = dut_ptr->slave_port_0_c_bits_source;
+        chan_c->address = dut_ptr->slave_port_0_c_bits_address;
+        chan_c->corrupt = dut_ptr->slave_port_0_c_bits_corrupt;
+        DATA_COPY(chan_c->data, dut_ptr->slave_port_0_c_bits_data);
+
+        chan_d->ready   = dut_ptr->slave_port_0_d_ready;
+
+        chan_e->valid = dut_ptr->slave_port_0_e_valid;
+        chan_e->sink  = dut_ptr->slave_port_0_e_bits_sink;
+    }
+
+    void SAgent::tick() {
+        in_mon->monitor_a(chan_a);
+        in_mon->monitor_c(chan_c);
+        in_mon->monitor_e(chan_e);
+
+        tran_b = gen->generator_b();
+        tran_d = gen->generator_d();
+
+        drv->driver_b(tran_b);
+        drv->driver_d(tran_d);
+        drv->driver_ready();
+        scb->update_age();
+    }
+
+    void SAgent::update_signal(VTestTop *dut_ptr) {
+        dut_ptr->slave_port_0_a_ready = chan_a->ready;
+
+        dut_ptr->slave_port_0_b_valid          = chan_b->valid;
+        dut_ptr->slave_port_0_b_bits_opcode    = chan_b->opcode;
+        dut_ptr->slave_port_0_b_bits_param     = chan_b->param;
+        dut_ptr->slave_port_0_b_bits_size      = chan_b->size;
+        dut_ptr->slave_port_0_b_bits_source    = chan_b->source;
+        dut_ptr->slave_port_0_b_bits_address   = chan_b->address;
+        dut_ptr->slave_port_0_b_bits_mask      = chan_b->mask;
+        dut_ptr->slave_port_0_b_bits_corrupt   = chan_b->corrupt;
+        DATA_COPY(dut_ptr->slave_port_0_b_bits_data, chan_b->data);
+
+        dut_ptr->slave_port_0_c_ready = chan_c->ready;
+
+        dut_ptr->slave_port_0_d_valid        = chan_d->valid;
+        dut_ptr->slave_port_0_d_bits_opcode  = chan_d->opcode;
+        dut_ptr->slave_port_0_d_bits_param   = chan_d->param;
+        dut_ptr->slave_port_0_d_bits_size    = chan_d->size;
+        dut_ptr->slave_port_0_d_bits_source  = chan_d->source;
+        dut_ptr->slave_port_0_d_bits_sink    = chan_d->sink;
+        dut_ptr->slave_port_0_d_bits_denied  = chan_d->denied;
+        dut_ptr->slave_port_0_d_bits_corrupt = chan_d->corrupt;
+        DATA_COPY(dut_ptr->slave_port_0_d_bits_data, chan_d->data);
+
+        dut_ptr->slave_port_0_e_ready = chan_e->ready;
+    }
 
     void Slave_ScoreBoard::a_write(Channel_A *chan_a){
         Trans *temp = new Trans();
@@ -57,7 +139,7 @@ namespace tl_agent{
                 }
                 break;
             }
-            case OP_ProbeAck:{                
+            case OP_ProbeAck:{
                 if(probeAck_q.empty()) assert(0);
 
                 Trans *temp = NULL;
@@ -126,149 +208,133 @@ namespace tl_agent{
         delete temp;
     }
 
-
-
     void Slave_ScoreBoard::update_age(){
-        clk_count++;
-        if(clk_count % 1000 != 0) return;
+          clk_count++;
+          if(clk_count % 1000 != 0) return;
 
-        uint32_t age = 0;
-        for(int i = 0; i < acquire_q.size(); i++){
-            age = acquire_q[i]->tran_age++;
-            if(age > 4000){
-                assert(0);
-            }
-        }
-        for(int i = 0; i < grantAck_q.size(); i++){
-            age = grantAck_q[i]->tran_age++;
-            if(age > 4000){
-                assert(0);
-            }
-        }
-        for(int i = 0; i < releaseAck_q.size(); i++){
-            age = releaseAck_q[i]->tran_age++;
-            if(age > 4000){
-                assert(0);
-            }
-        }
-        for(int i = 0; i < probeAck_q.size(); i++){
-            age = probeAck_q[i]->tran_age++;
-            if(age > 4000){
-                assert(0);
-            }
+          uint32_t age = 0;
+          for(int i = 0; i < acquire_q.size(); i++){
+              age = acquire_q[i]->tran_age++;
+              if(age > 4000){
+                  assert(0);
+              }
+          }
+          for(int i = 0; i < grantAck_q.size(); i++){
+              age = grantAck_q[i]->tran_age++;
+              if(age > 4000){
+                  assert(0);
+              }
+          }
+          for(int i = 0; i < releaseAck_q.size(); i++){
+              age = releaseAck_q[i]->tran_age++;
+              if(age > 4000){
+                  assert(0);
+              }
+          }
+          for(int i = 0; i < probeAck_q.size(); i++){
+              age = probeAck_q[i]->tran_age++;
+              if(age > 4000){
+                  assert(0);
+              }
+          }
+      }
+
+    void Input_Monitor::monitor_a(Channel_A *chan_a){
+        if(chan_a->valid && chan_a->ready){
+            scb->a_write(chan_a);
         }
     }
 
+    void Input_Monitor::monitor_c(Channel_C *chan_c){
+        static uint32_t beat = 1;
 
-
-
-
-void Input_Monitor::monitor_a(Channel_A *chan_a){
-    if(chan_a->valid && chan_a->ready){
-        scb->a_write(chan_a);
-    }
-}
-
-void Input_Monitor::monitor_c(Channel_C *chan_c){
-    static uint32_t beat = 1;
-
-    if(chan_c->valid && chan_c->ready){
-        switch(chan_c->opcode){
-            case OP_Release: 
-            case OP_ProbeAck:{
-                scb->c_write(chan_c, 0);
-                break;                    
-            }
-            case OP_ReleaseData:
-            case OP_ProbeAckData:{
-                switch(beat){
-                    case 1: {
-                        scb->c_write(chan_c, beat++);
-                        break;
-                    }
-                    case 2:{
-                        scb->c_write(chan_c, beat++);
-                        beat = 1;
-                        break;
-                    }
-                    default:{
-                        assert(0);
-                        break;
-                    }
+        if(chan_c->valid && chan_c->ready){
+            switch(chan_c->opcode){
+                case OP_Release:
+                case OP_ProbeAck:{
+                    scb->c_write(chan_c, 0);
+                    break;
                 }
-                break;
-            }
-            default:{
-                assert(0);
-                break;
+                case OP_ReleaseData:
+                case OP_ProbeAckData:{
+                    switch(beat){
+                        case 1: {
+                            scb->c_write(chan_c, beat++);
+                            break;
+                        }
+                        case 2:{
+                            scb->c_write(chan_c, beat++);
+                            beat = 1;
+                            break;
+                        }
+                        default:{
+                            assert(0);
+                            break;
+                        }
+                    }
+                    break;
+                }
+                default:{
+                    assert(0);
+                    break;
+                }
             }
         }
     }
-}
 
-void Input_Monitor::monitor_e(Channel_E *chan_e){
-    if(chan_e->valid && chan_e->ready){
-        scb->e_write(chan_e);
-    }
-}
+    void Input_Monitor::monitor_e(Channel_E *chan_e){
+      if(chan_e->valid && chan_e->ready){
+          scb->e_write(chan_e);
+      }
+  }
 
+    Trans *Generator::generator_b(){
+      if(!scb->genetator_new_tran_b) return NULL;
 
+      uint32_t rand_sel = rand() % 40;
+      static uint8_t source = 1;
+      if(source == 15) source = 1;
 
+      if(rand_sel == 1 && scb->probeAck_q.size() < 10){
+          Trans *temp = new Trans();
+          // generator probe
+          temp->tran_age = 0;
+          temp->opcode   = (rand() % 2 == 0) ? OP_ProbeBlock : OP_ProbePerm;
+          temp->param    = PARAM_toN;
+          temp->size     = 6;
+          temp->source   = source++;
+          temp->address  = (paddr_t)rand() << 6;
+          temp->mask     = 0xffffffff;
+          temp->sink     = 0;
+          temp->corrupt  = 0;
+          temp->denied   = 0;
+          // address check
+          bool addr_is_legal1 = true;
+          bool addr_is_legal2 = true;
+          for(int i = 0; i < scb->grantAck_q.size(); i++){
+              if(temp->address == scb->grantAck_q[i]->address){
+                  addr_is_legal1 = false;
+                  break;
+              }
+          }
+          for(int i = 0; i < scb->probeAck_q.size(); i++){
+              if(temp->address == scb->probeAck_q[i]->address){
+                  addr_is_legal2 = false;
+              }
+          }
 
+          if(addr_is_legal1 && addr_is_legal2){
+              scb->probeAck_q.push_back(temp);
+              return temp;
+          }
 
+          delete temp;
+          return NULL;
+      }
+      return NULL;
+  }
 
-Trans *Generator::generator_b(){
-    if(!scb->genetator_new_tran_b) return NULL;
-
-    uint32_t rand_sel = rand() % 40;
-    static uint8_t source = 1;
-    if(source == 15) source = 1;
-
-    if(rand_sel == 1 && scb->probeAck_q.size() < 10){
-        Trans *temp = new Trans();
-        // generator probe
-        temp->tran_age = 0;
-        temp->opcode   = (rand() % 2 == 0) ? OP_ProbeBlock : OP_ProbePerm;
-        temp->param    = PARAM_toN;
-        temp->size     = 6;
-        temp->source   = source++;
-        temp->address  = (paddr_t)rand() << 6;
-        temp->mask     = 0xffffffff;
-        temp->sink     = 0;
-        temp->corrupt  = 0;
-        temp->denied   = 0;
-        // address check
-        bool addr_is_legal1 = true;
-        bool addr_is_legal2 = true;
-        for(int i = 0; i < scb->grantAck_q.size(); i++){
-            if(temp->address == scb->grantAck_q[i]->address){
-                addr_is_legal1 = false;
-                break;
-            }
-        }
-        for(int i = 0; i < scb->probeAck_q.size(); i++){
-            if(temp->address == scb->probeAck_q[i]->address){
-                addr_is_legal2 = false;
-            }
-        }
-        
-        if(addr_is_legal1 && addr_is_legal2){
-            scb->probeAck_q.push_back(temp);
-            return temp;
-        }
-
-        delete temp;
-        return NULL;
-    }
-    return NULL;
-}
-
-
-
-
-
-
-Trans *Generator::generator_d(){
+    Trans *Generator::generator_d(){
     if(!scb->genetator_new_tran_d) return NULL;
 
     uint32_t rand_sel = rand() % 40;
@@ -342,11 +408,7 @@ Trans *Generator::generator_d(){
     return NULL;
 }
 
-
-
-
-
-void Driver::driver_b(Trans *tran){
+    void Driver::driver_b(Trans *tran){
     static bool tran_finish = true;
     static Trans *temp = NULL;
 
@@ -372,13 +434,7 @@ void Driver::driver_b(Trans *tran){
     scb->genetator_new_tran_b = tran_finish;
 }
 
-
-
-
-
-
-
-void Driver::driver_d(Trans *tran){
+    void Driver::driver_d(Trans *tran){
     static bool tran_finish = true;
     static uint32_t beat = 1;
     static Trans *temp = NULL;
@@ -434,12 +490,10 @@ void Driver::driver_d(Trans *tran){
     scb->genetator_new_tran_d = tran_finish;
 }
 
-
-void Driver::driver_ready(){
+    void Driver::driver_ready(){
     chan_a->ready = true;
     chan_c->ready = true;
     chan_e->ready = true;
 }
-
 
 }
