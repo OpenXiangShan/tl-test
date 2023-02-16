@@ -24,6 +24,7 @@ private:
     typedef tl_agent::BaseAgent BaseAgent_t;
     typedef tl_agent::ULAgent ULAgent_t;
     typedef tl_agent::CAgent CAgent_t;
+    typedef tl_agent::SAgent SAgent_t;
 
     const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
     VTestTop *dut_ptr;
@@ -34,26 +35,9 @@ private:
     uint64_t seed = 0, wave_begin = 0, wave_end = 0;
     bool enable_wave = true;
     bool wave_full = false;
+    SAgent_t* sagent;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
     void parse_args(int argc, char **argv);
-
-
-public:
-        tl_agent::Channel_A *chan_a;
-        tl_agent::Channel_B *chan_b;
-        tl_agent::Channel_C *chan_c;
-        tl_agent::Channel_D *chan_d;
-        tl_agent::Channel_E *chan_e;
-
-        
-        tl_agent::Slave_ScoreBoard     *scb;
-        tl_agent::Input_Monitor  *in_mon;
-        tl_agent::Generator      *gen;
-        tl_agent::Driver         *drv;
-
-        tl_agent::Trans *tran_b;
-        tl_agent::Trans *tran_d;
-
 
 public:
     Emu(int argc, char **argv);

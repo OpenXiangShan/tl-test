@@ -4,6 +4,4 @@ add_library(TLAgent
         ULAgent.h
         CAgent.cpp
         CAgent.h
-        Port.h
-        SAgent.cpp
-        SAgent.h)
+        Port.h)
