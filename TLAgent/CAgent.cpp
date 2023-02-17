@@ -245,9 +245,6 @@ Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) {
     std::shared_ptr<C_IDEntry> idmap_entry(
         new C_IDEntry(*c->address, *c->alias));
     release_idMap->update(*c->source, idmap_entry);
-    if(core_id == 1 && bus_type == ICACHE_BUS_TYPE){
-      printf("1");
-    }
 
     if (localBoard->haskey(*c->address)) {
       localBoard->query(*c->address)
