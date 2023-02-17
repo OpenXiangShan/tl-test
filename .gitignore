@@ -1,5 +1,6 @@
 build
 cmake-build-debug
 .idea
-env/rtl/*
-env/sram/*
+Dut/rtl
+Dut/sram
+.vscode
