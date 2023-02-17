@@ -116,7 +116,6 @@ protected:
   std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE>> port;
   GlobalBoard<paddr_t> *globalBoard;
   IDPool a_idpool;
-  IDPool c_idpool;
   virtual void timeout_check() = 0;
   int id;
   uint64_t core_id;
@@ -135,7 +134,7 @@ public:
   virtual void handle_channel() = 0;
   virtual void update_signal() = 0;
   virtual bool local_probe(paddr_t address) = 0;
-  BaseAgent(int a_begin, int a_end, int c_begin, int c_end) : a_idpool(a_begin, a_end), c_idpool(c_begin, c_end){};
+  BaseAgent(int a_begin, int a_end) : a_idpool(a_begin, a_end){};
   virtual ~BaseAgent() = default;
 };
 

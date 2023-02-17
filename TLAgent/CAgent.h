@@ -69,9 +69,12 @@ private:
   /* Here we need a scoreboard called localBoard maintaining address->info
    * For convenience, an idMap(id->addr) is also maintained
    */
-  ScoreBoard<paddr_t, C_SBEntry> *localBoard;
-  ScoreBoard<int, C_IDEntry> *aidMap;
-  ScoreBoard<int, C_IDEntry> *cidMap;
+  std::shared_ptr<ScoreBoard<paddr_t, C_SBEntry> > localBoard;
+  IDPool release_idpool;
+  IDPool probe_ack_idpool;
+  std::shared_ptr<ScoreBoard<int, C_IDEntry> > aidMap;
+  std::shared_ptr<ScoreBoard<int, C_IDEntry> > release_idMap;
+  std::shared_ptr<ScoreBoard<int, C_IDEntry> > probe_ack_idMap;
   IDPool probeIDpool;
   void timeout_check();
 

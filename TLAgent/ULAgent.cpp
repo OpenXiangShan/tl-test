@@ -8,7 +8,7 @@ namespace tl_agent {
 
 ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t *cycles,
     uint64_t cid, uint8_t bt):
-    BaseAgent(0, GET_UA_ID_UPBOUND(bt),0,1), pendingA(), pendingD() {
+    BaseAgent(0, GET_UA_ID_UPBOUND(bt)), pendingA(), pendingD() {
   using namespace tl_interface;
   this->core_id = cid;
   this->bus_type = bt;
