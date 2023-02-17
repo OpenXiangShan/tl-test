@@ -46,8 +46,9 @@ Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
         PutFullData, S_SENDING_A, align_addr(*a->address), *this->cycles));
     localBoard->update(*a->source, entry);
     int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
+    
     for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
-      this->port->a.data[i] = a->data[i];
+      this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
     }
     break;
   }
@@ -57,7 +58,7 @@ Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
     localBoard->update(*a->source, entry);
     int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
     for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
-      this->port->a.data[i] = a->data[i];
+      this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
     }
     break;
   }

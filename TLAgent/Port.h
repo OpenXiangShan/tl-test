@@ -85,6 +85,7 @@ public:
     delete (this->mask);
     delete (this->address);
     delete (this->alias);
+    delete[] (this->data);
   }
 };
 
@@ -155,6 +156,8 @@ public:
     delete (this->source);
     delete (this->address);
     delete (this->alias);
+    delete (this->dirty);
+    delete[] (this->data);
   }
 };
 
