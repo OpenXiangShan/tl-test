@@ -19,7 +19,7 @@ void Emu::parse_args(int argc, char **argv) {
                                         {0, 0, NULL, 0}};
   int o;
   int long_index = 0;
-  while ((o = getopt_long(argc, const_cast<char *const *>(argv), "-s:b:e:c:v",
+  while ((o = getopt_long(argc, const_cast<char *const *>(argv), "-s:b:e:c:mv",
                           long_options, &long_index)) != -1) {
     switch (o) {
     case 's':
