@@ -146,4 +146,10 @@ module tb_top(
     .dft_cgen(dft_cgen)
 );
   `include "mem_conn.v"
+
+  tl_monitor_collect#(.SIZE_WD(3),.ADDR_WD(36),.DATA_WD(256),
+  .SOURCE_WD(9),.SINK_WD(6),.USER_WD(8),.ECHO_WD(8)
+  )tl_monitor_set(
+    .clock(io_clock)
+  );
 endmodule

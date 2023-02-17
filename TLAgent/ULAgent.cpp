@@ -7,26 +7,26 @@
 namespace tl_agent {
 
 ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t *cycles,
-    uint64_t cid, uint8_t at):
-    BaseAgent(0, GET_UA_ID_UPBOUND(at)), pendingA(), pendingD() {
+    uint64_t cid, uint8_t bt):
+    BaseAgent(0, GET_UA_ID_UPBOUND(bt),0,1), pendingA(), pendingD() {
   using namespace tl_interface;
   this->core_id = cid;
-  this->agt_type = at;
+  this->bus_type = bt;
   this->globalBoard = gb;
   this->id = id;
   this->cycles = cycles;
   localBoard = new ScoreBoard<int, UL_SBEntry>();
-  this->tlu_info.reset(new TLUInfo(cid,at));
-  register_tlu_info(this->tlu_info);
-  this->port.reset(new Port<ReqField, RespField, EchoField, BEATSIZE>);
-  this->tlu_info->connect(this->port);
+  this->tl_info.reset(new TLInfo(cid,bt));
+  register_tlu_info(this->tl_info);
+  this->port.reset(new Port<ReqField, RespField, EchoField, BEATSIZE>());
+  this->tl_info->connect(this->port);
 }
 
 std::string ULAgent::type_to_string(){
   using namespace std;
-  string mhartid = "core " + to_string(this->agt_type);
+  string mhartid = "core " + to_string(this->core_id);
   string res;
-  if(this->agt_type == PTW_TYPE) res = mhartid + " PTW";
+  if(this->bus_type == PTW_BUS_TYPE) res = mhartid + " PTW";
   else res = "DMA";
   return res;
 }
@@ -188,7 +188,7 @@ void ULAgent::fire_d() {
         this->globalBoard->unpending(info->address);
       }
       localBoard->erase(*chnD.source);
-      this->idpool.freeid(*chnD.source);
+      this->a_idpool.freeid(*chnD.source);
     }
   }
 }
@@ -214,39 +214,39 @@ void ULAgent::update_signal() {
   if (*this->cycles % TIMEOUT_INTERVAL == 0) {
     this->timeout_check();
   }
-  idpool.update();
+  a_idpool.update();
 }
 
 bool ULAgent::do_getAuto(paddr_t address) {
-  if (pendingA.is_pending() || idpool.full())
+  if (pendingA.is_pending() || a_idpool.full())
     return false;
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
   req_a->opcode = new uint8_t(Get);
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint32_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->a_idpool.getid());
   pendingA.init(req_a, 1);
   Log("[%ld] [Get] addr: %lx source: %d\n", *cycles, address, *(req_a->source));
   return true;
 }
 
 bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
-  if (pendingA.is_pending() || idpool.full())
+  if (pendingA.is_pending() || a_idpool.full())
     return false;
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
   req_a->opcode = new uint8_t(Get);
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(size);
   req_a->mask = new uint32_t(mask);
-  req_a->source = new uint32_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->a_idpool.getid());
   pendingA.init(req_a, 1);
   Log("[%ld] [Get] addr: %lx size: %x\n", *cycles, address, size);
   return true;
 }
 
 bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
-  if (pendingA.is_pending() || idpool.full())
+  if (pendingA.is_pending() || a_idpool.full())
     return false;
   if (this->globalBoard->haskey(address) &&
       this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
@@ -257,7 +257,7 @@ bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint32_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->a_idpool.getid());
   req_a->data = data;
   pendingA.init(req_a, DATASIZE / BEATSIZE);
   Log("[%ld] [PutFullData] addr: %lx source: %d data: ", *cycles, address, *(req_a->source));
@@ -270,7 +270,7 @@ bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
 
 bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
                                 uint8_t data[]) {
-  if (pendingA.is_pending() || idpool.full())
+  if (pendingA.is_pending() || a_idpool.full())
     return false;
   if (this->globalBoard->haskey(address) &&
       this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
@@ -281,7 +281,7 @@ bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
   req_a->address = new paddr_t(address);
   req_a->size = new uint8_t(size);
   req_a->mask = new uint32_t(mask);
-  req_a->source = new uint32_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->a_idpool.getid());
   req_a->data = data;
   int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
   pendingA.init(req_a, nrBeat);

@@ -29,17 +29,17 @@ enum {
 
 class ReqField {
 public:
-  uint8_t value;
+  uint32_t value;
 };
 
 class RespField {
 public:
-  uint8_t value;
+  uint32_t value;
 };
 
 class EchoField {
 public:
-  uint8_t value;
+  uint32_t value;
 };
 
 template <typename T> class PendingTrans {
@@ -115,9 +115,12 @@ class BaseAgent {
 protected:
   std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE>> port;
   GlobalBoard<paddr_t> *globalBoard;
-  IDPool idpool;
+  IDPool a_idpool;
+  IDPool c_idpool;
   virtual void timeout_check() = 0;
   int id;
+  uint64_t core_id;
+  uint8_t bus_type;
 
 public:
   virtual std::string type_to_string() = 0;
@@ -132,7 +135,7 @@ public:
   virtual void handle_channel() = 0;
   virtual void update_signal() = 0;
   virtual bool local_probe(paddr_t address) = 0;
-  BaseAgent(int begin, int end) : idpool(begin, end){};
+  BaseAgent(int a_begin, int a_end, int c_begin, int c_end) : a_idpool(a_begin, a_end), c_idpool(c_begin, c_end){};
   virtual ~BaseAgent() = default;
 };
 

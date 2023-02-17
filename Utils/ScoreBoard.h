@@ -108,11 +108,11 @@ int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref,
     if (dut[i] != ref[i]) {
       printf("dut: ");
       for (int j = 0; j < DATASIZE; j++) {
-        printf("%02hhx", dut[j]);
+        printf("%02hhx", dut[DATASIZE - 1 - j]);
       }
       printf("\nref: ");
       for (int j = 0; j < DATASIZE; j++) {
-        printf("%02hhx", ref[j]);
+        printf("%02hhx", ref[DATASIZE - 1 - j]);
       }
       printf("\n");
       tlc_assert(false, assert_info.data());

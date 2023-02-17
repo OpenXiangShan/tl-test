@@ -28,7 +28,6 @@ Next we need to generate a DUT wrapper. We provide two pre-written wrappers, you
 > cmake ..
 For trace-dump, add -DTRACE=1
 For multi-thread, add -DTHREAD=${NR_THREADS}
-For enable Tilelink-C monitors, add -DTLCMON=1
 
 > make
 ```
@@ -43,6 +42,7 @@ For enable Tilelink-C monitors, add -DTLCMON=1
 -b --wave-begin=N  Wave dump starts from cycle N
 -e --wave-end=N    Wave dump ends to cycle N
 -v --verbose       Verbose mode
+-m --monitor       Enable TL monitors
 Please check -DTRACE=1 is added to tl-test compiling cmake arguments before wave dump.
 
 Tl-test will dump wave to directory tl-test/build/ if wave_begin < wave_end.

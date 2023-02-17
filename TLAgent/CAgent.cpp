@@ -36,28 +36,29 @@ int shrinkGenPriv(int param) {
 }
 
 CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles,
-               uint64_t cid, uint8_t ct):
+               uint64_t cid, uint8_t bt):
   pendingA(), pendingB(), pendingC(), pendingD(), pendingE(),
-  probeIDpool(GET_CA_ID_UPBOUND(ct), GET_CA_ID_UPBOUND(ct) + 1),
-  BaseAgent(0, GET_CA_ID_UPBOUND(ct)){
+  probeIDpool(GET_CA_PROB_ID(bt), GET_CA_PROB_ID(bt) + 1),
+  BaseAgent(GET_CA_A_ID_BEGIN(bt), GET_CA_A_ID_END(bt), GET_CA_C_ID_BEGIN(bt), GET_CA_C_ID_END(bt)){
   using namespace tl_interface;
   this->core_id = cid;
-  this->cache_type = ct;
+  this->bus_type = bt;
   this->globalBoard = gb;
   this->id = id;
   this->cycles = cycles;
   this->localBoard = new ScoreBoard<paddr_t, C_SBEntry>();
-  this->idMap = new ScoreBoard<int, C_IDEntry>();
-  this->tlc_info.reset(new TLCInfo(cid,ct));
-  register_tlc_info(this->tlc_info);
-  this->port.reset(new Port<ReqField, RespField, EchoField, BEATSIZE>);
-  this->tlc_info->connect(this->port);
+  this->aidMap = new ScoreBoard<int, C_IDEntry>();
+  this->cidMap = new ScoreBoard<int, C_IDEntry>();
+  this->tl_info.reset(new TLInfo(cid,bt));
+  register_tlc_info(this->tl_info);
+  this->port.reset(new Port<ReqField, RespField, EchoField, BEATSIZE>());
+  this->tl_info->connect(this->port);
 }
 std::string CAgent::type_to_string(){
   using namespace std;
   string mhartid = "core " + to_string(this->core_id);
   string type;
-  if(this->cache_type == DCACHE_TYPE) type = " d$";
+  if(this->bus_type == DCACHE_BUS_TYPE) type = " d$";
   else type = " i$";
   return mhartid + type;
 }
@@ -67,7 +68,7 @@ Resp CAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
   case AcquireBlock: {
     std::shared_ptr<C_IDEntry> idmap_entry(
         new C_IDEntry(*a->address, *a->alias));
-    idMap->update(*a->source, idmap_entry);
+    aidMap->update(*a->source, idmap_entry);
 
     if (localBoard->haskey(*a->address)) {
       localBoard->query(*a->address)
@@ -89,7 +90,7 @@ Resp CAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
   case AcquirePerm: {
     std::shared_ptr<C_IDEntry> idmap_entry(
         new C_IDEntry(*a->address, *a->alias));
-    idMap->update(*a->source, idmap_entry);
+    aidMap->update(*a->source, idmap_entry);
     if (localBoard->haskey(*a->address)) {
       localBoard->query(*a->address)
           ->update_status(S_SENDING_A, *cycles, *a->alias);
@@ -240,7 +241,7 @@ Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) {
   case ReleaseData: {
     std::shared_ptr<C_IDEntry> idmap_entry(
         new C_IDEntry(*c->address, *c->alias));
-    idMap->update(*c->source, idmap_entry);
+    cidMap->update(*c->source, idmap_entry);
 
     if (localBoard->haskey(*c->address)) {
       localBoard->query(*c->address)
@@ -257,7 +258,7 @@ Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) {
   case ProbeAckData: {
     std::shared_ptr<C_IDEntry> idmap_entry(
         new C_IDEntry(*c->address, *c->alias));
-    idMap->update(*c->source, idmap_entry);
+    cidMap->update(*c->source, idmap_entry);
 
     if (localBoard->haskey(*c->address)) {
       // TODO: What if this is an interrupted probe?
@@ -275,7 +276,7 @@ Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) {
   case ProbeAck: {
     std::shared_ptr<C_IDEntry> idmap_entry(
         new C_IDEntry(*c->address, *c->alias));
-    idMap->update(*c->source, idmap_entry);
+    cidMap->update(*c->source, idmap_entry);
     // tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
     if (localBoard->haskey(*c->address)) {
       auto item = localBoard->query(*c->address);
@@ -427,8 +428,8 @@ void CAgent::fire_d() {
     auto chnD = this->port->d;
     bool hasData = *chnD.opcode == GrantData;
     bool grant = *chnD.opcode == GrantData || *chnD.opcode == Grant;
-    auto addr = idMap->query(*chnD.source)->address;
-    auto alias = idMap->query(*chnD.source)->alias;
+    auto addr = grant? (aidMap->query(*chnD.source)->address):(cidMap->query(*chnD.source)->address);
+    auto alias = grant? (aidMap->query(*chnD.source)->alias):(cidMap->query(*chnD.source)->alias);
     auto info = localBoard->query(addr);
     auto exact_status = info->status[alias];
     if (!(exact_status == S_C_WAITING_D || exact_status == S_A_WAITING_D ||
@@ -466,18 +467,22 @@ void CAgent::fire_d() {
     if (!pendingD.is_pending()) {
       switch (*chnD.opcode) {
       case GrantData: {
-        Log("[%ld] [GrantData] addr: %lx source: %d data: ", *cycles, addr, *(chnD.source));
+        Log("[%ld] [GrantData] addr: %lx source: %d sink: %d, data: ", *cycles, addr, *(chnD.source), *(chnD.sink));
         for (int i = 0; i < DATASIZE; i++) {
           Dump("%02hhx", pendingD.info->data[DATASIZE - 1 - i]);
         }
         Dump("\n");
         this->globalBoard->verify(addr, pendingD.info->data);
         info->update_dirty(*chnD.dirty, alias);
+        this->a_idpool.freeid(*chnD.source);
+        aidMap->erase(*chnD.source);
         break;
       }
       case Grant: {
-        Log("[%ld] [Grant] addr: %lx source: %d \n", *cycles, addr, *(chnD.source));
+        Log("[%ld] [Grant] addr: %lx source: %d sink: %d\n", *cycles, addr, *(chnD.source), *(chnD.sink));
         info->update_dirty(*chnD.dirty, alias);
+        this->a_idpool.freeid(*chnD.source);
+        aidMap->erase(*chnD.source);
         break;
       }
       case ReleaseAck: {
@@ -491,6 +496,8 @@ void CAgent::fire_d() {
         }
         info->unpending_priviledge(*cycles, alias);
         this->globalBoard->unpending(addr);
+        this->c_idpool.freeid(*chnD.source);
+        cidMap->erase(*chnD.source);
         break;
       }
       default:
@@ -511,10 +518,9 @@ void CAgent::fire_d() {
         pendingE.init(req_e, 1);
         info->update_status(S_SENDING_E, *cycles, alias);
         info->update_priviledge(capGenPriv(*chnD.param), *cycles, alias);
+        Log("[%ld] [GrantAck] addr: %lx sink: %d\n", *cycles, *(req_e->addr), *(req_e->sink));
       }
-      idMap->erase(*chnD.source);
       // Log("== free == fireD %d\n", *chnD.source);
-      this->idpool.freeid(*chnD.source);
     }
   }
 }
@@ -561,12 +567,13 @@ void CAgent::update_signal() {
   if (*this->cycles % TIMEOUT_INTERVAL == 0) {
     this->timeout_check();
   }
-  idpool.update();
+  a_idpool.update();
+  c_idpool.update();
   probeIDpool.update();
 }
 
 bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
-  if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
+  if (pendingA.is_pending() || pendingB.is_pending() || a_idpool.full())
     return false;
   if (localBoard->haskey(address)) { // check whether this transaction is legal
     auto entry = localBoard->query(address);
@@ -591,18 +598,18 @@ bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
   req_a->param = new uint8_t(param);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint32_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->a_idpool.getid());
   req_a->alias = new uint8_t(alias);
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
   switch (param) {
   case NtoB:
-    Log("[%ld] [AcquireData NtoB] addr: %lx alias: %d\n", *cycles, address,
-        alias);
+    Log("[%ld] [AcquireData NtoB] addr: %lx source: %d alias: %d\n", *cycles, address,
+        *(req_a->source), alias);
     break;
   case NtoT:
-    Log("[%ld] [AcquireData NtoT] addr: %lx alias: %d\n", *cycles, address,
-        alias);
+    Log("[%ld] [AcquireData NtoT] addr: %lx source: %d alias: %d\n", *cycles, address,
+        *(req_a->source), alias);
     break;
   }
 
@@ -610,7 +617,7 @@ bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
 }
 
 bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
-  if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
+  if (pendingA.is_pending() || pendingB.is_pending() || a_idpool.full())
     return false;
   if (localBoard->haskey(address)) {
     auto entry = localBoard->query(address);
@@ -635,7 +642,7 @@ bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
   req_a->param = new uint8_t(param);
   req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
   req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint32_t(this->idpool.getid());
+  req_a->source = new uint32_t(this->a_idpool.getid());
   req_a->alias = new uint8_t(alias);
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
@@ -645,7 +652,7 @@ bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
 
 bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
                             int alias) {
-  if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() ||
+  if (pendingC.is_pending() || pendingB.is_pending() || c_idpool.full() ||
       !localBoard->haskey(address))
     return false;
   // TODO: checkout pendingA
@@ -668,7 +675,7 @@ bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
   req_c->address = new paddr_t(address);
   req_c->param = new uint8_t(param);
   req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_c->source = new uint32_t(this->idpool.getid());
+  req_c->source = new uint32_t(this->c_idpool.getid());
   req_c->dirty = new uint8_t(1);
   // Log("== id == release %d\n", *req_c->source);
   req_c->data = data;
@@ -683,7 +690,7 @@ bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
 }
 
 bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
-  if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() ||
+  if (pendingC.is_pending() || pendingB.is_pending() || c_idpool.full() ||
       !localBoard->haskey(address))
     return false;
   // TODO: checkout pendingA
@@ -713,7 +720,7 @@ bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
   req_c->address = new paddr_t(address);
   req_c->param = new uint8_t(param);
   req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_c->source = new uint32_t(this->idpool.getid());
+  req_c->source = new uint32_t(this->c_idpool.getid());
   req_c->dirty = new uint8_t(1);
   req_c->alias = new uint8_t(alias);
   if (param == BtoN) {

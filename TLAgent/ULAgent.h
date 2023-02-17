@@ -42,6 +42,7 @@ public:
 class ULAgent : public BaseAgent {
 private:
   uint64_t *cycles;
+  std::shared_ptr<tl_interface::TLInfo> tl_info;
   PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA;
   PendingTrans<ChnD<RespField, EchoField, DATASIZE>> pendingD;
   /* We only need a localBoard recording SourceID -> UL_SBEntry
@@ -51,10 +52,7 @@ private:
   void timeout_check();
 
 public:
-  uint64_t core_id;
-  uint8_t agt_type;
-  std::shared_ptr<tl_interface::TLUInfo> tlu_info;
-  ULAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles, uint64_t cid, uint8_t ct);
+  ULAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles, uint64_t cid, uint8_t bt);
   ~ULAgent() = default;
   Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a);
   void handle_b(std::shared_ptr<ChnB>b);

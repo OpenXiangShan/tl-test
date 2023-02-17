@@ -248,13 +248,17 @@ module XSCore(
   output         auto_frontend_icache_client_out_e_valid,
   output [5:0]   auto_frontend_icache_client_out_e_bits_sink
 );
-  `define DCACHE 1'b0
-  `define ICACHE 1'b1
+`define DCACHE_BUS_TYPE 0
+`define ICACHE_BUS_TYPE 1
+`define TILE_BUS_TYPE 2
+`define L3_BUS_TYPE 3
+`define DMA_BUS_TYPE 4
+`define PTW_BUS_TYPE 5
 
 //DPI-C function
   import "DPI-C" function void tlc_agent_eval (
     input     bit[63:0]   core_id,
-    input     bit         cache_type,
+    input     bit[7:0]    bus_type,
   //Channel A
     output    bit[2:0]    a_opcode,
     output    bit[2:0]    a_param,
@@ -305,8 +309,8 @@ module XSCore(
     input     bit         e_ready
   );
 //DPI-C function end
-  wire        dcache_type = `DCACHE;
-  wire        icache_type = `ICACHE;
+  wire [7:0]  dcache_type = `DCACHE_BUS_TYPE;
+  wire [7:0]  icache_type = `ICACHE_BUS_TYPE;
   wire        auto_memBlock_dcache_client_out_a_bits_user_preferCache;
   wire [2:0]  auto_frontend_icache_client_out_a_bits_param;
   wire        auto_frontend_icache_client_out_a_bits_user_needHint;
@@ -436,120 +440,13 @@ module XSCore(
   assign auto_memBlock_pf_sender_out_addr_valid = 0;
   assign auto_memBlock_pf_sender_out_l2_pf_en = 0;
 //MISC end
-  `undef ICACHE
-  `undef DCACHE
 
-//Monitor
-`ifdef INTF_MONITOR
-  tlc_monitor tlc_dcache(
-    clock,
-    io_hartId,
-    dcache_type,
-
-    auto_memBlock_dcache_client_out_a_bits_opcode,
-    auto_memBlock_dcache_client_out_a_bits_param,
-    auto_memBlock_dcache_client_out_a_bits_size,
-    auto_memBlock_dcache_client_out_a_bits_source,
-    auto_memBlock_dcache_client_out_a_bits_address,
-    auto_memBlock_dcache_client_out_a_bits_mask,
-    auto_memBlock_dcache_client_out_a_bits_user_alias,
-    auto_memBlock_dcache_client_out_a_bits_user_preferCache,
-    auto_memBlock_dcache_client_out_a_bits_user_needHint,
-    auto_memBlock_dcache_client_out_a_valid,
-    auto_memBlock_dcache_client_out_a_ready,
-
-    auto_memBlock_dcache_client_out_b_bits_param,
-    auto_memBlock_dcache_client_out_b_bits_address,
-    auto_memBlock_dcache_client_out_b_bits_data,
-    auto_memBlock_dcache_client_out_b_valid,
-    auto_memBlock_dcache_client_out_b_ready,
-
-    auto_memBlock_dcache_client_out_c_bits_opcode,
-    auto_memBlock_dcache_client_out_c_bits_param,
-    auto_memBlock_dcache_client_out_c_bits_size,
-    auto_memBlock_dcache_client_out_c_bits_source,
-    auto_memBlock_dcache_client_out_c_bits_address,
-    auto_memBlock_dcache_client_out_c_bits_data,
-    auto_memBlock_dcache_client_out_c_bits_echo_blockisdirty,
-    auto_memBlock_dcache_client_out_c_valid,
-    auto_memBlock_dcache_client_out_c_ready,
-
-    auto_memBlock_dcache_client_out_d_bits_opcode,
-    auto_memBlock_dcache_client_out_d_bits_param,
-    auto_memBlock_dcache_client_out_d_bits_size,
-    auto_memBlock_dcache_client_out_d_bits_source,
-    auto_memBlock_dcache_client_out_d_bits_sink,
-    auto_memBlock_dcache_client_out_d_bits_denied,
-    auto_memBlock_dcache_client_out_d_bits_data,
-    auto_memBlock_dcache_client_out_d_bits_corrupt,
-    auto_memBlock_dcache_client_out_d_bits_echo_blockisdirty,
-    auto_memBlock_dcache_client_out_d_valid,
-    auto_memBlock_dcache_client_out_d_ready,
-
-    auto_memBlock_dcache_client_out_e_bits_sink,
-    auto_memBlock_dcache_client_out_e_valid,
-    auto_memBlock_dcache_client_out_e_ready
-  );
-
-  tlc_monitor tlc_icache(
-    clock,
-    io_hartId,
-    icache_type,
-
-    auto_frontend_icache_client_out_a_bits_opcode,
-    auto_frontend_icache_client_out_a_bits_param,
-    auto_frontend_icache_client_out_a_bits_size,
-    tmp_a_source,
-    auto_frontend_icache_client_out_a_bits_address,
-    auto_frontend_icache_client_out_a_bits_mask,
-    auto_frontend_icache_client_out_a_bits_user_alias,
-    auto_frontend_icache_client_out_a_bits_user_preferCache,
-    auto_frontend_icache_client_out_a_bits_user_needHint,
-    auto_frontend_icache_client_out_a_valid,
-    auto_frontend_icache_client_out_a_ready,
-
-    auto_frontend_icache_client_out_b_bits_param,
-    auto_frontend_icache_client_out_b_bits_address,
-    auto_frontend_icache_client_out_b_bits_data,
-    auto_frontend_icache_client_out_b_valid,
-    auto_frontend_icache_client_out_b_ready,
-
-    auto_frontend_icache_client_out_c_bits_opcode,
-    auto_frontend_icache_client_out_c_bits_param,
-    auto_frontend_icache_client_out_c_bits_size,
-    auto_frontend_icache_client_out_c_bits_source,
-    auto_frontend_icache_client_out_c_bits_address,
-    auto_frontend_icache_client_out_c_bits_data,
-    auto_frontend_icache_client_out_c_bits_echo_blockisdirty,
-    auto_frontend_icache_client_out_c_valid,
-    auto_frontend_icache_client_out_c_ready,
-
-    auto_frontend_icache_client_out_d_bits_opcode,
-    auto_frontend_icache_client_out_d_bits_param,
-    auto_frontend_icache_client_out_d_bits_size,
-    {3'b000, auto_frontend_icache_client_out_d_bits_source},
-    auto_frontend_icache_client_out_d_bits_sink,
-    auto_frontend_icache_client_out_d_bits_denied,
-    auto_frontend_icache_client_out_d_bits_data,
-    auto_frontend_icache_client_out_d_bits_corrupt,
-    auto_frontend_icache_client_out_d_bits_echo_blockisdirty,
-    auto_frontend_icache_client_out_d_valid,
-    auto_frontend_icache_client_out_d_ready,
-
-    auto_frontend_icache_client_out_e_bits_sink,
-    auto_frontend_icache_client_out_e_valid,
-    auto_frontend_icache_client_out_e_ready
-  );
-`endif
-
-  `define PTW_TYPE 0
-  `define DMA_TYPE 1
   wire [7:0] ptw_type;
-  assign ptw_type = `PTW_TYPE;
+  assign ptw_type = `PTW_BUS_TYPE;
 
   import "DPI-C" function void tlu_agent_eval(
     input   bit[63:0]   core_id,
-    input   bit[7:0]    agt_type,         
+    input   bit[7:0]    bus_type,         
     input   bit         a_ready,
     output  bit         a_valid,
     output  bit[2:0]    a_opcode,
@@ -598,7 +495,11 @@ module XSCore(
     );
   end
 
-  `undef PTW_TYPE
-  `undef DMA_TYPE
+`undef DCACHE_BUS_TYPE
+`undef ICACHE_BUS_TYPE
+`undef TILE_BUS_TYPE
+`undef L3_BUS_TYPE
+`undef DMA_BUS_TYPE
+`undef PTW_BUS_TYPE
 endmodule
 

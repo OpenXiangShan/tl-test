@@ -60,9 +60,7 @@ public:
 class CAgent : public BaseAgent {
 private:
   uint64_t *cycles;
-  uint64_t core_id;
-  uint8_t cache_type;
-  std::shared_ptr<tl_interface::TLCInfo> tlc_info;
+  std::shared_ptr<tl_interface::TLInfo> tl_info;
   PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA;
   PendingTrans<ChnB> pendingB;
   PendingTrans<ChnC<ReqField, EchoField, DATASIZE>> pendingC;
@@ -72,13 +70,14 @@ private:
    * For convenience, an idMap(id->addr) is also maintained
    */
   ScoreBoard<paddr_t, C_SBEntry> *localBoard;
-  ScoreBoard<int, C_IDEntry> *idMap;
+  ScoreBoard<int, C_IDEntry> *aidMap;
+  ScoreBoard<int, C_IDEntry> *cidMap;
   IDPool probeIDpool;
   void timeout_check();
 
 public:
   CAgent(GlobalBoard<paddr_t> *const gb, int id, uint64_t *cycles, uint64_t cid,
-         uint8_t ct);
+         uint8_t bt);
   ~CAgent() = default;
   Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a);
   void handle_b(std::shared_ptr<ChnB>b);

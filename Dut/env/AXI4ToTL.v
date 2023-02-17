@@ -50,7 +50,7 @@ module AXI4ToTL(
 
   import "DPI-C" function void tlu_agent_eval(
     input   bit[63:0]   core_id,
-    input   bit[7:0]    agt_type,         
+    input   bit[7:0]    bus_type,         
     input   bit         a_ready,
     output  bit         a_valid,
     output  bit[2:0]    a_opcode,
@@ -70,10 +70,14 @@ module AXI4ToTL(
     input   bit[255:0]  d_data,
     input   bit         d_corrupt
   );
-  `define PTW_TYPE 0
-  `define DMA_TYPE 1
+`define DCACHE_BUS_TYPE 0
+`define ICACHE_BUS_TYPE 1
+`define TILE_BUS_TYPE 2
+`define L3_BUS_TYPE 3
+`define DMA_BUS_TYPE 4
+`define PTW_BUS_TYPE 5
   wire [7:0] dma_type;
-  assign dma_type = `DMA_TYPE;
+  assign dma_type = `DMA_BUS_TYPE;
   wire [2:0] tmp_a_param;
   wire tmp_a_preferCache;
   always @ (posedge clock or negedge clock)begin
@@ -114,6 +118,10 @@ module AXI4ToTL(
   assign auto_in_r_bits_resp = 0;
   assign auto_in_r_bits_last = 0;
 
-  `undef PTW_TYPE
-  `undef DMA_TYPE
+`undef DCACHE_BUS_TYPE
+`undef ICACHE_BUS_TYPE
+`undef TILE_BUS_TYPE
+`undef L3_BUS_TYPE
+`undef DMA_BUS_TYPE
+`undef PTW_BUS_TYPE
 endmodule

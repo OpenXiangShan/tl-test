@@ -1,0 +1,1 @@
+add_library(Monitor Monitor.h Monitor.cpp)

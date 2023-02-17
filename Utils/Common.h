@@ -20,16 +20,28 @@ enum {
   NR_PTWAGT = 2,
   NR_DMAAGT = 1,
   NR_ULAGENTS = NR_PTWAGT + NR_DMAAGT,
+  NR_TILE_MONITOR = 2,
+  NR_L3_MONITOR = 4,
+  NR_DMA_MONITOR = 1,
+  NR_TL_MONITOR = NR_TILE_MONITOR + NR_L3_MONITOR + NR_DMA_MONITOR,
   TIMEOUT_INTERVAL = 5000,
   DRAM_OFFSET = 0x80000000
 };
 enum {
-  DCACHE_TYPE = 0, 
-  ICACHE_TYPE = 1,
-  PTW_TYPE = 0,
-  DMA_TYPE = 1,
-  DCACHE_SOURCE_WD = 6,
-  ICACHE_SOURCE_WD = 3,
+  DCACHE_BUS_TYPE = 0,
+  ICACHE_BUS_TYPE = 1,
+  TILE_BUS_TYPE = 2,
+  L3_BUS_TYPE = 3,
+  DMA_BUS_TYPE = 4,
+  PTW_BUS_TYPE = 5,
+  DCACHE_A_SOURCE_BEGIN = 0,
+  DCACHE_A_SOURCE_END = 16,
+  DCACHE_C_SOURCE_BEGIN = 0,
+  DCACHE_C_SOURCE_END = 16,
+  ICACHE_A_SOURCE_BEGIN = 0,
+  ICACHE_A_SOURCE_END = 1 << 3,
+  ICACHE_C_SOURCE_BEGIN = 4,
+  ICACHE_C_SOURCE_END = 5,
   PTW_SOURCE_WD = 3,
   DMA_SOURCE_WD = 9
 };
@@ -51,8 +63,9 @@ typedef uint64_t paddr_t;
 #define Log(...)                                                               \
   do {                                                                         \
     if (Verbose) {                                                             \
-      printf("%s: ",this->type_to_string().c_str());                               \
+      printf("%s: ",this->type_to_string().c_str());                           \
       printf(__VA_ARGS__);                                                     \
+      fflush(stdout);                                                          \
     }                                                                          \
   } while (0)
 
@@ -63,11 +76,23 @@ typedef uint64_t paddr_t;
     }                                                                          \
   } while (0)
 
-#define GET_CA_ID_UPBOUND(ct)                                                   \
-  (((ct == DCACHE_TYPE)? (1 << DCACHE_SOURCE_WD):(1 << ICACHE_SOURCE_WD)))      
+#define GET_CA_A_ID_BEGIN(ct)                                                   \
+  ((ct == DCACHE_BUS_TYPE)? DCACHE_A_SOURCE_BEGIN:ICACHE_A_SOURCE_BEGIN)
+
+#define GET_CA_A_ID_END(ct)                                                   \
+  ((ct == DCACHE_BUS_TYPE)? DCACHE_A_SOURCE_END:ICACHE_A_SOURCE_END) 
+
+#define GET_CA_C_ID_BEGIN(ct)                                                   \
+  ((ct == DCACHE_BUS_TYPE)? DCACHE_C_SOURCE_BEGIN:ICACHE_C_SOURCE_BEGIN)
+
+#define GET_CA_C_ID_END(ct)                                                   \
+  ((ct == DCACHE_BUS_TYPE)? DCACHE_C_SOURCE_END:ICACHE_C_SOURCE_END)
+
+#define GET_CA_PROB_ID(ct)                                                   \
+  ((ct == DCACHE_BUS_TYPE)? DCACHE_C_SOURCE_END:ICACHE_C_SOURCE_BEGIN)    
 
 #define GET_UA_ID_UPBOUND(ct)                                                   \
-  (((ct == PTW_TYPE)? (1 << PTW_SOURCE_WD):(1 << DMA_SOURCE_WD)))      
+  (((ct == PTW_BUS_TYPE)? (1 << PTW_SOURCE_WD):(1 << DMA_SOURCE_WD)))      
 
 /*
 #define Log(...) \

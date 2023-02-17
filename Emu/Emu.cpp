@@ -14,12 +14,12 @@ void Emu::parse_args(int argc, char **argv) {
                                         {"wave-begin", 1, NULL, 'b'},
                                         {"wave-end", 1, NULL, 'e'},
                                         {"cycles", 1, NULL, 'c'},
-                                        {"wave-full", 0, NULL, 'f'},
                                         {"verbose", 0, NULL, 'v'},
+                                        {"monitor", 0, NULL, 'm'},
                                         {0, 0, NULL, 0}};
   int o;
   int long_index = 0;
-  while ((o = getopt_long(argc, const_cast<char *const *>(argv), "-s:b:e:c:fv",
+  while ((o = getopt_long(argc, const_cast<char *const *>(argv), "-s:b:e:c:v",
                           long_options, &long_index)) != -1) {
     switch (o) {
     case 's':
@@ -34,11 +34,11 @@ void Emu::parse_args(int argc, char **argv) {
     case 'c':
       this->exe_cycles = atoll(optarg);
       break;
-    case 'f':
-      this->wave_full = true;
-      break;
     case 'v':
       Verbose = true;
+      break;
+    case 'm':
+      en_monitor = true;
       break;
     default:
       tlc_assert(false, "Unknown args!");
@@ -67,17 +67,29 @@ Emu::Emu(int argc, char **argv) {
   }
 
   for (int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
-    agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, i % 2, PTW_TYPE));
+    agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, i % 2, PTW_BUS_TYPE));
     fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
     fuzzers[i]->set_cycles(&Cycles);
   }
 
   for (int i = NR_CAGENTS + NR_PTWAGT; i < NR_AGENTS; i++) {
-    agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, 0xffffffffffffffffL, DMA_TYPE));
+    agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, 0xffffffffffffffffL, DMA_BUS_TYPE));
     fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
     fuzzers[i]->set_cycles(&Cycles);
   }
+  if(this->en_monitor){
+    for (int i = 0; i < NR_TILE_MONITOR; i++) {
+      monitors[i].reset(new tl_monitor::Monitor(&Cycles, i, TILE_BUS_TYPE));
+    }
 
+    for (int i = NR_TILE_MONITOR; i < NR_TILE_MONITOR + NR_L3_MONITOR; i++) {
+      monitors[i].reset(new tl_monitor::Monitor(&Cycles, i - NR_TILE_MONITOR, L3_BUS_TYPE));
+    }
+
+    for (int i = NR_TILE_MONITOR + NR_L3_MONITOR; i < NR_TL_MONITOR; i++) {
+      monitors[i].reset(new tl_monitor::Monitor(&Cycles, i - NR_TILE_MONITOR - NR_L3_MONITOR, DMA_BUS_TYPE));
+    }
+  }
 #if VM_TRACE == 1
   if (this->enable_wave) {
     Verilated::traceEverOn(true); // Verilator must compute traced signals
@@ -100,6 +112,11 @@ Emu::~Emu() {
 
 void Emu::execute(uint64_t nr_cycle) {
   while (Cycles < nr_cycle) {
+    if(this->en_monitor){
+      for(int i = 0; i < NR_TL_MONITOR; i++){
+        monitors[i]->print_info();
+      }
+    }
     for (int i = 0; i < NR_AGENTS; i++) {
       agents[i]->handle_channel();
     }
