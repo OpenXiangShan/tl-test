@@ -653,7 +653,7 @@ bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
   req_a->alias = new uint8_t(alias);
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
-  Log("[%ld] [AcquirePerm] addr: %lx alias: %d\n", *cycles, address, alias);
+  Log("[%ld] [AcquirePerm] addr: %lx source: %d alias: %d\n", *cycles, address, *(req_a->source), alias);
   return true;
 }
 
@@ -773,7 +773,7 @@ void CAgent::timeout_check() {
           printf("Now time:   %lu\n", *this->cycles);
           printf("Last stamp: %lu\n", value->time_stamp);
           printf("Status[0]:  %d\n", value->status[0]);
-          printf("Address:    %lu\n", it->first);
+          printf("Address:    0x%lx\n", it->first);
           tlc_assert(false, "Transaction time out");
         }
       }
