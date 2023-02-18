@@ -6,14 +6,14 @@
 
 ULFuzzer::ULFuzzer(std::shared_ptr<tl_agent::ULAgent> ulAgent) { this->ulAgent = ulAgent; }
 
-uint8_t *genPutData(uint8_t *putdata) {
+std::shared_ptr<uint8_t[]>genPutData(std::shared_ptr<uint8_t[]>putdata) {
   for (int i = 0; i < DATASIZE; i++) {
     putdata[i] = (uint8_t)rand();
   }
   return putdata;
 }
 
-uint8_t *genPutPartialData(uint8_t *putdata) {
+std::shared_ptr<uint8_t[]>genPutPartialData(std::shared_ptr<uint8_t[]>putdata) {
   for (int i = 0; i < DATASIZE / 2; i++) {
     putdata[i] = (uint8_t)rand();
   }
@@ -29,7 +29,7 @@ void ULFuzzer::randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent) {
   bool sent = false;
   paddr_t addr;
   bool flag;
-  uint8_t *putdata = new uint8_t[DATASIZE];
+  std::shared_ptr<uint8_t[]>putdata(new uint8_t[DATASIZE]);
   for (int i = 0; i < 10; i++) {
     addr = (rand() % 0x8) * (rand() % 0x80) * 0x40 + DRAM_OFFSET; // Tag + Set + Offset
     flag = true;
@@ -77,12 +77,10 @@ void ULFuzzer::randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent) {
       }
     }
   }
-  if (!sent)
-    delete[] (putdata);
 }
 
 void ULFuzzer::caseTest() {
-  uint8_t *putdata = new uint8_t[DATASIZE];
+  std::shared_ptr<uint8_t[]>putdata(new uint8_t[DATASIZE]);
   if (*cycles == 500) {
     ulAgent->do_putpartialdata(0x1070, 2, 0xf0000, genPutPartialData(putdata));
   }
@@ -92,7 +90,7 @@ void ULFuzzer::caseTest() {
 }
 
 void ULFuzzer::caseTest2() {
-  uint8_t *putdata = new uint8_t[DATASIZE];
+  std::shared_ptr<uint8_t[]>putdata(new uint8_t[DATASIZE]);
   if (*cycles == 100) {
     ulAgent->do_putpartialdata(0x1000, 2, 0xf, genPutPartialData(putdata));
   }

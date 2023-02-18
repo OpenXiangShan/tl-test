@@ -36,6 +36,7 @@ private:
   bool en_monitor = false;
   bool enable_wave = true;
   bool wave_full = false;
+  bool all_wave = false;
   inline char *cycle_wavefile(uint64_t cycles, time_t t);
   void parse_args(int argc, char **argv);
 

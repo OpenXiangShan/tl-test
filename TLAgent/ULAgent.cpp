@@ -76,32 +76,6 @@ Resp ULAgent::send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) {
 
 Resp ULAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) { return OK; }
 
-/* Deprecated function */
-uint8_t *
-mergePutPartialData(PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA,
-                    uint8_t *origin_data) {
-  if (*pendingA.info->opcode == Get || *pendingA.info->opcode == PutFullData) {
-    return pendingA.info->data;
-  } else {
-    for (int i = 0; i < BEATSIZE; i++) {
-      uint8_t validN = *pendingA.info->mask & ((uint32_t)1 << i);
-      if (!validN) {
-        if (origin_data == nullptr)
-          pendingA.info->data[i] = 0;
-        else
-          pendingA.info->data[i] = origin_data[i];
-      }
-    }
-    for (int i = BEATSIZE; i < DATASIZE; i++) {
-      if (origin_data == nullptr)
-        pendingA.info->data[i] = 0;
-      else
-        pendingA.info->data[i] = origin_data[i];
-    }
-    return pendingA.info->data;
-  }
-}
-
 void ULAgent::fire_a() {
   if (this->port->a.fire()) {
     *pendingA.info->address = align_addr(*pendingA.info->address);
@@ -157,10 +131,10 @@ void ULAgent::fire_d() {
       pendingD.update();
     } else { // new D resp
       std::shared_ptr<ChnD<RespField, EchoField, DATASIZE> >resp_d(new ChnD<RespField, EchoField, DATASIZE>());
-      resp_d->opcode = new uint8_t(*chnD.opcode);
-      resp_d->param = new uint8_t(*chnD.param);
-      resp_d->source = new uint32_t(*chnD.source);
-      resp_d->data = hasData ? new uint8_t[DATASIZE] : nullptr;
+      resp_d->opcode.reset(new uint8_t(*chnD.opcode));
+      resp_d->param.reset(new uint8_t(*chnD.param));
+      resp_d->source.reset(new uint32_t(*chnD.source));
+      resp_d->data.reset(hasData ? new uint8_t[DATASIZE] : nullptr);
       int nr_beat = (*chnD.opcode == Grant || *chnD.opcode == AccessAck ||
                      *chnD.size <= 5)
                         ? 0
@@ -222,11 +196,11 @@ bool ULAgent::do_getAuto(paddr_t address) {
   if (pendingA.is_pending() || a_idpool.full())
     return false;
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
-  req_a->opcode = new uint8_t(Get);
-  req_a->address = new paddr_t(address);
-  req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint32_t(this->a_idpool.getid());
+  req_a->opcode.reset(new uint8_t(Get));
+  req_a->address.reset(new paddr_t(address));
+  req_a->size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
+  req_a->mask.reset(new uint32_t(0xffffffffUL));
+  req_a->source.reset(new uint32_t(this->a_idpool.getid()));
   pendingA.init(req_a, 1);
   Log("[%ld] [Get] addr: %lx source: %d\n", *cycles, address, *(req_a->source));
   return true;
@@ -236,17 +210,17 @@ bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
   if (pendingA.is_pending() || a_idpool.full())
     return false;
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
-  req_a->opcode = new uint8_t(Get);
-  req_a->address = new paddr_t(address);
-  req_a->size = new uint8_t(size);
-  req_a->mask = new uint32_t(mask);
-  req_a->source = new uint32_t(this->a_idpool.getid());
+  req_a->opcode.reset(new uint8_t(Get));
+  req_a->address.reset(new paddr_t(address));
+  req_a->size.reset(new uint8_t(size));
+  req_a->mask.reset(new uint32_t(mask));
+  req_a->source.reset(new uint32_t(this->a_idpool.getid()));
   pendingA.init(req_a, 1);
   Log("[%ld] [Get] addr: %lx size: %x\n", *cycles, address, size);
   return true;
 }
 
-bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
+bool ULAgent::do_putfulldata(paddr_t address, std::shared_ptr<uint8_t[]> data) {
   if (pendingA.is_pending() || a_idpool.full())
     return false;
   if (this->globalBoard->haskey(address) &&
@@ -254,11 +228,11 @@ bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
     return false;
   }
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
-  req_a->opcode = new uint8_t(PutFullData);
-  req_a->address = new paddr_t(address);
-  req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint32_t(this->a_idpool.getid());
+  req_a->opcode.reset(new uint8_t(PutFullData));
+  req_a->address.reset(new paddr_t(address));
+  req_a->size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
+  req_a->mask.reset(new uint32_t(0xffffffffUL));
+  req_a->source.reset(new uint32_t(this->a_idpool.getid()));
   req_a->data = data;
   pendingA.init(req_a, DATASIZE / BEATSIZE);
   Log("[%ld] [PutFullData] addr: %lx source: %d data: ", *cycles, address, *(req_a->source));
@@ -269,20 +243,19 @@ bool ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
   return true;
 }
 
-bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
-                                uint8_t data[]) {
+bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,std::shared_ptr<uint8_t[]> data) {
   if (pendingA.is_pending() || a_idpool.full())
     return false;
   if (this->globalBoard->haskey(address) &&
       this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
     return false;
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
-  req_a->opcode =
-      (rand() % 3) ? new uint8_t(PutPartialData) : new uint8_t(PutFullData);
-  req_a->address = new paddr_t(address);
-  req_a->size = new uint8_t(size);
-  req_a->mask = new uint32_t(mask);
-  req_a->source = new uint32_t(this->a_idpool.getid());
+  req_a->opcode.reset(
+      (rand() % 3) ? new uint8_t(PutPartialData) : new uint8_t(PutFullData));
+  req_a->address.reset(new paddr_t(address));
+  req_a->size.reset(new uint8_t(size));
+  req_a->mask.reset(new uint32_t(mask));
+  req_a->source.reset(new uint32_t(this->a_idpool.getid()));
   req_a->data = data;
   int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
   pendingA.init(req_a, nrBeat);

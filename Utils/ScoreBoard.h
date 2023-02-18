@@ -31,21 +31,22 @@ class Global_SBEntry {
 public:
   enum { SB_INVALID = 0, SB_VALID, SB_PENDING };
   int status;
-  uint8_t *data;
-  uint8_t *pending_data; // used for put&release
+  std::shared_ptr<uint8_t[]> data;
+  std::shared_ptr<uint8_t[]> pending_data; // used for put&release
   uint64_t mask;
 };
 
 template <typename T> class GlobalBoard : public ScoreBoard<T, Global_SBEntry> {
 private:
-  int data_check(const uint8_t *dut, const uint8_t *ref,
+  int data_check(std::shared_ptr<const uint8_t[]>dut, std::shared_ptr<const uint8_t[]>ref,
                  std::string assert_info);
-  uint8_t init_zeros[DATASIZE];
+  std::shared_ptr<uint8_t[]>init_zeros;
 
 public:
-  int verify(const T &key, const uint8_t *data);
+  int verify(const T &key, std::shared_ptr<const uint8_t[]>data);
   void unpending(const T &key);
   void update(const T &key, std::shared_ptr<Global_SBEntry> &data);
+  GlobalBoard();
 };
 
 /************************** Implementation **************************/
@@ -102,7 +103,14 @@ bool ScoreBoard<Tk, Tv>::haskey(const Tk &key) {
 }
 
 template <typename T>
-int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref,
+GlobalBoard<T>::GlobalBoard(){
+  init_zeros.reset(new uint8_t[DATASIZE]);
+  int idx = DATASIZE;
+  while(idx --> 0)init_zeros[idx] = 0;
+}
+
+template <typename T>
+int GlobalBoard<T>::data_check(std::shared_ptr<const uint8_t[]>dut, std::shared_ptr<const uint8_t[]>ref,
                                std::string assert_info) {
   for (int i = 0; i < DATASIZE; i++) {
     if (dut[i] != ref[i]) {
@@ -126,14 +134,6 @@ template <typename T>
 void GlobalBoard<T>::update(const T &key,
                             std::shared_ptr<Global_SBEntry> &data) {
   if (this->mapping.count(key) != 0) {
-    if (this->mapping[key] != nullptr) {
-      if (this->mapping[key]->data != data->data) {
-        delete (this->mapping[key]->data);
-      }
-      if (this->mapping[key]->pending_data != data->pending_data) {
-        delete (this->mapping[key]->pending_data);
-      }
-    }
     this->mapping[key] = data;
   } else {
     this->mapping.insert(std::make_pair(key, data));
@@ -141,7 +141,7 @@ void GlobalBoard<T>::update(const T &key,
 }
 
 template <typename T>
-int GlobalBoard<T>::verify(const T &key, const uint8_t *data) {
+int GlobalBoard<T>::verify(const T &key, std::shared_ptr<const uint8_t[]>data) {
   if (this->mapping.count(key) == 0) { // we assume data is all zero initially
     return this->data_check(data, init_zeros, "Init data is non-zero!");
   }

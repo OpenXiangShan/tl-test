@@ -57,9 +57,6 @@ public:
   bool is_multiBeat() { return (this->nr_beat != 1); };
   bool is_pending() { return (beat_cnt != 0); }
   void init(std::shared_ptr<T> info, int nr_beat) {
-    if (this->info != nullptr) {
-      this->info->free();
-    }
     this->info = info;
     this->nr_beat = nr_beat;
     beat_cnt = nr_beat;

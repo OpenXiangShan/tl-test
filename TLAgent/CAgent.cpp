@@ -147,32 +147,31 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
     return;
   }
   std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >req_c(new ChnC<ReqField, EchoField, DATASIZE>());
-  req_c->address = new paddr_t(*b->address);
-  req_c->size = new uint8_t(*b->size);
-  req_c->source = new uint32_t(this->probeIDpool.getid());
-  req_c->dirty = new uint8_t(1);
-  req_c->alias = new uint8_t(*b->alias);
+  req_c->address.reset(new paddr_t(*b->address));
+  req_c->size.reset(new uint8_t(*b->size));
+  req_c->source.reset(new uint32_t(this->probeIDpool.getid()));
+  req_c->dirty.reset(new uint8_t(1));
+  req_c->alias.reset(new uint8_t(*b->alias));
   // Log("== id == handleB %d\n", *req_c->source);
   if (exact_status == S_SENDING_A || exact_status == S_INVALID ||
       exact_status == S_A_WAITING_D) {
     Log("Probe an non-exist block, status: %d\n", exact_status);
-    req_c->opcode = new uint8_t(ProbeAck);
-    req_c->param = new uint8_t(NtoN);
+    req_c->opcode.reset(new uint8_t(ProbeAck));
+    req_c->param.reset(new uint8_t(NtoN));
     pendingC.init(req_c, 1);
     Log("[%ld] [ProbeAck NtoN] addr: %lx\n", *cycles, *b->address);
   } else {
     int dirty =
         (exact_privilege == TIP) && (info->dirty[*b->alias] || rand() % 3);
     // When should we probeAck with data? request need_data or dirty itself
-    req_c->opcode = (dirty || *b->needdata) ? new uint8_t(ProbeAckData)
-                                            : new uint8_t(ProbeAck);
+    req_c->opcode.reset((dirty || *b->needdata) ? new uint8_t(ProbeAckData): new uint8_t(ProbeAck));
     if (*b->param == toB) {
       switch (exact_privilege) {
       case TIP:
-        req_c->param = new uint8_t(TtoB);
+        req_c->param.reset(new uint8_t(TtoB));
         break;
       case BRANCH:
-        req_c->param = new uint8_t(BtoB);
+        req_c->param.reset(new uint8_t(BtoB));
         break;
       default:
         tlc_assert(false, "Try to probe toB an invalid block!");
@@ -180,10 +179,10 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
     } else if (*b->param == toN) {
       switch (exact_privilege) {
       case TIP:
-        req_c->param = new uint8_t(TtoN);
+        req_c->param.reset(new uint8_t(TtoN));
         break;
       case BRANCH:
-        req_c->param = new uint8_t(BtoN);
+        req_c->param.reset(new uint8_t(BtoN));
         break;
       default:
         tlc_assert(false, "Try to probe toB an invalid block!");
@@ -196,14 +195,14 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
       for (int i = 0; i < DATASIZE; i++) {
         all_zero[i] = 0;
       }
-      req_c->data = all_zero;
+      req_c->data.reset(all_zero);
     } else {
       if (*req_c->opcode == ProbeAckData && *req_c->param != BtoN) {
         uint8_t *random = new uint8_t[DATASIZE];
         for (int i = 0; i < DATASIZE; i++) {
           random[i] = (uint8_t)rand();
         }
-        req_c->data = random;
+        req_c->data.reset(random);
       } else {
         req_c->data = globalBoard->query(*b->address)->data;
       }
@@ -333,13 +332,13 @@ void CAgent::fire_b() {
     auto chnB = this->port->b;
     // Log("[%ld] [B fire] addr: %lx\n", *cycles, *chnB.address);
     std::shared_ptr<ChnB>req_b(new ChnB());
-    req_b->opcode = new uint8_t(*chnB.opcode);
-    req_b->address = new paddr_t(*chnB.address);
-    req_b->param = new uint8_t(*chnB.param);
-    req_b->size = new uint8_t(*chnB.size);
-    req_b->source = new uint32_t(*chnB.source);
-    req_b->alias = new uint8_t((*chnB.alias) >> 1);
-    req_b->needdata = new uint8_t((*chnB.alias) & 0x1);
+    req_b->opcode.reset(new uint8_t(*chnB.opcode));
+    req_b->address.reset(new paddr_t(*chnB.address));
+    req_b->param.reset(new uint8_t(*chnB.param));
+    req_b->size.reset(new uint8_t(*chnB.size));
+    req_b->source.reset(new uint32_t(*chnB.source));
+    req_b->alias.reset(new uint8_t((*chnB.alias) >> 1));
+    req_b->needdata.reset(new uint8_t((*chnB.alias) & 0x1));
     pendingB.init(req_b, 1);
     Log("[%ld] [Probe] addr: %lx alias: %d\n", *cycles, *chnB.address,
         (*chnB.alias) >> 1);
@@ -452,10 +451,10 @@ void CAgent::fire_d() {
       pendingD.update();
     } else { // new D resp
       std::shared_ptr<ChnD<RespField, EchoField, DATASIZE> >resp_d(new ChnD<RespField, EchoField, DATASIZE>());
-      resp_d->opcode = new uint8_t(*chnD.opcode);
-      resp_d->param = new uint8_t(*chnD.param);
-      resp_d->source = new uint32_t(*chnD.source);
-      resp_d->data = grant ? new uint8_t[DATASIZE] : nullptr;
+      resp_d->opcode.reset(new uint8_t(*chnD.opcode));
+      resp_d->param.reset(new uint8_t(*chnD.param));
+      resp_d->source.reset(new uint32_t(*chnD.source));
+      resp_d->data.reset(grant ? new uint8_t[DATASIZE] : nullptr);
       int nr_beat = (*chnD.opcode == Grant || *chnD.opcode == ReleaseAck)
                         ? 0
                         : 1; // TODO: parameterize it
@@ -512,9 +511,9 @@ void CAgent::fire_d() {
         tlc_assert(exact_status != S_A_WAITING_D_INTR,
                    "TODO: check this Ridiculous probe!");
         std::shared_ptr<ChnE>req_e(new ChnE());
-        req_e->sink = new uint8_t(*chnD.sink);
-        req_e->addr = new paddr_t(addr);
-        req_e->alias = new uint8_t(alias);
+        req_e->sink.reset(new uint8_t(*chnD.sink));
+        req_e->addr.reset(new paddr_t(addr));
+        req_e->alias.reset(new uint8_t(alias));
         if (pendingE.is_pending()) {
           tlc_assert(false, "E is pending!");
         }
@@ -597,13 +596,13 @@ bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
     }
   }
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
-  req_a->opcode = new uint8_t(AcquireBlock);
-  req_a->address = new paddr_t(address);
-  req_a->param = new uint8_t(param);
-  req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint32_t(this->a_idpool.getid());
-  req_a->alias = new uint8_t(alias);
+  req_a->opcode.reset(new uint8_t(AcquireBlock));
+  req_a->address.reset(new paddr_t(address));
+  req_a->param.reset(new uint8_t(param));
+  req_a->size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
+  req_a->mask.reset(new uint32_t(0xffffffffUL));
+  req_a->source.reset(new uint32_t(this->a_idpool.getid()));
+  req_a->alias.reset(new uint8_t(alias));
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
   switch (param) {
@@ -641,20 +640,20 @@ bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
     }
   }
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
-  req_a->opcode = new uint8_t(AcquirePerm);
-  req_a->address = new paddr_t(address);
-  req_a->param = new uint8_t(param);
-  req_a->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_a->mask = new uint32_t(0xffffffffUL);
-  req_a->source = new uint32_t(this->a_idpool.getid());
-  req_a->alias = new uint8_t(alias);
+  req_a->opcode.reset(new uint8_t(AcquirePerm));
+  req_a->address.reset(new paddr_t(address));
+  req_a->param.reset(new uint8_t(param));
+  req_a->size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
+  req_a->mask.reset(new uint32_t(0xffffffffUL));
+  req_a->source.reset(new uint32_t(this->a_idpool.getid()));
+  req_a->alias.reset(new uint8_t(alias));
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
   Log("[%ld] [AcquirePerm] addr: %lx source: %d alias: %d\n", *cycles, address, *(req_a->source), alias);
   return true;
 }
 
-bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
+bool CAgent::do_releaseData(paddr_t address, int param, std::shared_ptr<uint8_t[]>data,
                             int alias) {
   if (pendingC.is_pending() || pendingB.is_pending() || release_idpool.full() ||
       !localBoard->haskey(address))
@@ -675,15 +674,15 @@ bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[],
     return false;
 
   std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >req_c(new ChnC<ReqField, EchoField, DATASIZE>());
-  req_c->opcode = new uint8_t(ReleaseData);
-  req_c->address = new paddr_t(address);
-  req_c->param = new uint8_t(param);
-  req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_c->source = new uint32_t(this->release_idpool.getid());
-  req_c->dirty = new uint8_t(1);
+  req_c->opcode.reset(new uint8_t(ReleaseData));
+  req_c->address.reset(new paddr_t(address));
+  req_c->param.reset(new uint8_t(param));
+  req_c->size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
+  req_c->source.reset(new uint32_t(this->release_idpool.getid()));
+  req_c->dirty.reset(new uint8_t(1));
   // Log("== id == release %d\n", *req_c->source);
   req_c->data = data;
-  req_c->alias = new uint8_t(alias);
+  req_c->alias.reset(new uint8_t(alias));
   pendingC.init(req_c, DATASIZE / BEATSIZE);
   Log("[%ld] [ReleaseData] addr: %lx, data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
@@ -720,19 +719,19 @@ bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
   }
 
   std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >req_c(new ChnC<ReqField, EchoField, DATASIZE>());
-  req_c->opcode = new uint8_t(ReleaseData);
-  req_c->address = new paddr_t(address);
-  req_c->param = new uint8_t(param);
-  req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
-  req_c->source = new uint32_t(this->release_idpool.getid());
-  req_c->dirty = new uint8_t(1);
-  req_c->alias = new uint8_t(alias);
+  req_c->opcode.reset(new uint8_t(ReleaseData));
+  req_c->address.reset(new paddr_t(address));
+  req_c->param.reset(new uint8_t(param));
+  req_c->size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
+  req_c->source.reset(new uint32_t(this->release_idpool.getid()));
+  req_c->dirty.reset(new uint8_t(1));
+  req_c->alias.reset(new uint8_t(alias));
   if (param == BtoN) {
-    uint8_t *data = globalBoard->query(address)->data;
+    std::shared_ptr<uint8_t[]>data = globalBoard->query(address)->data;
     req_c->data = data;
   } else {
     tlc_assert(param == TtoN, "Wrong execution path!");
-    uint8_t *putdata = new uint8_t[DATASIZE];
+    std::shared_ptr<uint8_t[]>putdata(new uint8_t[DATASIZE]);
     for (int i = 0; i < DATASIZE; i++) {
       putdata[i] = (uint8_t)rand();
     }

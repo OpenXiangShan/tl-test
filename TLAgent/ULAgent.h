@@ -68,9 +68,9 @@ public:
 
   bool do_getAuto(paddr_t address);
   bool do_get(paddr_t address, uint8_t size, uint32_t mask);
-  bool do_putfulldata(paddr_t address, uint8_t data[]);
+  bool do_putfulldata(paddr_t address, std::shared_ptr<uint8_t[]> data);
   bool do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,
-                         uint8_t data[]);
+                         std::shared_ptr<uint8_t[]> data);
   std::string type_to_string();
 };
 

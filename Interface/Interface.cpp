@@ -78,64 +78,64 @@ namespace tl_interface{
 
   void TLInfo::connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port){
     //Channel A
-    port->a.ready     = &a_ready;
-    port->a.valid     = &a_valid;
-    port->a.opcode    = (uint8_t *)(&a_opcode);
-    port->a.param     = (uint8_t *)(&a_param);
-    port->a.address   = &a_address;
-    port->a.size      = (uint8_t *)(&a_size);
-    port->a.source    = &a_source;
-    port->a.mask      = &a_mask;
-    port->a.data      = a_data;
-    port->a.alias     = (uint8_t *)(&a_user_alias);
-    port->a.corrupt   = &a_corrupt;
-    port->a.usr       = (tl_agent::ReqField*)&a_user;
-    port->a.echo      = (tl_agent::EchoField*)&a_echo;
+    port->a.ready    .reset(&a_ready);
+    port->a.valid    .reset(&a_valid);
+    port->a.opcode   .reset((uint8_t *)(&a_opcode));
+    port->a.param    .reset((uint8_t *)(&a_param));
+    port->a.address  .reset(&a_address);
+    port->a.size     .reset((uint8_t *)(&a_size));
+    port->a.source   .reset(&a_source);
+    port->a.mask     .reset(&a_mask);
+    port->a.data     .reset(a_data);
+    port->a.alias    .reset((uint8_t *)(&a_user_alias));
+    port->a.corrupt  .reset(&a_corrupt);
+    port->a.usr      .reset((tl_agent::ReqField*)&a_user);
+    port->a.echo     .reset((tl_agent::EchoField*)&a_echo);
     //Channel B
-    port->b.ready     = &b_ready;
-    port->b.valid     = &b_valid;
-    port->b.opcode    = (uint8_t *)&b_opcode;
-    port->b.param     = (uint8_t *)(&b_param);
-    port->b.address   = &b_address;
-    port->b.size      = &b_size;
-    port->b.source    = &b_source;
-    port->b.alias     = &b_alias;
-    port->b.needdata  = &b_needdata;
-    port->b.corrupt   = &b_corrupt;
+    port->b.ready    .reset(&b_ready);
+    port->b.valid    .reset(&b_valid);
+    port->b.opcode   .reset((uint8_t *)&b_opcode);
+    port->b.param    .reset((uint8_t *)(&b_param));
+    port->b.address  .reset(&b_address);
+    port->b.size     .reset(&b_size);
+    port->b.source   .reset(&b_source);
+    port->b.alias    .reset(&b_alias);
+    port->b.needdata .reset(&b_needdata);
+    port->b.corrupt  .reset(&b_corrupt);
     //Channel C
-    port->c.ready     = &c_ready;
-    port->c.valid     = &c_valid;
-    port->c.opcode    = (uint8_t *)(&c_opcode);
-    port->c.param     = (uint8_t *)(&c_param);
-    port->c.address   = &c_address;
-    port->c.size      = (uint8_t *)(&c_size);
-    port->c.source    = &c_source;
-    port->c.data      = c_data;
-    port->c.dirty     = &c_echo_blockisdirty;
-    port->c.corrupt   = &c_corrupt;
-    port->c.alias     = nullptr;
-    port->c.usr       = (tl_agent::ReqField*)&c_user;
-    port->c.echo      = (tl_agent::EchoField*)&c_echo;
+    port->c.ready    .reset(&c_ready);
+    port->c.valid    .reset(&c_valid);
+    port->c.opcode   .reset((uint8_t *)(&c_opcode));
+    port->c.param    .reset((uint8_t *)(&c_param));
+    port->c.address  .reset(&c_address);
+    port->c.size     .reset((uint8_t *)(&c_size));
+    port->c.source   .reset(&c_source);
+    port->c.data     .reset(c_data);
+    port->c.dirty    .reset(&c_echo_blockisdirty);
+    port->c.corrupt  .reset(&c_corrupt);
+    port->c.alias    = nullptr;
+    port->c.usr      .reset((tl_agent::ReqField*)&c_user);
+    port->c.echo     .reset((tl_agent::EchoField*)&c_echo);
     //Channel D
-    port->d.ready     = &d_ready;
-    port->d.valid     = &d_valid;
-    port->d.opcode    = (uint8_t *)(&d_opcode);
-    port->d.param     = (uint8_t *)(&d_param);
-    port->d.size      = (uint8_t *)(&d_size);
-    port->d.source    = &d_source;
-    port->d.sink      = (uint8_t *)(&d_sink);
-    port->d.denied    = &d_denied;
-    port->d.dirty     = &d_echo_blockisdirty;
-    port->d.data      = d_data;
-    port->d.corrupt   = &d_corrupt;
-    port->d.usr       = (tl_agent::RespField*)&d_user;
-    port->d.echo      = (tl_agent::EchoField*)&d_echo;
+    port->d.ready    .reset(&d_ready);
+    port->d.valid    .reset(&d_valid);
+    port->d.opcode   .reset((uint8_t *)(&d_opcode));
+    port->d.param    .reset((uint8_t *)(&d_param));
+    port->d.size     .reset((uint8_t *)(&d_size));
+    port->d.source   .reset(&d_source);
+    port->d.sink     .reset((uint8_t *)(&d_sink));
+    port->d.denied   .reset(&d_denied);
+    port->d.dirty    .reset(&d_echo_blockisdirty);
+    port->d.data     .reset(d_data);
+    port->d.corrupt  .reset(&d_corrupt);
+    port->d.usr      .reset((tl_agent::RespField*)&d_user);
+    port->d.echo     .reset((tl_agent::EchoField*)&d_echo);
     //Channel E
-    port->e.ready     = &e_ready;
-    port->e.valid     = &e_valid;
-    port->e.sink      = (uint8_t *)(&e_sink);
-    port->e.addr      = nullptr;
-    port->e.alias     = nullptr;
+    port->e.ready    .reset(&e_ready);
+    port->e.valid    .reset(&e_valid);
+    port->e.sink     .reset((uint8_t *)(&e_sink));
+    port->e.addr     = nullptr;
+    port->e.alias    = nullptr;
   }
 
   std::shared_ptr<TLInfo> find_tlc_info(uint64_t cid, uint8_t bt){

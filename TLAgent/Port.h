@@ -42,179 +42,74 @@ enum { INVALID = 0, BRANCH, TRUNK, TIP };
 
 class Decoupled {
 public:
-  uint8_t *valid;
-  uint8_t *ready;
+  std::shared_ptr<uint8_t> valid;
+  std::shared_ptr<uint8_t> ready;
 
   bool fire() const { return *valid && *ready; }
-  virtual void free() = 0;
 };
 
 template <class Usr, class Echo, std::size_t N> class ChnA : public Decoupled {
 public:
-  uint8_t *opcode;
-  uint8_t *param;
-  uint8_t *size;
-  uint32_t *source;
-  uint32_t *mask;
-  paddr_t *address;
-  uint8_t *data;
-  Usr *usr;
-  Echo *echo;
-  uint8_t *corrupt;
-  uint8_t *alias;
-
-  ChnA(){
-    opcode = nullptr;
-    param = nullptr;
-    size = nullptr;
-    source = nullptr;
-    mask = nullptr;
-    address = nullptr;
-    data = nullptr;
-    usr = nullptr;
-    echo = nullptr;
-    corrupt = nullptr;
-    alias = nullptr;
-  }
-
-  void free() {
-    delete (this->opcode);
-    delete (this->param);
-    delete (this->size);
-    delete (this->source);
-    delete (this->mask);
-    delete (this->address);
-    delete (this->alias);
-    delete[] (this->data);
-  }
+  std::shared_ptr<uint8_t> opcode;
+  std::shared_ptr<uint8_t> param;
+  std::shared_ptr<uint8_t> size;
+  std::shared_ptr<uint32_t> source;
+  std::shared_ptr<uint32_t> mask;
+  std::shared_ptr<paddr_t> address;
+  std::shared_ptr<uint8_t[]> data;
+  std::shared_ptr<Usr> usr;
+  std::shared_ptr<Echo> echo;
+  std::shared_ptr<uint8_t> corrupt;
+  std::shared_ptr<uint8_t> alias;
 };
 
 class ChnB : public Decoupled {
 public:
-  uint8_t *opcode;
-  uint8_t *param;
-  uint8_t *size;
-  uint32_t *source;
-  paddr_t *address;
-  uint8_t *corrupt;
-  uint8_t *alias;
-  uint8_t *needdata;
-
-  ChnB(){
-    opcode = nullptr;
-    param = nullptr;
-    size = nullptr;
-    source = nullptr;
-    address = nullptr;
-    corrupt = nullptr;
-    alias = nullptr;
-    needdata = nullptr;
-  }
-
-  void free() {
-    delete (this->opcode);
-    delete (this->param);
-    delete (this->size);
-    delete (this->source);
-    delete (this->address);
-    delete (this->alias);
-  }
+  std::shared_ptr<uint8_t> opcode;
+  std::shared_ptr<uint8_t> param;
+  std::shared_ptr<uint8_t> size;
+  std::shared_ptr<uint32_t> source;
+  std::shared_ptr<paddr_t> address;
+  std::shared_ptr<uint8_t> corrupt;
+  std::shared_ptr<uint8_t> alias;
+  std::shared_ptr<uint8_t> needdata;
 };
 
 template <class Usr, class Echo, std::size_t N> class ChnC : public Decoupled {
 public:
-  uint8_t *opcode;
-  uint8_t *param;
-  uint8_t *size;
-  uint32_t *source;
-  paddr_t *address;
-  Usr *usr;
-  Echo *echo;
-  uint8_t *dirty;
-  uint8_t *data;
-  uint8_t *corrupt;
-  uint8_t *alias;
-
-  ChnC(){
-    opcode = nullptr;
-    param = nullptr;
-    size = nullptr;
-    source = nullptr;
-    address = nullptr;
-    usr = nullptr;
-    echo = nullptr;
-    dirty = nullptr;
-    data = nullptr;
-    corrupt = nullptr;
-    alias = nullptr;
-  }
-
-  void free() {
-    delete (this->opcode);
-    delete (this->param);
-    delete (this->size);
-    delete (this->source);
-    delete (this->address);
-    delete (this->alias);
-    delete (this->dirty);
-    delete[] (this->data);
-  }
+  std::shared_ptr<uint8_t> opcode;
+  std::shared_ptr<uint8_t> param;
+  std::shared_ptr<uint8_t> size;
+  std::shared_ptr<uint32_t> source;
+  std::shared_ptr<paddr_t> address;
+  std::shared_ptr<Usr> usr;
+  std::shared_ptr<Echo> echo;
+  std::shared_ptr<uint8_t> dirty;
+  std::shared_ptr<uint8_t[]> data;
+  std::shared_ptr<uint8_t> corrupt;
+  std::shared_ptr<uint8_t> alias;
 };
 
 template <class Usr, class Echo, std::size_t N> class ChnD : public Decoupled {
 public:
-  uint8_t *opcode;
-  uint8_t *param;
-  uint8_t *size;
-  uint32_t *source;
-  uint8_t *sink;
-  uint8_t *denied;
-  Usr *usr;
-  Echo *echo;
-  uint8_t *dirty;
-  uint8_t *data;
-  uint8_t *corrupt;
-
-  ChnD(){
-    opcode = nullptr;
-    param = nullptr;
-    size = nullptr;
-    source = nullptr;
-    sink = nullptr;
-    denied = nullptr;
-    usr = nullptr;
-    echo = nullptr;
-    dirty = nullptr;
-    data = nullptr;
-    corrupt = nullptr;    
-  }
-
-  void free() {
-    delete (this->opcode);
-    delete (this->param);
-    delete (this->size);
-    delete (this->source);
-    delete (this->sink);
-  }
+  std::shared_ptr<uint8_t> opcode;
+  std::shared_ptr<uint8_t> param;
+  std::shared_ptr<uint8_t> size;
+  std::shared_ptr<uint32_t> source;
+  std::shared_ptr<uint8_t> sink;
+  std::shared_ptr<uint8_t> denied;
+  std::shared_ptr<Usr> usr;
+  std::shared_ptr<Echo> echo;
+  std::shared_ptr<uint8_t> dirty;
+  std::shared_ptr<uint8_t[]> data;
+  std::shared_ptr<uint8_t> corrupt;
 };
 
 class ChnE : public Decoupled {
 public:
-  uint8_t *sink;
-  paddr_t *addr; // used for index scoreboard
-  uint8_t *alias;
-
-  ChnE(){
-    sink = nullptr;
-    addr = nullptr; // used for index scoreboard
-    alias = nullptr;
-  }
-
-  void free() {
-    delete (this->sink);
-    delete (this->addr);
-    delete (this->alias);
-  }
+  std::shared_ptr<uint8_t> sink;
+  std::shared_ptr<paddr_t> addr; // used for index scoreboard
+  std::shared_ptr<uint8_t> alias;
 };
 
 template <class ReqField, class RespField, class EchoField, std::size_t N>

@@ -15,11 +15,12 @@ void Emu::parse_args(int argc, char **argv) {
                                         {"wave-end", 1, NULL, 'e'},
                                         {"cycles", 1, NULL, 'c'},
                                         {"verbose", 0, NULL, 'v'},
+                                        {"fullwave", 0, NULL, 'f'},
                                         {"monitor", 0, NULL, 'm'},
                                         {0, 0, NULL, 0}};
   int o;
   int long_index = 0;
-  while ((o = getopt_long(argc, const_cast<char *const *>(argv), "-s:b:e:c:mv",
+  while ((o = getopt_long(argc, const_cast<char *const *>(argv), "-s:b:e:c:mvf",
                           long_options, &long_index)) != -1) {
     switch (o) {
     case 's':
@@ -40,11 +41,18 @@ void Emu::parse_args(int argc, char **argv) {
     case 'm':
       en_monitor = true;
       break;
+    case 'f':
+      all_wave = true;
+      break;
     default:
       tlc_assert(false, "Unknown args!");
     }
   }
-  if (this->wave_begin >= this->wave_end) {
+  if(all_wave){
+    this->wave_begin = 0;
+    this->wave_end = this->exe_cycles;
+  }
+  if ((this->wave_begin >= this->wave_end)) {
     this->enable_wave = false;
   }
 }
