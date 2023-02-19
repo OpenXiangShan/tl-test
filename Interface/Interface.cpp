@@ -8,132 +8,138 @@ namespace tl_interface{
   int32_t monitor_info_array_counter = 0;
 
   using namespace tl_agent;
-  TLInfo::TLInfo(uint64_t cid, uint8_t bt):
-    id(cid), bus_type(bt)
+  TLInfo::TLInfo(uint64_t cid, uint8_t bt)
   {
-    a_opcode = 0;
-    a_param = 0;
-    a_size = 0;
-    a_source = 0;
-    a_address = 0;
-    a_user = 0;
-    a_echo = 0;
-    a_mask = 0;
-    memset(a_data, 0, BEATSIZE);
-    a_user_alias = 0;
-    a_user_preferCache = 0;
-    a_user_needHint = 0;
-    a_corrupt = 0;
-    a_valid = 0;
-    a_ready = 0;
+    id.reset(new uint64_t(cid));
+    bus_type.reset(new uint8_t(bt));
+
+    a_opcode.reset(new uint8_t(0));
+    a_param.reset(new uint8_t(0));
+    a_size.reset(new uint8_t(0));
+    a_source.reset(new uint32_t(0));
+    a_address.reset(new paddr_t(0));
+    a_user.reset(new tl_agent::ReqField());
+    a_echo.reset(new tl_agent::EchoField());
+    a_mask.reset(new uint32_t(0));
+    a_data.reset(new uint8_t[BEATSIZE]);
+    memset(a_data.get(), 0, BEATSIZE);
+    a_user_alias.reset(new uint8_t(0));
+    a_user_preferCache.reset(new uint8_t(0));
+    a_user_needHint.reset(new uint8_t(0));
+    a_corrupt.reset(new uint8_t(0));
+    a_valid.reset(new uint8_t(0));
+    a_ready.reset(new uint8_t(0));
 
     //Channel B
-    b_opcode = 0;
-    b_param = 0;
-    b_size = 0;
-    b_source = 0;
-    b_address = 0;
-    b_mask = 0;
-    memset(b_data, 0, BEATSIZE);
-    b_corrupt = 0;
-    b_alias = 0;
-    b_needdata = 0;
-    b_valid = 0;
-    b_ready = 0;
+    b_opcode.reset(new uint8_t(0));
+    b_param.reset(new uint8_t(0));
+    b_size.reset(new uint8_t(0));
+    b_source.reset(new uint32_t(0));
+    b_address.reset(new paddr_t(0));
+    b_mask.reset(new uint32_t(0));
+    b_data.reset(new uint8_t[BEATSIZE]);
+    memset(b_data.get(), 0, BEATSIZE);
+    b_corrupt.reset(new uint8_t(0));
+    b_alias.reset(new uint8_t(0));
+    b_needdata.reset(new uint8_t(0));
+    b_valid.reset(new uint8_t(0));
+    b_ready.reset(new uint8_t(0));
 
     //Channel C
-    c_opcode = 0;
-    c_param = 0;
-    c_size = 0;
-    c_source = 0;
-    c_address = 0;
-    c_user = 0;
-    c_echo = 0;
-    memset(c_data, 0, BEATSIZE);
-    c_corrupt = 0;
-    c_echo_blockisdirty = 0;
-    c_valid = 0;
-    c_ready = 0;
+    c_opcode.reset(new uint8_t(0));
+    c_param.reset(new uint8_t(0));
+    c_size.reset(new uint8_t(0));
+    c_source.reset(new uint32_t(0));
+    c_address.reset(new paddr_t(0));
+    c_user.reset(new tl_agent::ReqField());
+    c_echo.reset(new tl_agent::EchoField());
+    c_data.reset(new uint8_t[BEATSIZE]);
+    memset(c_data.get(), 0, BEATSIZE);
+    c_corrupt.reset(new uint8_t(0));
+    c_echo_blockisdirty.reset(new uint8_t(0));
+    c_valid.reset(new uint8_t(0));
+    c_ready.reset(new uint8_t(0));
 
     //Channel D
-    d_opcode = 0;
-    d_param = 0;
-    d_size = 0;
-    d_source = 0;
-    d_sink = 0;
-    d_denied = 0;
-    d_user = 0;
-    d_echo = 0;
-    memset(d_data, 0, BEATSIZE);
-    d_corrupt = 0;
-    d_echo_blockisdirty = 0;
-    d_valid = 0;
-    d_ready = 0;
+    d_opcode.reset(new uint8_t(0));
+    d_param.reset(new uint8_t(0));
+    d_size.reset(new uint8_t(0));
+    d_source.reset(new uint32_t(0));
+    d_sink.reset(new uint32_t(0));
+    d_denied.reset(new uint8_t(0));
+    d_user.reset(new tl_agent::RespField());
+    d_echo.reset(new tl_agent::EchoField());
+    d_data.reset(new uint8_t[BEATSIZE]);
+    memset(d_data.get(), 0, BEATSIZE);
+    d_corrupt.reset(new uint8_t(0));
+    d_echo_blockisdirty.reset(new uint8_t(0));
+    d_valid.reset(new uint8_t(0));
+    d_ready.reset(new uint8_t(0));
 
     //Channel E
-    e_sink = 0;
-    e_valid = 0;
-    e_ready = 0;
+    e_sink.reset(new uint32_t(0));
+    e_valid.reset(new uint8_t(0));
+    e_ready.reset(new uint8_t(0));
   }
 
   void TLInfo::connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port){
     //Channel A
-    port->a.ready    .reset(&a_ready);
-    port->a.valid    .reset(&a_valid);
-    port->a.opcode   .reset((uint8_t *)(&a_opcode));
-    port->a.param    .reset((uint8_t *)(&a_param));
-    port->a.address  .reset(&a_address);
-    port->a.size     .reset((uint8_t *)(&a_size));
-    port->a.source   .reset(&a_source);
-    port->a.mask     .reset(&a_mask);
-    port->a.data     .reset(a_data);
-    port->a.alias    .reset((uint8_t *)(&a_user_alias));
-    port->a.corrupt  .reset(&a_corrupt);
-    port->a.usr      .reset((tl_agent::ReqField*)&a_user);
-    port->a.echo     .reset((tl_agent::EchoField*)&a_echo);
+    port->a.ready    = a_ready; 
+    port->a.valid    = a_valid; 
+    port->a.opcode   = a_opcode; 
+    port->a.param    = a_param; 
+    port->a.address  = a_address; 
+    port->a.size     = a_size; 
+    port->a.source   = a_source; 
+    port->a.mask     = a_mask; 
+    port->a.data     = a_data; 
+    port->a.alias    = a_user_alias; 
+    port->a.corrupt  = a_corrupt; 
+    port->a.usr      = a_user; 
+    port->a.echo     = a_echo; 
     //Channel B
-    port->b.ready    .reset(&b_ready);
-    port->b.valid    .reset(&b_valid);
-    port->b.opcode   .reset((uint8_t *)&b_opcode);
-    port->b.param    .reset((uint8_t *)(&b_param));
-    port->b.address  .reset(&b_address);
-    port->b.size     .reset(&b_size);
-    port->b.source   .reset(&b_source);
-    port->b.alias    .reset(&b_alias);
-    port->b.needdata .reset(&b_needdata);
-    port->b.corrupt  .reset(&b_corrupt);
+    port->b.ready    = b_ready; 
+    port->b.valid    = b_valid; 
+    port->b.opcode   = b_opcode; 
+    port->b.param    = b_param; 
+    port->b.address  = b_address; 
+    port->b.size     = b_size; 
+    port->b.source   = b_source; 
+    port->b.alias    = b_alias; 
+    port->b.needdata = b_needdata; 
+    port->b.corrupt  = b_corrupt; 
     //Channel C
-    port->c.ready    .reset(&c_ready);
-    port->c.valid    .reset(&c_valid);
-    port->c.opcode   .reset((uint8_t *)(&c_opcode));
-    port->c.param    .reset((uint8_t *)(&c_param));
-    port->c.address  .reset(&c_address);
-    port->c.size     .reset((uint8_t *)(&c_size));
-    port->c.source   .reset(&c_source);
-    port->c.data     .reset(c_data);
-    port->c.dirty    .reset(&c_echo_blockisdirty);
-    port->c.corrupt  .reset(&c_corrupt);
+    port->c.ready    = c_ready; 
+    port->c.valid    = c_valid; 
+    port->c.opcode   = c_opcode; 
+    port->c.param    = c_param; 
+    port->c.address  = c_address; 
+    port->c.size     = c_size; 
+    port->c.source   = c_source; 
+    port->c.data     = c_data; 
+    port->c.dirty    = c_echo_blockisdirty; 
+    port->c.corrupt  = c_corrupt; 
     port->c.alias    = nullptr;
-    port->c.usr      .reset((tl_agent::ReqField*)&c_user);
-    port->c.echo     .reset((tl_agent::EchoField*)&c_echo);
+    port->c.usr      = c_user; 
+    port->c.echo     = c_echo; 
     //Channel D
-    port->d.ready    .reset(&d_ready);
-    port->d.valid    .reset(&d_valid);
-    port->d.opcode   .reset((uint8_t *)(&d_opcode));
-    port->d.param    .reset((uint8_t *)(&d_param));
-    port->d.size     .reset((uint8_t *)(&d_size));
-    port->d.source   .reset(&d_source);
-    port->d.sink     .reset((uint8_t *)(&d_sink));
-    port->d.denied   .reset(&d_denied);
-    port->d.dirty    .reset(&d_echo_blockisdirty);
-    port->d.data     .reset(d_data);
-    port->d.corrupt  .reset(&d_corrupt);
-    port->d.usr      .reset((tl_agent::RespField*)&d_user);
-    port->d.echo     .reset((tl_agent::EchoField*)&d_echo);
+    port->d.ready    = d_ready; 
+    port->d.valid    = d_valid; 
+    port->d.opcode   = d_opcode; 
+    port->d.param    = d_param; 
+    port->d.size     = d_size; 
+    port->d.source   = d_source; 
+    port->d.sink     = d_sink; 
+    port->d.denied   = d_denied; 
+    port->d.dirty    = d_echo_blockisdirty; 
+    port->d.data     = d_data; 
+    port->d.corrupt  = d_corrupt; 
+    port->d.usr      = d_user; 
+    port->d.echo     = d_echo; 
     //Channel E
-    port->e.ready    .reset(&e_ready);
-    port->e.valid    .reset(&e_valid);
-    port->e.sink     .reset((uint8_t *)(&e_sink));
+    port->e.ready    = e_ready; 
+    port->e.valid    = e_valid; 
+    port->e.sink     = e_sink; 
     port->e.addr     = nullptr;
     port->e.alias    = nullptr;
   }
@@ -143,7 +149,7 @@ namespace tl_interface{
     bool found = false;
     int32_t idx = tlc_info_array_counter;
     while(idx --> 0){
-      if(tlc_info_array[idx]->id == cid && tlc_info_array[idx]->bus_type == bt){
+      if(*(tlc_info_array[idx]->id) == cid && *(tlc_info_array[idx]->bus_type) == bt){
         found = true;
         break;
       }
@@ -161,7 +167,7 @@ namespace tl_interface{
     bool found = false;
     int32_t idx = tlu_info_array_counter;
     while(idx --> 0){
-      if(tlu_info_array[idx]->id == cid && tlu_info_array[idx]->bus_type == bt){
+      if(*(tlu_info_array[idx]->id) == cid && *(tlu_info_array[idx]->bus_type) == bt){
         found = true;
         break;
       }
@@ -179,7 +185,7 @@ namespace tl_interface{
     bool found = false;
     int32_t idx = monitor_info_array_counter;
     while(idx --> 0){
-      if(monitor_info_array[idx]->id == id && monitor_info_array[idx]->bus_type == bt){
+      if(*(monitor_info_array[idx]->id) == id && *(monitor_info_array[idx]->bus_type) == bt){
         found = true;
         break;
       }
@@ -253,55 +259,55 @@ void tlc_agent_eval (
   std::shared_ptr<tl_interface::TLInfo> info = tl_interface::find_tlc_info(cid, bt);
 
   //Channel A
-  *a_opcode                   = info->a_opcode;
-  *a_param                    = info->a_param;
-  *a_size                     = info->a_size;
-  *a_source                   = info->a_source;
-  *(uint64_t*)a_address       = info->a_address;
-  *a_mask                     = info->a_mask;
-  *a_user_alias               = info->a_user_alias;
-  *a_user_preferCache         = info->a_user_preferCache;
-  *a_user_needHint            = info->a_user_needHint;
-  *a_valid                    = info->a_valid;
-  info->a_ready               = a_ready;
+  *a_opcode                   = *(info->a_opcode);
+  *a_param                    = *(info->a_param);
+  *a_size                     = *(info->a_size);
+  *a_source                   = *(info->a_source);
+  *(uint64_t*)a_address       = *(info->a_address);
+  *a_mask                     = *(info->a_mask);
+  *a_user_alias               = *(info->a_user_alias);
+  *a_user_preferCache         = *(info->a_user_preferCache);
+  *a_user_needHint            = *(info->a_user_needHint);
+  *a_valid                    = *(info->a_valid);
+  *(info->a_ready)            = a_ready;
 
   //Channel B
-  info->b_param               = *b_param;
-  info->b_address             = *(const uint64_t*)b_address;
-  memcpy(info->b_data, b_data, BEATSIZE);
-  info->b_alias               = info->b_data[0] & 0x1;
-  info->b_needdata            = (info->b_data[0] & 0xe) >> 1;
-  info->b_valid               = b_valid;
-  *b_ready                    = info->b_ready;
+  *(info->b_param)            = *b_param;
+  *(info->b_address)          = *(const uint64_t*)b_address;
+  memcpy(info->b_data.get(), b_data, BEATSIZE);
+  *(info->b_alias)            = (info->b_data[0]) & 0x1;
+  *(info->b_needdata)         = ((info->b_data[0]) & 0xe) >> 1;
+  *(info->b_valid)            = b_valid;
+  *b_ready                    = *(info->b_ready);
 
   //Channel C
-  *c_opcode                   = info->c_opcode;
-  *c_param                    = info->c_param;
-  *c_size                     = info->c_size;
-  *c_source                   = info->c_source;
-  *(uint64_t*)c_address       = info->c_address;
-  memcpy(c_data, info->c_data, BEATSIZE);
-  *c_echo_blockisdirty        = info->c_echo_blockisdirty;
-  *c_valid                    = info->c_valid;
-  info->c_ready               = c_ready;
+  *c_opcode                   = *(info->c_opcode);
+  *c_param                    = *(info->c_param);
+  *c_size                     = *(info->c_size);
+  *c_source                   = *(info->c_source);
+  *(uint64_t*)c_address       = *(info->c_address);
+  memcpy(c_data, info->c_data.get(), BEATSIZE);
+  *c_echo_blockisdirty        = *(info->c_echo_blockisdirty);
+  *c_valid                    = *(info->c_valid);
+  *(info->c_ready)            = c_ready;
 
   //Channel D
-  info->d_opcode              = *d_opcode;
-  info->d_param               = *d_param;
-  info->d_size                = *d_size;
-  info->d_source              = *d_source;
-  info->d_sink                = *d_sink;
-  info->d_denied              = d_denied;
-  memcpy(info->d_data, d_data, BEATSIZE);
-  info->d_corrupt             = d_corrupt;
-  info->d_echo_blockisdirty   = d_echo_blockisdirty;
-  info->d_valid               = d_valid;
-  *d_ready                    = info->d_ready;
+  *(info->d_opcode)           = *d_opcode;
+  *(info->d_param)            = *d_param;
+  *(info->d_size)             = *d_size;
+  *(info->d_source)           = *d_source;
+  *(info->d_sink)             = *d_sink;
+  *(info->d_denied)           = d_denied;
+  memcpy(info->d_data.get(), d_data, BEATSIZE);
+  *(info->d_corrupt)          = d_corrupt;
+  *(info->d_echo_blockisdirty)= d_echo_blockisdirty;
+  *(info->d_valid)            = d_valid;
+  *d_ready                    = *(info->d_ready);
 
   //Channel E
-  *e_sink                     = info->e_sink;
-  *e_valid                    = info->e_valid;
-  info->e_ready               = e_ready;
+  *e_sink                     = *(info->e_sink);
+  *e_valid                    = *(info->e_valid);
+  *(info->e_ready)            = e_ready;
 }
 
 void tlu_agent_eval(
@@ -329,25 +335,25 @@ void tlu_agent_eval(
     uint64_t cid = *(const uint64_t*)core_id;
     uint8_t  bt  = *(const uint8_t*)bus_type;
     std::shared_ptr<tl_interface::TLInfo> info = tl_interface::find_tlu_info(cid, bt);
-    info->a_ready         = a_ready;
-    *a_valid              = info->a_valid;
-    *a_opcode             = info->a_opcode;
-    *a_param              = info->a_param;
-    *a_size               = info->a_size;
-    *a_source             = info->a_source;
-    *(paddr_t*)a_address  = info->a_address;
-    *a_user_preferCache   = info->a_user_preferCache;
-    *a_mask               = info->a_mask;
-    memcpy(a_data, info->a_data, BEATSIZE);
+    *(info->a_ready)      = a_ready;
+    *a_valid              = *(info->a_valid);
+    *a_opcode             = *(info->a_opcode);
+    *a_param              = *(info->a_param);
+    *a_size               = *(info->a_size);
+    *a_source             = *(info->a_source);
+    *(paddr_t*)a_address  = *(info->a_address);
+    *a_user_preferCache   = *(info->a_user_preferCache);
+    *a_mask               = *(info->a_mask);
+    memcpy(a_data, info->a_data.get(), BEATSIZE);
 
-    *d_ready              = info->d_ready;
-    info->d_valid         = d_valid;
-    info->d_opcode        = *d_opcode;
-    info->d_size          = *d_size;
-    info->d_source        = *d_source;
-    info->d_denied        = d_denied;
-    info->d_corrupt       = d_corrupt;
-    memcpy(info->d_data, d_data, BEATSIZE);
+    *d_ready                = *(info->d_ready);
+    *(info->d_valid)        = d_valid;
+    *(info->d_opcode)       = *d_opcode;
+    *(info->d_size)         = *d_size;
+    *(info->d_source)       = *d_source;
+    *(info->d_denied)       = d_denied;
+    *(info->d_corrupt)      = d_corrupt;
+    memcpy(info->d_data.get(), d_data, BEATSIZE);
   }
 
 void tlc_monitor_eval(
@@ -416,62 +422,62 @@ void tlc_monitor_eval(
     if(tl_interface::monitor_info_array_counter == 0)return;
     std::shared_ptr<tl_interface::TLInfo> info = tl_interface::find_monitor_info(cid, bt);
     //Channel A
-    info->a_opcode = *a_opcode;
-    info->a_param = *a_param;
-    info->a_size = *a_size;
-    info->a_source = *a_source;
-    info->a_address = *(paddr_t *)a_address;
-    info->a_user = *a_user;
-    info->a_echo = *a_echo;
-    info->a_mask = *a_mask;
-    memcpy(info->a_data, a_data, BEATSIZE);
-    info->a_corrupt = a_corrupt;
-    info->a_valid = a_valid;
-    info->a_ready = a_ready;
+    *(info->a_opcode) = *a_opcode;
+    *(info->a_param) = *a_param;
+    *(info->a_size) = *a_size;
+    *(info->a_source) = *a_source;
+    *(info->a_address) = *(paddr_t *)a_address;
+    (*(info->a_user)).value = *a_user;
+    (*(info->a_echo)).value = *a_echo;
+    *(info->a_mask) = *a_mask;
+    memcpy(info->a_data.get(), a_data, BEATSIZE);
+    *(info->a_corrupt) = a_corrupt;
+    *(info->a_valid) = a_valid;
+    *(info->a_ready) = a_ready;
 
     //Channel B
-    info->b_opcode = *b_opcode;
-    info->b_param = *b_param;
-    info->b_size = *b_size;
-    info->b_source = *b_source;
-    info->b_address = *(paddr_t *)b_address;
-    info->b_mask = *b_mask;
-    memcpy(info->b_data, b_data, BEATSIZE);
-    info->b_corrupt = b_corrupt;
-    info->b_valid = b_valid;
-    info->b_ready = b_ready;
+    *(info->b_opcode) = *b_opcode;
+    *(info->b_param) = *b_param;
+    *(info->b_size) = *b_size;
+    *(info->b_source) = *b_source;
+    *(info->b_address) = *(paddr_t *)b_address;
+    *(info->b_mask) = *b_mask;
+    memcpy(info->b_data.get(), b_data, BEATSIZE);
+    *(info->b_corrupt) = b_corrupt;
+    *(info->b_valid) = b_valid;
+    *(info->b_ready) = b_ready;
 
     //Channel C
-    info->c_opcode = *c_opcode;
-    info->c_param = *c_param;
-    info->c_size = *c_size;
-    info->c_source = *c_source;
-    info->c_address = *(paddr_t *)c_address;
-    info->c_user = *c_user;
-    info->c_echo = *c_echo;
-    memcpy(info->c_data, c_data, BEATSIZE);
-    info->c_corrupt = c_corrupt;
-    info->c_valid = c_valid;
-    info->c_ready = c_ready;
+    *(info->c_opcode) = *c_opcode;
+    *(info->c_param) = *c_param;
+    *(info->c_size) = *c_size;
+    *(info->c_source) = *c_source;
+    *(info->c_address) = *(paddr_t *)c_address;
+    (*(info->c_user)).value = *c_user;
+    (*(info->c_echo)).value = *c_echo;
+    memcpy(info->c_data.get(), c_data, BEATSIZE);
+    *(info->c_corrupt) = c_corrupt;
+    *(info->c_valid) = c_valid;
+    *(info->c_ready) = c_ready;
 
     //Channel D
-    info->d_opcode = *d_opcode;
-    info->d_param = *d_param;
-    info->d_size = *d_size;
-    info->d_source = *d_source;
-    info->d_sink = *d_sink;
-    info->d_denied = d_denied;
-    info->d_user = *d_user;
-    info->d_echo = *d_echo;
-    memcpy(info->d_data, d_data, BEATSIZE);
-    info->d_corrupt = d_corrupt;
-    info->d_valid = d_valid;
-    info->d_ready = d_ready;
+    *(info->d_opcode) = *d_opcode;
+    *(info->d_param) = *d_param;
+    *(info->d_size) = *d_size;
+    *(info->d_source) = *d_source;
+    *(info->d_sink) = *d_sink;
+    *(info->d_denied) = d_denied;
+    (*(info->d_user)).value = *d_user;
+    (*(info->d_echo)).value = *d_echo;
+    memcpy(info->d_data.get(), d_data, BEATSIZE);
+    *(info->d_corrupt) = d_corrupt;
+    *(info->d_valid) = d_valid;
+    *(info->d_ready) = d_ready;
 
     //Channel E
-    info->e_sink = *e_sink;
-    info->e_valid = e_valid;
-    info->e_ready = e_ready;
+    *(info->e_sink) = *e_sink;
+    *(info->e_valid) = e_valid;
+    *(info->e_ready) = e_ready;
   }
 #ifdef __cplusplus
 }

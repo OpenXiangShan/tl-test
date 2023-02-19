@@ -10,73 +10,73 @@ namespace tl_interface{
   using namespace tl_agent;
   class TLInfo{
     public:
-    uint64_t    id;
-    uint8_t     bus_type;
+    std::shared_ptr<uint64_t>             id;
+    std::shared_ptr<uint8_t>              bus_type;
 
     //Channel A
-    uint8_t     a_opcode;
-    uint8_t     a_param;
-    uint8_t     a_size;
-    uint32_t    a_source;
-    paddr_t     a_address;
-    uint32_t    a_user;
-    uint32_t    a_echo;
-    uint32_t    a_mask;
-    uint8_t     a_data[BEATSIZE];
-    uint32_t    a_user_alias;
-    uint8_t     a_user_preferCache;
-    uint8_t     a_user_needHint;
-    uint8_t     a_corrupt;
-    uint8_t     a_valid;
-    uint8_t     a_ready;
+    std::shared_ptr<uint8_t>              a_opcode;
+    std::shared_ptr<uint8_t>              a_param;
+    std::shared_ptr<uint8_t>              a_size;
+    std::shared_ptr<uint32_t>             a_source;
+    std::shared_ptr<paddr_t>              a_address;
+    std::shared_ptr<tl_agent::ReqField>   a_user;
+    std::shared_ptr<tl_agent::EchoField>  a_echo;
+    std::shared_ptr<uint32_t>             a_mask;
+    std::shared_ptr<uint8_t[]>            a_data;
+    std::shared_ptr<uint8_t>              a_user_alias;
+    std::shared_ptr<uint8_t>              a_user_preferCache;
+    std::shared_ptr<uint8_t>              a_user_needHint;
+    std::shared_ptr<uint8_t>              a_corrupt;
+    std::shared_ptr<uint8_t>              a_valid;
+    std::shared_ptr<uint8_t>              a_ready;
 
     //Channel B
-    uint8_t     b_opcode;
-    uint8_t     b_param;
-    uint8_t     b_size;
-    uint32_t    b_source;
-    paddr_t     b_address;
-    uint32_t    b_mask;
-    uint8_t     b_data[BEATSIZE];
-    uint8_t     b_corrupt;
-    uint8_t     b_alias;
-    uint8_t     b_needdata;
-    uint8_t     b_valid;
-    uint8_t     b_ready;
+    std::shared_ptr<uint8_t>              b_opcode;
+    std::shared_ptr<uint8_t>              b_param;
+    std::shared_ptr<uint8_t>              b_size;
+    std::shared_ptr<uint32_t>             b_source;
+    std::shared_ptr<paddr_t>              b_address;
+    std::shared_ptr<uint32_t>             b_mask;
+    std::shared_ptr<uint8_t[]>            b_data;
+    std::shared_ptr<uint8_t>              b_corrupt;
+    std::shared_ptr<uint8_t>              b_alias;
+    std::shared_ptr<uint8_t>              b_needdata;
+    std::shared_ptr<uint8_t>              b_valid;
+    std::shared_ptr<uint8_t>              b_ready;
 
     //Channel C
-    uint8_t     c_opcode;
-    uint8_t     c_param;
-    uint8_t     c_size;
-    uint32_t    c_source;
-    paddr_t     c_address;
-    uint32_t    c_user;
-    uint32_t    c_echo;
-    uint8_t     c_data[BEATSIZE];
-    uint8_t     c_corrupt;
-    uint8_t     c_echo_blockisdirty;
-    uint8_t     c_valid;
-    uint8_t     c_ready;
+    std::shared_ptr<uint8_t>              c_opcode;
+    std::shared_ptr<uint8_t>              c_param;
+    std::shared_ptr<uint8_t>              c_size;
+    std::shared_ptr<uint32_t>             c_source;
+    std::shared_ptr<paddr_t>              c_address;
+    std::shared_ptr<tl_agent::ReqField>   c_user;
+    std::shared_ptr<tl_agent::EchoField>  c_echo;
+    std::shared_ptr<uint8_t[]>            c_data;
+    std::shared_ptr<uint8_t>              c_corrupt;
+    std::shared_ptr<uint8_t>              c_echo_blockisdirty;
+    std::shared_ptr<uint8_t>              c_valid;
+    std::shared_ptr<uint8_t>              c_ready;
 
     //Channel D
-    uint8_t     d_opcode;
-    uint8_t     d_param;
-    uint8_t     d_size;
-    uint32_t    d_source;
-    uint32_t    d_sink;
-    uint8_t     d_denied;
-    uint32_t    d_user;
-    uint32_t    d_echo;
-    uint8_t     d_data[BEATSIZE];
-    uint8_t     d_corrupt;
-    uint8_t     d_echo_blockisdirty;
-    uint8_t     d_valid;
-    uint8_t     d_ready;
+    std::shared_ptr<uint8_t>              d_opcode;
+    std::shared_ptr<uint8_t>              d_param;
+    std::shared_ptr<uint8_t>              d_size;
+    std::shared_ptr<uint32_t>             d_source;
+    std::shared_ptr<uint32_t>             d_sink;
+    std::shared_ptr<uint8_t>              d_denied;
+    std::shared_ptr<tl_agent::RespField>  d_user;
+    std::shared_ptr<tl_agent::EchoField>  d_echo;
+    std::shared_ptr<uint8_t[]>            d_data;
+    std::shared_ptr<uint8_t>              d_corrupt;
+    std::shared_ptr<uint8_t>              d_echo_blockisdirty;
+    std::shared_ptr<uint8_t>              d_valid;
+    std::shared_ptr<uint8_t>              d_ready;
 
     //Channel E
-    uint32_t    e_sink;
-    uint8_t     e_valid;
-    uint8_t     e_ready;
+    std::shared_ptr<uint32_t>             e_sink;
+    std::shared_ptr<uint8_t>              e_valid;
+    std::shared_ptr<uint8_t>              e_ready;
 
     TLInfo(uint64_t cid, uint8_t ct);
     void connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port);

@@ -96,7 +96,7 @@ public:
   std::shared_ptr<uint8_t> param;
   std::shared_ptr<uint8_t> size;
   std::shared_ptr<uint32_t> source;
-  std::shared_ptr<uint8_t> sink;
+  std::shared_ptr<uint32_t> sink;
   std::shared_ptr<uint8_t> denied;
   std::shared_ptr<Usr> usr;
   std::shared_ptr<Echo> echo;
@@ -107,7 +107,7 @@ public:
 
 class ChnE : public Decoupled {
 public:
-  std::shared_ptr<uint8_t> sink;
+  std::shared_ptr<uint32_t> sink;
   std::shared_ptr<paddr_t> addr; // used for index scoreboard
   std::shared_ptr<uint8_t> alias;
 };

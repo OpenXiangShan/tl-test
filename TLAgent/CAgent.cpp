@@ -511,7 +511,7 @@ void CAgent::fire_d() {
         tlc_assert(exact_status != S_A_WAITING_D_INTR,
                    "TODO: check this Ridiculous probe!");
         std::shared_ptr<ChnE>req_e(new ChnE());
-        req_e->sink.reset(new uint8_t(*chnD.sink));
+        req_e->sink.reset(new uint32_t(*chnD.sink));
         req_e->addr.reset(new paddr_t(addr));
         req_e->alias.reset(new uint8_t(alias));
         if (pendingE.is_pending()) {
