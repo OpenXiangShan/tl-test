@@ -31,12 +31,12 @@ namespace tl_interface{
     a_ready.reset(new uint8_t(0));
 
     //Channel B
-    b_opcode.reset(new uint8_t(0));
+    b_opcode.reset(new uint8_t(6));
     b_param.reset(new uint8_t(0));
-    b_size.reset(new uint8_t(0));
+    b_size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
     b_source.reset(new uint32_t(0));
     b_address.reset(new paddr_t(0));
-    b_mask.reset(new uint32_t(0));
+    b_mask.reset(new uint32_t(0xFFFFFFFF));
     b_data.reset(new uint8_t[BEATSIZE]);
     memset(b_data.get(), 0, BEATSIZE);
     b_corrupt.reset(new uint8_t(0));
@@ -48,7 +48,7 @@ namespace tl_interface{
     //Channel C
     c_opcode.reset(new uint8_t(0));
     c_param.reset(new uint8_t(0));
-    c_size.reset(new uint8_t(0));
+    c_size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
     c_source.reset(new uint32_t(0));
     c_address.reset(new paddr_t(0));
     c_user.reset(new tl_agent::ReqField());
@@ -275,8 +275,8 @@ void tlc_agent_eval (
   *(info->b_param)            = *b_param;
   *(info->b_address)          = *(const uint64_t*)b_address;
   memcpy(info->b_data.get(), b_data, BEATSIZE);
-  *(info->b_alias)            = (info->b_data[0]) & 0x1;
-  *(info->b_needdata)         = ((info->b_data[0]) & 0xe) >> 1;
+  *(info->b_needdata)         = (info->b_data[0]) & 0x1;
+  *(info->b_alias)            = (info->b_data[0]) >> 1;
   *(info->b_valid)            = b_valid;
   *b_ready                    = *(info->b_ready);
 

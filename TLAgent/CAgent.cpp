@@ -337,8 +337,8 @@ void CAgent::fire_b() {
     req_b->param.reset(new uint8_t(*chnB.param));
     req_b->size.reset(new uint8_t(*chnB.size));
     req_b->source.reset(new uint32_t(*chnB.source));
-    req_b->alias.reset(new uint8_t((*chnB.alias) >> 1));
-    req_b->needdata.reset(new uint8_t((*chnB.alias) & 0x1));
+    req_b->alias.reset(new uint8_t(*chnB.alias));
+    req_b->needdata.reset(new uint8_t(*chnB.needdata));
     pendingB.init(req_b, 1);
     Log("[%ld] [Probe] addr: %lx alias: %d\n", *cycles, *chnB.address,
         (*chnB.alias) >> 1);
