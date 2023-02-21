@@ -148,16 +148,16 @@ int GlobalBoard<T>::verify(const T &key, std::shared_ptr<const uint8_t[]>data) {
   tlc_assert(this->mapping.count(key) == 1,
              "Duplicate records found in GlobalBoard!");
 
-  Global_SBEntry value = *this->mapping.at(key).get();
-  if (value.status == Global_SBEntry::SB_VALID) {
-    tlc_assert(value.data != nullptr,
+  std::shared_ptr<Global_SBEntry> value = this->mapping.at(key);
+  if (value->status == Global_SBEntry::SB_VALID) {
+    tlc_assert(value->data != nullptr,
                "NULL occured in valid entry of GlobalBoard!");
-    return this->data_check(data, value.data, "Data mismatch!");
-  } else if (value.status == Global_SBEntry::SB_PENDING) {
+    return this->data_check(data, value->data, "Data mismatch!");
+  } else if (value->status == Global_SBEntry::SB_PENDING) {
     bool flag = true;
-    if (value.data != nullptr) {
+    if (value->data != nullptr) {
       for (int i = 0; i < DATASIZE; i++) {
-        if (data[i] != value.data[i]) {
+        if (data[i] != value->data[i]) {
           flag = false;
           break;
         }
@@ -174,9 +174,9 @@ int GlobalBoard<T>::verify(const T &key, std::shared_ptr<const uint8_t[]>data) {
       if (flag)
         return 0;
     }
-    tlc_assert(value.pending_data != nullptr,
+    tlc_assert(value->pending_data != nullptr,
                "NULL occured in pending entry of GlobalBoard!");
-    this->data_check(data, value.pending_data, "Data mismatch!");
+    this->data_check(data, value->pending_data, "Data mismatch!");
     return 0;
   } else {
     // TODO: handle other status
@@ -188,7 +188,7 @@ int GlobalBoard<T>::verify(const T &key, std::shared_ptr<const uint8_t[]>data) {
 template <typename T> void GlobalBoard<T>::unpending(const T &key) {
   tlc_assert(this->mapping.count(key) == 1,
              "Un-pending non-exist entry in GlobalBoard!");
-  Global_SBEntry *value = this->mapping.at(key).get();
+  std::shared_ptr<Global_SBEntry> value = this->mapping.at(key);
   // tlc_assert(value->pending_data != nullptr, "Un-pending entry with NULL ptr
   // in GlobalBoard!");
   if (value->pending_data == nullptr) {

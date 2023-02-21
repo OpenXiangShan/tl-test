@@ -340,7 +340,8 @@ void CAgent::fire_b() {
     req_b->alias.reset(new uint8_t(*chnB.alias));
     req_b->needdata.reset(new uint8_t(*chnB.needdata));
     pendingB.init(req_b, 1);
-    Log("[%ld] [Probe] addr: %lx alias: %d\n", *cycles, *chnB.address,
+    std::string param_str = *chnB.param==toN? "toN":(*chnB.param==toB? "toB":(*chnB.param==toT? "toT":"Unknown"));
+    Log("[%ld] [Probe %s] addr: %lx alias: %d\n", *cycles, param_str.c_str(), *chnB.address,
         (*chnB.alias) >> 1);
   }
 }
@@ -389,14 +390,17 @@ void CAgent::fire_c() {
         global_SBEntry->mask = FULLMASK;
         this->globalBoard->update(*pendingC.info->address, global_SBEntry);
       }
-      if (*chnC.opcode == ProbeAckData) {
+      if (*chnC.opcode == ProbeAckData || *chnC.opcode == ProbeAck) {
         std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
+        bool origin_entry_is_pending = false;
         global_SBEntry->data = pendingC.info->data;
         if (this->globalBoard->get().count(*pendingC.info->address) != 0) {
           auto originEntry = this->globalBoard->get()[*pendingC.info->address];
           global_SBEntry->pending_data = originEntry->pending_data;
+          if(*chnC.opcode == ProbeAck)global_SBEntry->data = originEntry->data; 
           if (originEntry->status == Global_SBEntry::SB_PENDING) {
             global_SBEntry->status = Global_SBEntry::SB_PENDING;
+            origin_entry_is_pending = true;
             global_SBEntry->mask =
                 this->globalBoard->get()[*pendingC.info->address]->mask;
           } else {
@@ -404,11 +408,16 @@ void CAgent::fire_c() {
             global_SBEntry->mask = FULLMASK;
           }
         } else {
+          if(*chnC.opcode == ProbeAck){
+            global_SBEntry->pending_data.reset(new uint8_t[DATASIZE]);
+            memset(global_SBEntry->pending_data.get(), 0, DATASIZE);
+            global_SBEntry->data = nullptr;
+          }
           global_SBEntry->status = Global_SBEntry::SB_VALID;
           global_SBEntry->mask = FULLMASK;
         }
-
         this->globalBoard->update(*pendingC.info->address, global_SBEntry);
+        if(!origin_entry_is_pending)this->globalBoard->unpending(*pendingC.info->address);
       }
       if (*chnC.opcode == ReleaseData || *chnC.opcode == Release) {
         info->update_pending_priviledge(shrinkGenPriv(*pendingC.info->param),
@@ -467,9 +476,11 @@ void CAgent::fire_d() {
       }
     }
     if (!pendingD.is_pending()) {
+      uint8_t p = *(chnD.param);
+      std::string param_str = p==toT? "toT":(p==toB? "toB":(p==toN? "toN":"Unknown"));
       switch (*chnD.opcode) {
       case GrantData: {
-        Log("[%ld] [GrantData] addr: %lx source: %d sink: %d, data: ", *cycles, addr, *(chnD.source), *(chnD.sink));
+        Log("[%ld] [GrantData %s] addr: %lx source: %d sink: %d, data: ", *cycles, param_str.c_str(), addr, *(chnD.source), *(chnD.sink));
         for (int i = 0; i < DATASIZE; i++) {
           Dump("%02hhx", pendingD.info->data[DATASIZE - 1 - i]);
         }
@@ -481,7 +492,7 @@ void CAgent::fire_d() {
         break;
       }
       case Grant: {
-        Log("[%ld] [Grant] addr: %lx source: %d sink: %d\n", *cycles, addr, *(chnD.source), *(chnD.sink));
+        Log("[%ld] [Grant %s] addr: %lx source: %d sink: %d\n", *cycles, param_str.c_str(), addr, *(chnD.source), *(chnD.sink));
         info->update_dirty(*chnD.dirty, alias);
         this->a_idpool.freeid(*chnD.source);
         aidMap->erase(*chnD.source);
@@ -649,7 +660,8 @@ bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
   req_a->alias.reset(new uint8_t(alias));
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
-  Log("[%ld] [AcquirePerm] addr: %lx source: %d alias: %d\n", *cycles, address, *(req_a->source), alias);
+  std::string param_str = param == NtoB? "NtoB":(param == NtoT? "NtoT":(param == BtoT?"BtoT":"Unknown"));
+  Log("[%ld] [AcquirePerm %s] addr: %lx source: %d alias: %d\n", *cycles, param_str.c_str(), address, *(req_a->source), alias);
   return true;
 }
 
