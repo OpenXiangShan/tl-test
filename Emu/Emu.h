@@ -61,6 +61,7 @@ inline void Emu::reset(uint64_t n) {
     dut_ptr->eval();
   }
   printf("reset is done!\n");
+  fflush(stdout);
   dut_ptr->reset = 0;
 }
 

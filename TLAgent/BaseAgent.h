@@ -115,10 +115,10 @@ protected:
   IDPool a_idpool;
   virtual void timeout_check() = 0;
   int id;
+  
+public:
   uint64_t core_id;
   uint8_t bus_type;
-
-public:
   virtual std::string type_to_string() = 0;
   virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >a) = 0;
   virtual void handle_b(std::shared_ptr<ChnB>b) = 0;

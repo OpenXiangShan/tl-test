@@ -28,17 +28,18 @@ void CFuzzer::randomTest(bool do_alias, std::shared_ptr<tl_agent::BaseAgent> *ag
     return;
 
   int alias = (do_alias) ? (rand() % 4) : 0;
+  uint8_t param = cAgent->bus_type == ICACHE_BUS_TYPE? tl_agent::NtoB:tl_agent::NtoT;
   if (rand() % 2) {
     if (rand() % 3) {
       if (rand() % 2) {
-        cAgent->do_acquireBlock(addr, tl_agent::NtoT,
+        cAgent->do_acquireBlock(addr, param,
                                 alias); // AcquireBlock NtoT
       } else {
-        cAgent->do_acquireBlock(addr, tl_agent::NtoT,
+        cAgent->do_acquireBlock(addr, param,
                                 alias); // AcquireBlock NtoB
       }
     } else {
-      cAgent->do_acquirePerm(addr, tl_agent::NtoT, alias); // AcquirePerm
+      if(cAgent->bus_type == DCACHE_BUS_TYPE)cAgent->do_acquirePerm(addr, param, alias); // AcquirePerm
     }
   } else {
     cAgent->do_releaseDataAuto(

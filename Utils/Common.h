@@ -36,14 +36,16 @@ enum {
   PTW_BUS_TYPE = 5,
   DCACHE_A_SOURCE_BEGIN = 0,
   DCACHE_A_SOURCE_END = 16,
-  DCACHE_C_SOURCE_BEGIN = 0,
-  DCACHE_C_SOURCE_END = 16,
+  DCACHE_C_SOURCE_BEGIN = 16,
+  DCACHE_C_SOURCE_END = 33,
   ICACHE_A_SOURCE_BEGIN = 0,
-  ICACHE_A_SOURCE_END = 1 << 3,
+  ICACHE_A_SOURCE_END = 4,
   ICACHE_C_SOURCE_BEGIN = 4,
   ICACHE_C_SOURCE_END = 5,
-  PTW_SOURCE_WD = 3,
-  DMA_SOURCE_WD = 9
+  PTW_A_SOURCE_BEGIN = 0,
+  PTW_A_SOURCE_END = 7,
+  DMA_A_SOURCE_BEGIN = 0,
+  DMA_A_SOURCE_END = 1 << 9,
 };
 
 const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;
@@ -86,13 +88,13 @@ typedef uint64_t paddr_t;
   ((ct == DCACHE_BUS_TYPE)? DCACHE_C_SOURCE_BEGIN:ICACHE_C_SOURCE_BEGIN)
 
 #define GET_CA_C_ID_END(ct)                                                   \
-  ((ct == DCACHE_BUS_TYPE)? DCACHE_C_SOURCE_END:ICACHE_C_SOURCE_END)
+  ((ct == DCACHE_BUS_TYPE)? DCACHE_C_SOURCE_END:ICACHE_C_SOURCE_END) 
 
-#define GET_CA_PROB_ID(ct)                                                   \
-  ((ct == DCACHE_BUS_TYPE)? DCACHE_C_SOURCE_END:ICACHE_C_SOURCE_BEGIN)    
+#define GET_UA_A_ID_BEGIN(ct)                                                   \
+  ((ct == PTW_BUS_TYPE)? PTW_A_SOURCE_BEGIN:DMA_A_SOURCE_BEGIN)
 
-#define GET_UA_ID_UPBOUND(ct)                                                   \
-  (((ct == PTW_BUS_TYPE)? (1 << PTW_SOURCE_WD):(1 << DMA_SOURCE_WD)))      
+#define GET_UA_A_ID_END(ct)                                                   \
+  ((ct == PTW_BUS_TYPE)? PTW_A_SOURCE_END:DMA_A_SOURCE_END)    
 
 /*
 #define Log(...) \
