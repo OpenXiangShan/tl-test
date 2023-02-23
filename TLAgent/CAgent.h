@@ -98,6 +98,13 @@ public:
   bool do_releaseData(paddr_t address, int param, std::shared_ptr<uint8_t[]>data, int alias);
   bool do_releaseDataAuto(paddr_t address, int alias);
   std::string type_to_string();
+  void clear(){
+    this->localBoard->clear();
+    this->c_idpool.clear();
+    this->aidMap->clear();
+    this->release_idMap->clear();
+    this->probe_ack_idMap->clear();
+  }
 };
 
 } // namespace tl_agent

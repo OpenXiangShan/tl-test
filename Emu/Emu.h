@@ -37,6 +37,7 @@ private:
   bool enable_wave = true;
   bool wave_full = false;
   bool all_wave = false;
+  bool random_mode = true;
   inline char *cycle_wavefile(uint64_t cycles, time_t t);
   void parse_args(int argc, char **argv);
 
@@ -50,6 +51,7 @@ public:
   inline void step();
   inline void update_cycles(uint64_t inc);
   void execute(uint64_t nr_cycle);
+  void reset_sys(uint64_t n);//reset system, include tl-test environment
 };
 
 inline void Emu::reset(uint64_t n) {

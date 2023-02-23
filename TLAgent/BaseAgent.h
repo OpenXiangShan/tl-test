@@ -72,11 +72,13 @@ private:
   std::set<uint32_t> *idle_ids;
   std::set<uint32_t> *used_ids;
   uint32_t pending_freeid;
+  uint32_t init[2];
 
 public:
   IDPool(uint32_t start, uint32_t end) {
     idle_ids = new std::set<uint32_t>();
     used_ids = new std::set<uint32_t>();
+    init[0] = start; init[1] = end;
     for (uint32_t i = start; i < end; i++) {
       idle_ids->insert(i);
     }
@@ -86,6 +88,14 @@ public:
   ~IDPool() {
     delete idle_ids;
     delete used_ids;
+  }
+  void clear(){
+    idle_ids->clear();
+    used_ids->clear();
+    for (uint32_t i = init[0]; i < init[1]; i++) {
+      idle_ids->insert(i);
+    }
+    pending_freeid = -1;
   }
   uint32_t getid() {
     if (idle_ids->size() == 0)
@@ -133,6 +143,7 @@ public:
   virtual bool local_probe(paddr_t address) = 0;
   BaseAgent(int a_begin, int a_end) : a_idpool(a_begin, a_end){};
   virtual ~BaseAgent() = default;
+  virtual void clear(void) = 0;
 };
 
 } // namespace tl_agent

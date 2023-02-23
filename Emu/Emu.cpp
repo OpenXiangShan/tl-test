@@ -17,10 +17,11 @@ void Emu::parse_args(int argc, char **argv) {
                                         {"verbose", 0, NULL, 'v'},
                                         {"fullwave", 0, NULL, 'f'},
                                         {"monitor", 0, NULL, 'm'},
+                                        {"random", 0, NULL, 'r'},
                                         {0, 0, NULL, 0}};
   int o;
   int long_index = 0;
-  while ((o = getopt_long(argc, const_cast<char *const *>(argv), "-s:b:e:c:mvf",
+  while ((o = getopt_long(argc, const_cast<char *const *>(argv), "-s:b:e:c:mvfr",
                           long_options, &long_index)) != -1) {
     switch (o) {
     case 's':
@@ -43,6 +44,9 @@ void Emu::parse_args(int argc, char **argv) {
       break;
     case 'f':
       all_wave = true;
+      break;
+    case 'r':
+      random_mode = false;
       break;
     default:
       tlc_assert(false, "Unknown args!");
@@ -71,7 +75,7 @@ Emu::Emu(int argc, char **argv) {
   for (int i = 0; i < NR_CAGENTS; i++) {
     agents[i].reset(new CAgent_t(globalBoard, i, &Cycles, i / 2, i % 2));
     fuzzers[i].reset(new CFuzzer(std::dynamic_pointer_cast<tl_agent::CAgent>(agents[i])));
-    fuzzers[i]->set_cycles(&Cycles);
+    fuzzers[i]->set_cycles(&Cycles); 
   }
 
   for (int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
@@ -85,6 +89,16 @@ Emu::Emu(int argc, char **argv) {
     fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
     fuzzers[i]->set_cycles(&Cycles);
   }
+
+  if (random_mode == false)
+  {
+    for (int i = 0; i < NR_AGENTS; i++)
+    {
+      fuzzers[i]->init_testcase();//Input file test.txt
+    }
+  }
+  
+
   if(this->en_monitor){
     for (int i = 0; i < NR_TILE_MONITOR; i++) {
       monitors[i].reset(new tl_monitor::Monitor(&Cycles, i, TILE_BUS_TYPE));
@@ -118,6 +132,16 @@ Emu::~Emu() {
 #endif
 }
 
+//reset_sys
+void Emu::reset_sys(uint64_t n){
+    reset(n);
+    this->globalBoard->clear();
+    for (size_t i = 0; i < NR_AGENTS; i++)
+    {
+      agents[i]->clear();
+    }
+}
+
 void Emu::execute(uint64_t nr_cycle) {
   while (Cycles < nr_cycle) {
     if(this->en_monitor){
@@ -125,12 +149,17 @@ void Emu::execute(uint64_t nr_cycle) {
         monitors[i]->print_info();
       }
     }
+
+    if(fuzzers[0]->do_reset(Cycles)){//reset message store in agent 0
+      reset_sys(10);
+    }
+
     for (int i = 0; i < NR_AGENTS; i++) {
       agents[i]->handle_channel();
     }
 
     for (int i = 0; i < NR_AGENTS; i++) {
-      fuzzers[i]->tick(agents);
+      fuzzers[i]->tick(agents, i, random_mode);
     }
 
     for (int i = 0; i < NR_AGENTS; i++) {
