@@ -151,7 +151,7 @@ void ULAgent::fire_d() {
     if (!pendingD.is_pending()) {
       // ULAgent needn't care about endurance
       if (hasData) {
-        Log("[%ld] [AccessAckData] addr: %lx source: %d data: ", *cycles, info->address, *(chnD.source));
+        Log("[%ld] [D] [AccessAckData] addr: %lx source: %d data: ", *cycles, info->address, *(chnD.source));
         for (int i = 0; i < DATASIZE; i++) {
           Dump("%02hhx", pendingD.info->data[DATASIZE - 1 - i]);
         }
@@ -159,7 +159,7 @@ void ULAgent::fire_d() {
         this->globalBoard->verify(info->address, pendingD.info->data);
       } else if (*chnD.opcode ==
                  AccessAck) { // finish pending status in GlobalBoard
-        Log("[%ld] [AccessAck] addr: %lx source: %d\n", *cycles, info->address, *(chnD.source));
+        Log("[%ld] [D] [AccessAck] addr: %lx source: %d\n", *cycles, info->address, *(chnD.source));
         this->globalBoard->unpending(info->address);
       }
       localBoard->erase(*chnD.source);
@@ -202,7 +202,7 @@ bool ULAgent::do_getAuto(paddr_t address) {
   req_a->mask.reset(new uint32_t(0xffffffffUL));
   req_a->source.reset(new uint32_t(this->a_idpool.getid()));
   pendingA.init(req_a, 1);
-  Log("[%ld] [Get] addr: %lx source: %d\n", *cycles, address, *(req_a->source));
+  Log("[%ld] [A] [Get] addr: %lx source: %d\n", *cycles, address, *(req_a->source));
   return true;
 }
 
@@ -216,7 +216,7 @@ bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
   req_a->mask.reset(new uint32_t(mask));
   req_a->source.reset(new uint32_t(this->a_idpool.getid()));
   pendingA.init(req_a, 1);
-  Log("[%ld] [Get] addr: %lx size: %x\n", *cycles, address, size);
+  Log("[%ld] [A] [Get] addr: %lx size: %x\n", *cycles, address, size);
   return true;
 }
 
@@ -235,7 +235,7 @@ bool ULAgent::do_putfulldata(paddr_t address, std::shared_ptr<uint8_t[]> data) {
   req_a->source.reset(new uint32_t(this->a_idpool.getid()));
   req_a->data = data;
   pendingA.init(req_a, DATASIZE / BEATSIZE);
-  Log("[%ld] [PutFullData] addr: %lx source: %d data: ", *cycles, address, *(req_a->source));
+  Log("[%ld] [A] [PutFullData] addr: %lx source: %d data: ", *cycles, address, *(req_a->source));
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[DATASIZE - 1 - i]);
   }
@@ -259,7 +259,7 @@ bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,std
   req_a->data = data;
   int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
   pendingA.init(req_a, nrBeat);
-  Log("[%ld] [PutPartialData] addr: %lx source:%d data: ", *cycles, address, *(req_a->source));
+  Log("[%ld] [A] [PutPartialData] addr: %lx source:%d data: ", *cycles, address, *(req_a->source));
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[DATASIZE - 1 - i]);
   }

@@ -157,7 +157,7 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
     req_c->opcode.reset(new uint8_t(ProbeAck));
     req_c->param.reset(new uint8_t(NtoN));
     pendingC.init(req_c, 1);
-    Log("[%ld] [ProbeAck NtoN] addr: %lx\n", *cycles, *b->address);
+    Log("[%ld] [C] [ProbeAck NtoN] addr: %lx\n", *cycles, *b->address);
   } else {
     int dirty =
         (exact_privilege == TIP) && (info->dirty[*b->alias] || rand() % 3);
@@ -212,15 +212,15 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
     }
 
     if (*req_c->param == TtoN) {
-      Log("[%ld] [ProbeAck TtoN] addr: %lx data: ", *cycles, *b->address);
+      Log("[%ld] [C] [ProbeAck TtoN] addr: %lx data: ", *cycles, *b->address);
     } else if (*req_c->param == TtoB) {
-      Log("[%ld] [ProbeAck TtoB] addr: %lx data: ", *cycles, *b->address);
+      Log("[%ld] [C] [ProbeAck TtoB] addr: %lx data: ", *cycles, *b->address);
     } else if (*req_c->param == NtoN) {
-      Log("[%ld] [ProbeAck NtoN] addr: %lx data: ", *cycles, *b->address);
+      Log("[%ld] [C] [ProbeAck NtoN] addr: %lx data: ", *cycles, *b->address);
     } else if (*req_c->param == BtoN) {
-      Log("[%ld] [ProbeAck BtoN] addr: %lx data: ", *cycles, *b->address);
+      Log("[%ld] [C] [ProbeAck BtoN] addr: %lx data: ", *cycles, *b->address);
     } else if (*req_c->param == BtoB) {
-      Log("[%ld] [ProbeAck BtoB] addr: %lx data: ", *cycles, *b->address);
+      Log("[%ld] [C] [ProbeAck BtoB] addr: %lx data: ", *cycles, *b->address);
     } else {
       tlc_assert(false, "What the hell is req_c's param?");
     }
@@ -339,7 +339,7 @@ void CAgent::fire_b() {
     req_b->needdata.reset(new uint8_t(*chnB.needdata));
     pendingB.init(req_b, 1);
     std::string param_str = *chnB.param==toN? "toN":(*chnB.param==toB? "toB":(*chnB.param==toT? "toT":"Unknown"));
-    Log("[%ld] [Probe %s] addr: %lx alias: %d\n", *cycles, param_str.c_str(), *chnB.address,
+    Log("[%ld] [B] [Probe %s] addr: %lx alias: %d\n", *cycles, param_str.c_str(), *chnB.address,
         (*chnB.alias) >> 1);
   }
 }
@@ -478,7 +478,7 @@ void CAgent::fire_d() {
       std::string param_str = p==toT? "toT":(p==toB? "toB":(p==toN? "toN":"Unknown"));
       switch (*chnD.opcode) {
       case GrantData: {
-        Log("[%ld] [GrantData %s] addr: %lx source: %d sink: %d, data: ", *cycles, param_str.c_str(), addr, *(chnD.source), *(chnD.sink));
+        Log("[%ld] [D] [GrantData %s] addr: %lx source: %d sink: %d, data: ", *cycles, param_str.c_str(), addr, *(chnD.source), *(chnD.sink));
         for (int i = 0; i < DATASIZE; i++) {
           Dump("%02hhx", pendingD.info->data[DATASIZE - 1 - i]);
         }
@@ -490,14 +490,14 @@ void CAgent::fire_d() {
         break;
       }
       case Grant: {
-        Log("[%ld] [Grant %s] addr: %lx source: %d sink: %d\n", *cycles, param_str.c_str(), addr, *(chnD.source), *(chnD.sink));
+        Log("[%ld] [D] [Grant %s] addr: %lx source: %d sink: %d\n", *cycles, param_str.c_str(), addr, *(chnD.source), *(chnD.sink));
         info->update_dirty(*chnD.dirty, alias);
         this->a_idpool.freeid(*chnD.source);
         aidMap->erase(*chnD.source);
         break;
       }
       case ReleaseAck: {
-        Log("[%ld] [ReleaseAck] addr: %lx source: %d \n", *cycles, addr, *(chnD.source));
+        Log("[%ld] [D] [ReleaseAck] addr: %lx source: %d \n", *cycles, addr, *(chnD.source));
         if (exact_status == S_C_WAITING_D) {
           info->update_status(S_INVALID, *cycles, alias);
           info->update_dirty(0, alias);
@@ -529,7 +529,7 @@ void CAgent::fire_d() {
         pendingE.init(req_e, 1);
         info->update_status(S_SENDING_E, *cycles, alias);
         info->update_priviledge(capGenPriv(*chnD.param), *cycles, alias);
-        Log("[%ld] [GrantAck] addr: %lx sink: %d\n", *cycles, *(req_e->addr), *(req_e->sink));
+        Log("[%ld] [E] [GrantAck] addr: %lx sink: %d\n", *cycles, *(req_e->addr), *(req_e->sink));
       }
       // Log("== free == fireD %d\n", *chnD.source);
     }
@@ -617,11 +617,11 @@ bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
   pendingA.init(req_a, 1);
   switch (param) {
   case NtoB:
-    Log("[%ld] [AcquireData NtoB] addr: %lx source: %d alias: %d\n", *cycles, address,
+    Log("[%ld] [A] [AcquireData NtoB] addr: %lx source: %d alias: %d\n", *cycles, address,
         *(req_a->source), alias);
     break;
   case NtoT:
-    Log("[%ld] [AcquireData NtoT] addr: %lx source: %d alias: %d\n", *cycles, address,
+    Log("[%ld] [A] [AcquireData NtoT] addr: %lx source: %d alias: %d\n", *cycles, address,
         *(req_a->source), alias);
     break;
   }
@@ -663,7 +663,7 @@ bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
   // Log("== id == acquire %d\n", *req_a->source);
   pendingA.init(req_a, 1);
   std::string param_str = param == NtoB? "NtoB":(param == NtoT? "NtoT":(param == BtoT?"BtoT":"Unknown"));
-  Log("[%ld] [AcquirePerm %s] addr: %lx source: %d alias: %d\n", *cycles, param_str.c_str(), address, *(req_a->source), alias);
+  Log("[%ld] [A] [AcquirePerm %s] addr: %lx source: %d alias: %d\n", *cycles, param_str.c_str(), address, *(req_a->source), alias);
   return true;
 }
 
@@ -698,7 +698,7 @@ bool CAgent::do_releaseData(paddr_t address, int param, std::shared_ptr<uint8_t[
   req_c->data = data;
   req_c->alias.reset(new uint8_t(alias));
   pendingC.init(req_c, DATASIZE / BEATSIZE);
-  Log("[%ld] [ReleaseData] addr: %lx, data: ", *cycles, address);
+  Log("[%ld] [C] [ReleaseData] addr: %lx, data: ", *cycles, address);
   for (int i = 0; i < DATASIZE; i++) {
     Dump("%02hhx", data[DATASIZE - 1 - i]);
   }
@@ -756,10 +756,10 @@ bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
   pendingC.init(req_c, DATASIZE / BEATSIZE);
   switch (param) {
   case BtoN:
-    Log("[%ld] [ReleaseData BtoN] addr: %lx source: %d data: ", *cycles, address, *(req_c->source));
+    Log("[%ld] [C] [ReleaseData BtoN] addr: %lx source: %d data: ", *cycles, address, *(req_c->source));
     break;
   case TtoN:
-    Log("[%ld] [ReleaseData TtoN] addr: %lx source: %d data: ", *cycles, address, *(req_c->source));
+    Log("[%ld] [C] [ReleaseData TtoN] addr: %lx source: %d data: ", *cycles, address, *(req_c->source));
     break;
   }
 
