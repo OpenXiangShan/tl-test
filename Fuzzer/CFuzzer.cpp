@@ -47,23 +47,46 @@ void CFuzzer::randomTest(bool do_alias, std::shared_ptr<tl_agent::BaseAgent> *ag
   }
 }
 
-void CFuzzer::caseTest() {
-  if (*cycles == 100) {
-    this->cAgent->do_acquireBlock(0x1040, tl_agent::NtoT, 0);
-  }
-  if (*cycles == 300) {
-    std::shared_ptr<uint8_t[]>putdata(new uint8_t[DATASIZE]);
-    for (int i = 0; i < DATASIZE; i++) {
-      putdata[i] = (uint8_t)rand();
-    }
-    this->cAgent->do_releaseData(0x1040, tl_agent::TtoN, putdata, 0);
-  }
-  if (*cycles == 400) {
-    this->cAgent->do_acquireBlock(0x1040, tl_agent::NtoT, 0);
+//TODO : perfercache can be set
+void CFuzzer::caseTest(int id) {
+  if(case_mes[id].haskey(*cycles) == true)
+  {
+      // std::cout << "agent:" << id << " haskey" << std::endl;
+      //Case Message
+      testcase::Mes_Entry mes = case_mes[id].query(*cycles);
+      //genAddr
+      static paddr_t addr = 0x80000000;
+      if(mes.addr == 0)
+        addr = addr;
+      else if(mes.addr == 1)
+        addr = genAddr();
+      else
+        addr = mes.addr;
+
+      switch(mes.opcode){
+          case tl_agent::AcquireBlock :
+              this->cAgent->do_acquireBlock(addr, mes.param, mes.user);
+              break;
+          case tl_agent::AcquirePerm :
+              this->cAgent->do_acquirePerm(addr, mes.param, mes.user);
+              break;
+          case (tl_agent::ReleaseData+1) :{//因为releasdata与acquireperm的param重复，+1以视为区分
+                  std::shared_ptr<uint8_t[]>putdata(new uint8_t[DATASIZE]);
+                  for (int i = 0; i < DATASIZE; i++) {
+                    putdata[i] = (uint8_t)rand();
+                  }
+                  this->cAgent->do_releaseData(addr, mes.param, putdata, mes.user);
+                  break;
+              }
+          case testcase::reset_opcode : break;
+          default:printf("caseTest error\n");
+      }
   }
 }
 
-void CFuzzer::tick(std::shared_ptr<tl_agent::BaseAgent> *agent) {
-  this->randomTest(false, agent);
-  //    this->caseTest();
+void CFuzzer::tick(std::shared_ptr<tl_agent::BaseAgent> *agent, int id, int mode) {
+  if(mode == true)
+    this->randomTest(false, agent);
+  else
+    this->caseTest(id);
 }

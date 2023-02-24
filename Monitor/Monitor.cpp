@@ -10,6 +10,19 @@ namespace tl_monitor{
     return this->info;
   }
 
+  string hex_to_str(uint64_t mask,int len,bool x){
+    string hexes[16] = {"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"};
+    string hexstring = "";
+    for (int i=0; i<len; i++){
+      int j = len-i-1;
+      int number = (mask >> 4*j) & 0xf;
+      hexstring += hexes[number];
+    }
+    if(x == true)
+      return "0x" + hexstring;
+    else 
+      return hexstring;
+  }
 
   void Monitor::fire_ULA(){
     TLInfo a = *this->info;
@@ -32,13 +45,17 @@ namespace tl_monitor{
         default:info_chnl.op = "error";
       }
 
-      info_chnl.addr = std::to_string(*a.a_address);
+      info_chnl.addr = hex_to_str(*a.a_address,8,false);
       info_chnl.source = std::to_string(*a.a_source);
+      //data
       info_chnl.clear_data();
-      for (size_t i = 0; i < BEATSIZE; i++)
-      {
-        info_chnl.data = info_chnl.data + std::to_string(a.a_data[i]);
-      }
+      if(*a.a_opcode == PutFullData || *a.a_opcode == PutPartialData)
+        for (int i = BEATSIZE-1; i >= 0; i--)
+        {
+          info_chnl.data = info_chnl.data + hex_to_str(a.a_data[i],2,false);
+        }
+      else
+        info_chnl.data = "-";
       //user
       info_chnl.alias = std::to_string(*a.a_user_alias);
       info_chnl.prefercache = std::to_string(*a.a_user_preferCache);
@@ -69,11 +86,15 @@ namespace tl_monitor{
       info_chnl.addr = "-";
       info_chnl.source = std::to_string(*d.d_source);
       info_chnl.sink = std::to_string(*d.d_sink);
+      //data
       info_chnl.clear_data();
-      for (size_t i = 0; i < BEATSIZE; i++)
-      {
-        info_chnl.data = info_chnl.data + std::to_string(d.d_data[i]);
-      }
+      if(*d.d_opcode == AccessAckData)
+        for (int i = BEATSIZE-1; i >= 0; i--)
+        {
+          info_chnl.data = info_chnl.data + hex_to_str(d.d_data[i],2,false);
+        }
+      else
+        info_chnl.data = "-";
       //print
       std::string print_info = info_base.add() + info_chnl.uld_add();
       printf("%s\n", print_info.c_str());
@@ -130,13 +151,17 @@ namespace tl_monitor{
         default:info_chnl.op = "error";break;
       }
 
-      info_chnl.addr = std::to_string(*a.a_address);
+      info_chnl.addr = hex_to_str(*a.a_address,8,false);
       info_chnl.source = std::to_string(*a.a_source);
+      //data
       info_chnl.clear_data();
-      for (size_t i = 0; i < BEATSIZE; i++)
-      {
-        info_chnl.data = info_chnl.data + std::to_string(a.a_data[i]);
-      }
+      if(*a.a_opcode == PutFullData || *a.a_opcode == PutPartialData)
+        for (int i = BEATSIZE-1; i >= 0; i--)
+        {
+          info_chnl.data = info_chnl.data + hex_to_str(a.a_data[i],2,false);
+        }
+      else
+        info_chnl.data = "-";
       //user
       info_chnl.alias = std::to_string(*a.a_user_alias);
       info_chnl.prefercache = std::to_string(*a.a_user_preferCache);
@@ -166,7 +191,7 @@ namespace tl_monitor{
         default:info_chnl.op = "error";
       }
       
-      info_chnl.addr = std::to_string(*b.b_address);
+      info_chnl.addr = hex_to_str(*b.b_address,8,false);
       info_chnl.source = std::to_string(*b.d_source);
       info_chnl.clear_data();
       info_chnl.data = "-";
@@ -233,10 +258,17 @@ namespace tl_monitor{
           break;
         default:info_chnl.op = "error";
       }
-      info_chnl.addr = std::to_string(*c.c_address);
+      info_chnl.addr = hex_to_str(*c.c_address,8,false);
       info_chnl.source = std::to_string(*c.d_source);
+      //data
       info_chnl.clear_data();
-      info_chnl.data = "-";
+      if(*c.c_opcode == ProbeAckData || *c.c_opcode == ReleaseData)
+        for (int i = BEATSIZE-1; i >= 0; i--)
+        {
+          info_chnl.data = info_chnl.data + hex_to_str(c.c_data[i],2,false);
+        }
+      else
+        info_chnl.data = "-";
       //uesr
       info_chnl.blockisdirty = std::to_string(*c.c_echo_blockisdirty);
       //print
@@ -284,11 +316,15 @@ namespace tl_monitor{
       info_chnl.addr = "-";
       info_chnl.source = std::to_string(*d.d_source);
       info_chnl.sink = std::to_string(*d.d_sink);
+      //data
       info_chnl.clear_data();
-      for (size_t i = 0; i < BEATSIZE; i++)
-      {
-        info_chnl.data = info_chnl.data + std::to_string(d.d_data[i]);
-      }
+      if(*d.d_opcode == AccessAckData || *d.d_opcode == GrantData)
+        for (int i = BEATSIZE-1; i >= 0; i--)
+        {
+          info_chnl.data = info_chnl.data + hex_to_str(d.d_data[i],2,false);
+        }
+      else
+        info_chnl.data = "-";
       //user
       info_chnl.blockisdirty = std::to_string(*d.d_echo_blockisdirty);
       //print

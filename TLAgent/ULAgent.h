@@ -72,6 +72,9 @@ public:
   bool do_putpartialdata(paddr_t address, uint8_t offset, uint8_t size, uint32_t mask,
                          std::shared_ptr<uint8_t[]> data);
   std::string type_to_string();
+  void clear(){
+    this->localBoard->clear();
+  }
 };
 
 } // namespace tl_agent

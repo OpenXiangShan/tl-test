@@ -44,6 +44,7 @@ For multi-thread, add -DTHREAD=${NR_THREADS}
 -v --verbose       Verbose mode
 -m --monitor       Enable TL monitors
 -f --fullwave      Dump all wave. It will override --wave-begin=0 --wave-end=cycle
+-r --random-mode   Turn off random test mode, more information in Case.h
 Please check -DTRACE=1 is added to tl-test compiling cmake arguments before wave dump.
 
 Tl-test will dump wave to directory tl-test/build/ if wave_begin < wave_end.

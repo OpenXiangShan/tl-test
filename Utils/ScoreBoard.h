@@ -25,6 +25,7 @@ public:
   void erase(const Tk &key);
   int verify(const Tk &key, const Tv &data) const;
   bool haskey(const Tk &key);
+  void clear();
 };
 
 class Global_SBEntry {
@@ -56,6 +57,11 @@ template <typename Tk, typename Tv> ScoreBoard<Tk, Tv>::ScoreBoard() {
 }
 
 template <typename Tk, typename Tv> ScoreBoard<Tk, Tv>::~ScoreBoard() {}
+
+template <typename Tk, typename Tv>
+void ScoreBoard<Tk, Tv>::clear() {
+  mapping.clear();
+}
 
 template <typename Tk, typename Tv>
 std::map<Tk, std::shared_ptr<Tv>> &ScoreBoard<Tk, Tv>::get() {
