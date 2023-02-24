@@ -76,7 +76,7 @@ std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::query(const Tk &key) {
   if (mapping.count(key) > 0) {
     return mapping[key];
   } else {
-    tlc_assert(false, "Key no found!");
+    tlc_assert(false, "Key not found!");
   }
 }
 

@@ -243,25 +243,26 @@ bool ULAgent::do_putfulldata(paddr_t address, std::shared_ptr<uint8_t[]> data) {
   return true;
 }
 
-bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask,std::shared_ptr<uint8_t[]> data) {
+bool ULAgent::do_putpartialdata(paddr_t address, uint8_t offset, uint8_t size, uint32_t mask,std::shared_ptr<uint8_t[]> data) {
   if (pendingA.is_pending() || a_idpool.full())
     return false;
   if (this->globalBoard->haskey(address) &&
       this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
     return false;
   std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE> >req_a(new ChnA<ReqField, EchoField, DATASIZE>());
-  req_a->opcode.reset(
-      (rand() % 3) ? new uint8_t(PutPartialData) : new uint8_t(PutFullData));
-  req_a->address.reset(new paddr_t(address));
+  req_a->opcode.reset(new uint8_t(PutPartialData));
+  req_a->address.reset(new paddr_t(address + offset));
   req_a->size.reset(new uint8_t(size));
   req_a->mask.reset(new uint32_t(mask));
   req_a->source.reset(new uint32_t(this->a_idpool.getid()));
   req_a->data = data;
   int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
   pendingA.init(req_a, nrBeat);
-  Log("[%ld] [PutPartialData] addr: %lx source:%d data: ", *cycles, address, *(req_a->source));
-  for (int i = 0; i < DATASIZE; i++) {
-    Dump("%02hhx", data[DATASIZE - 1 - i]);
+  Log("[%ld] [PutPartialData] addr: %lx source:%d size:%d mask:%x data: ", *cycles, address + offset, *(req_a->source), size, mask);
+  int data_begin = offset;
+  int data_end = (1 << size) + offset;
+  for (int i = data_begin; i < data_end; i++) {
+    Dump("%02hhx", data[data_end - 1 - i]);
   }
   Dump("\n");
   return true;

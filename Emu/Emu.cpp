@@ -119,6 +119,10 @@ Emu::~Emu() {
 }
 
 void Emu::execute(uint64_t nr_cycle) {
+  while (Cycles < 10000) {
+    this->step();
+    this->update_cycles(1);
+  }
   while (Cycles < nr_cycle) {
     if(this->en_monitor){
       for(int i = 0; i < NR_TL_MONITOR; i++){

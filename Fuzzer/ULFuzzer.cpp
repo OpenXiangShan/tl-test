@@ -46,7 +46,7 @@ void ULFuzzer::randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent) {
   if (!flag)
     return;
 
-  if (rand() % 2) { // Get
+  if (rand() % 2 || this->ulAgent->bus_type == PTW_BUS_TYPE) { // Get
     ulAgent->do_getAuto(addr);
   } else {
     if (rand() % 2) { // PutFullData
@@ -60,18 +60,18 @@ void ULFuzzer::randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent) {
       switch (rand() % 3) {
       case 0:
         offset = (rand() % 4) * 8;
-        sent = ulAgent->do_putpartialdata(addr + offset, 3,
+        sent = ulAgent->do_putpartialdata(addr, offset, 3,
                                           mask_raw & (0x000000FF << offset),
                                           genPutPartialData(putdata));
         break;
       case 1:
         offset = (rand() % 2) * 16;
-        sent = ulAgent->do_putpartialdata(addr + offset, 4,
+        sent = ulAgent->do_putpartialdata(addr, offset, 4,
                                           mask_raw & (0x0000FFFF << offset),
                                           genPutPartialData(putdata));
         break;
       case 2:
-        sent = ulAgent->do_putpartialdata(addr, 5, mask_raw & 0xFFFFFFFF,
+        sent = ulAgent->do_putpartialdata(addr, 0, 5, mask_raw & 0xFFFFFFFF,
                                           genPutPartialData(putdata));
         break;
       }
@@ -82,7 +82,7 @@ void ULFuzzer::randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent) {
 void ULFuzzer::caseTest() {
   std::shared_ptr<uint8_t[]>putdata(new uint8_t[DATASIZE]);
   if (*cycles == 500) {
-    ulAgent->do_putpartialdata(0x1070, 2, 0xf0000, genPutPartialData(putdata));
+    ulAgent->do_putpartialdata(0x1070, 0, 2, 0xf0000, genPutPartialData(putdata));
   }
   if (*cycles == 600) {
     ulAgent->do_getAuto(0x1040);
@@ -92,7 +92,7 @@ void ULFuzzer::caseTest() {
 void ULFuzzer::caseTest2() {
   std::shared_ptr<uint8_t[]>putdata(new uint8_t[DATASIZE]);
   if (*cycles == 100) {
-    ulAgent->do_putpartialdata(0x1000, 2, 0xf, genPutPartialData(putdata));
+    ulAgent->do_putpartialdata(0x1000, 0, 2, 0xf, genPutPartialData(putdata));
   }
   if (*cycles == 500) {
     ulAgent->do_get(0x1000, 2, 0xf);

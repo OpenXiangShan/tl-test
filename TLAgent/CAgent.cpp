@@ -195,7 +195,7 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
       }
       req_c->data.reset(all_zero);
     } else {
-      if (*req_c->opcode == ProbeAckData && *req_c->param != BtoN) {
+      if (*req_c->opcode == ProbeAckData && (*req_c->param == TtoN || *req_c->param == TtoB)) {
         uint8_t *random = new uint8_t[DATASIZE];
         for (int i = 0; i < DATASIZE; i++) {
           random[i] = (uint8_t)rand();
@@ -308,6 +308,7 @@ Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) {
 Resp CAgent::send_e(std::shared_ptr<ChnE>e) {
   *this->port->e.sink = *e->sink;
   *this->port->e.valid = true;
+  *this->port->d.ready = false;
   return OK;
 }
 
@@ -524,6 +525,7 @@ void CAgent::fire_d() {
         req_e->addr.reset(new paddr_t(addr));
         req_e->alias.reset(new uint8_t(alias));
         if (pendingE.is_pending()) {
+          Log("New E request when E is pending!\n");
           tlc_assert(false, "E is pending!");
         }
         pendingE.init(req_e, 1);
@@ -544,6 +546,7 @@ void CAgent::fire_e() {
     auto info = localBoard->query(*pendingE.info->addr);
     info->update_status(S_VALID, *cycles, *pendingE.info->alias);
     pendingE.update();
+    *this->port->d.ready = true;
   }
 }
 
@@ -780,6 +783,7 @@ void CAgent::timeout_check() {
     for (int i = 0; i < 4; i++) {
       if (value->status[i] != S_INVALID && value->status[i] != S_VALID) {
         if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
+          Log("Time Out!\n");
           printf("Now time:   %lu\n", *this->cycles);
           printf("Last stamp: %lu\n", value->time_stamp);
           printf("Status[0]:  %d\n", value->status[0]);
