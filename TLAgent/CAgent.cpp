@@ -151,13 +151,27 @@ void CAgent::handle_b(std::shared_ptr<ChnB>b) {
   req_c->dirty.reset(new uint8_t(1));
   req_c->alias.reset(new uint8_t(*b->alias));
   // Log("== id == handleB %d\n", *req_c->source);
-  if (exact_status == S_SENDING_A || exact_status == S_INVALID ||
-      exact_status == S_A_WAITING_D) {
+  if (exact_status == S_INVALID) {
     Log("Probe an non-exist block, status: %d\n", exact_status);
     req_c->opcode.reset(new uint8_t(ProbeAck));
     req_c->param.reset(new uint8_t(NtoN));
     pendingC.init(req_c, 1);
     Log("[%ld] [C] [ProbeAck NtoN] addr: %lx\n", *cycles, *b->address);
+  } else if(exact_status == S_SENDING_A || exact_status == S_A_WAITING_D){
+    if(exact_privilege == BRANCH){
+      req_c->opcode.reset(new uint8_t(ProbeAck));
+      req_c->param.reset(new uint8_t(BtoN));
+      pendingC.init(req_c, 1);
+      Log("[%ld] [C] [ProbeAck BtoN] addr: %lx\n", *cycles, *b->address);
+    } else if(exact_privilege == INVALID){
+      Log("Probe an non-exist block, status: %d\n", exact_status);
+      req_c->opcode.reset(new uint8_t(ProbeAck));
+      req_c->param.reset(new uint8_t(NtoN));
+      pendingC.init(req_c, 1);
+      Log("[%ld] [C] [ProbeAck NtoN] addr: %lx\n", *cycles, *b->address);
+    } else {
+      tlc_assert(false, "Illegal block status!\n");
+    }
   } else {
     int dirty =
         (exact_privilege == TIP) && (info->dirty[*b->alias] || rand() % 3);
@@ -280,12 +294,12 @@ Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) {
     // tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
     if (localBoard->haskey(*c->address)) {
       auto item = localBoard->query(*c->address);
-      if (item->status[*c->alias] == S_C_WAITING_D) {
-        item->update_status(S_C_WAITING_D_INTR, *cycles, *c->alias);
-      } else if (item->status[*c->alias] == S_A_WAITING_D) {
-        item->update_status(S_A_WAITING_D_INTR, *cycles, *c->alias);
-      } else {
-        item->update_status(S_SENDING_C, *cycles, *c->alias);
+      switch(item->status[*c->alias]){
+        case S_C_WAITING_D: item->update_status(S_C_WAITING_D_INTR, *cycles, *c->alias);break;
+        case S_A_WAITING_D: item->update_status(S_A_WAITING_D_INTR, *cycles, *c->alias);break;
+        case S_C_WAITING_D_INTR: break;
+        case S_A_WAITING_D_INTR: break;
+        default: item->update_status(S_SENDING_C, *cycles, *c->alias);break;
       }
     } else {
       tlc_assert(false, "Localboard key not found!");
@@ -308,7 +322,6 @@ Resp CAgent::send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE> >c) {
 Resp CAgent::send_e(std::shared_ptr<ChnE>e) {
   *this->port->e.sink = *e->sink;
   *this->port->e.valid = true;
-  *this->port->d.ready = false;
   return OK;
 }
 
@@ -546,7 +559,6 @@ void CAgent::fire_e() {
     auto info = localBoard->query(*pendingE.info->addr);
     info->update_status(S_VALID, *cycles, *pendingE.info->alias);
     pendingE.update();
-    *this->port->d.ready = true;
   }
 }
 
@@ -556,12 +568,12 @@ void CAgent::handle_channel() {
   fire_a();
   fire_b();
   fire_c();
-  fire_e();
   fire_d();
+  fire_e(); 
 }
 
 void CAgent::update_signal() {
-  *this->port->d.ready = true; // TODO: do random here
+  *this->port->d.ready = !(pendingE.is_pending());
   *this->port->b.ready = !(pendingB.is_pending());
 
   if (pendingA.is_pending()) {

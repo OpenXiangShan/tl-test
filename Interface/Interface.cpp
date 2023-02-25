@@ -43,7 +43,7 @@ namespace tl_interface{
     b_alias.reset(new uint8_t(0));
     b_needdata.reset(new uint8_t(0));
     b_valid.reset(new uint8_t(0));
-    b_ready.reset(new uint8_t(0));
+    b_ready.reset(new uint8_t(1));
 
     //Channel C
     c_opcode.reset(new uint8_t(0));
@@ -74,7 +74,7 @@ namespace tl_interface{
     d_corrupt.reset(new uint8_t(0));
     d_echo_blockisdirty.reset(new uint8_t(0));
     d_valid.reset(new uint8_t(0));
-    d_ready.reset(new uint8_t(0));
+    d_ready.reset(new uint8_t(1));
 
     //Channel E
     e_sink.reset(new uint32_t(0));
