@@ -70,25 +70,38 @@ Emu::Emu(int argc, char **argv) {
 
   printf("[INFO] use seed: %ld\n", this->seed);
   srand(this->seed);
-
-  // Init agents
+  
   for (int i = 0; i < NR_CAGENTS; i++) {
-    agents[i].reset(new CAgent_t(globalBoard, i, &Cycles, i / 2, i % 2));
-    fuzzers[i].reset(new CFuzzer(std::dynamic_pointer_cast<tl_agent::CAgent>(agents[i])));
-    fuzzers[i]->set_cycles(&Cycles); 
+    l1[i].reset(new FakeL1_t(globalBoard, i, &Cycles, i / 2, i % 2));
+  }
+  
+  for(int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
+    ptw[i-NR_CAGENTS].reset(new FakePTW_t(globalBoard, i, &Cycles, i % 2, PTW_BUS_TYPE));
   }
 
-  for (int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
-    agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, i % 2, PTW_BUS_TYPE));
-    fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
-    fuzzers[i]->set_cycles(&Cycles);
+  for(int i = NR_CAGENTS + NR_PTWAGT; i < NR_CAGENTS + NR_PTWAGT + NR_DMAAGT; i++) {
+    dma[i-NR_CAGENTS-NR_PTWAGT].reset(new FakeDMA_t(globalBoard, i, &Cycles, 0xffffffffffffffffL, DMA_BUS_TYPE));
   }
 
-  for (int i = NR_CAGENTS + NR_PTWAGT; i < NR_AGENTS; i++) {
-    agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, 0xffffffffffffffffL, DMA_BUS_TYPE));
-    fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
-    fuzzers[i]->set_cycles(&Cycles);
-  }
+  sqr.reset(new Sequencer_t);
+  // Init agents
+  // for (int i = 0; i < NR_CAGENTS; i++) {
+  //   agents[i].reset(new CAgent_t(globalBoard, i, &Cycles, i / 2, i % 2));
+  //   fuzzers[i].reset(new CFuzzer(std::dynamic_pointer_cast<tl_agent::CAgent>(agents[i])));
+  //   fuzzers[i]->set_cycles(&Cycles); 
+  // }
+
+  // for (int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
+  //   agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, i % 2, PTW_BUS_TYPE));
+  //   fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
+  //   fuzzers[i]->set_cycles(&Cycles);
+  // }
+
+  // for (int i = NR_CAGENTS + NR_PTWAGT; i < NR_AGENTS; i++) {
+  //   agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, 0xffffffffffffffffL, DMA_BUS_TYPE));
+  //   fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
+  //   fuzzers[i]->set_cycles(&Cycles);
+  // }
 
   if (random_mode == false)
   {
@@ -150,21 +163,78 @@ void Emu::execute(uint64_t nr_cycle) {
       }
     }
 
-    if(fuzzers[0]->do_reset(Cycles)){//reset message store in agent 0
-      reset_sys(10);
-    }
+    // if(fuzzers[0]->do_reset(Cycles)){//reset message store in agent 0
+    //   reset_sys(10);
+    // }
 
-    for (int i = 0; i < NR_AGENTS; i++) {
-      agents[i]->handle_channel();
-    }
+    // for (int i = 0; i < NR_AGENTS; i++) {
+    //   agents[i]->handle_channel();
+    // }
 
-    for (int i = 0; i < NR_AGENTS; i++) {
-      fuzzers[i]->tick(agents, i, random_mode);
-    }
+    // for (int i = 0; i < NR_AGENTS; i++) {
+    //   fuzzers[i]->tick(agents, i, random_mode);
+    // }
 
-    for (int i = 0; i < NR_AGENTS; i++) {
-      agents[i]->update_signal();
+    // for (int i = 0; i < NR_AGENTS; i++) {
+    //   agents[i]->update_signal();
+    // }
+    
+    for (int i = 0; i < NR_CAGENTS; i++) {
+      l1[i]->handle_channel();
     }
+    for (int i = 0; i < NR_PTWAGT; i++) {
+      ptw[i]->handle_channel();
+    }
+    for (int i = 0; i < NR_DMAAGT; i++) {
+      dma[i]->handle_channel();
+    }
+    // for (int i = NR_CAGENTS; i < NR_AGENTS; i++) {
+    //   agents[i]->handle_channel();
+    // }
+
+    for (int i = 0; i < NR_CAGENTS; i++) {
+      tl_base_agent::TLCTransaction tr = randomTest2(false, l1[i]->bus_type, ptw, dma);
+      l1[i]->transaction_input(tr);
+    }
+    for (int i = 0; i < NR_PTWAGT; i++) {
+      tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
+      ptw[i]->transaction_input(tr);
+    }
+    for (int i = 0; i < NR_DMAAGT; i++) {
+      tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
+      dma[i]->transaction_input(tr);
+    }
+    // for (int i = 0; i < 3; i++) {
+    //   // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
+    //   if(i == 0) {
+    //     tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[0]->bus_type);
+    //     ptw[0]->transaction_input(tr);
+    //   }
+    //   if(i == 1) {
+    //     tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[1]->bus_type);
+    //     ptw[1]->transaction_input(tr);
+    //   }
+    //   if(i == 3) {
+    //     tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[0]->bus_type);
+    //     dma[0]->transaction_input(tr);
+    //   }
+    // }
+    // for (int i = NR_CAGENTS; i < NR_AGENTS; i++) {
+    //   fuzzers[i]->tick(agents, i, random_mode, l1);
+    // }
+
+    for (int i = 0; i < NR_CAGENTS; i++) {
+      l1[i]->update_signal();
+    }
+    for (int i = 0; i < NR_PTWAGT; i++) {
+      ptw[i]->update_signal();
+    }
+    for (int i = 0; i < NR_DMAAGT; i++) {
+      dma[i]->update_signal();
+    }
+    // for (int i = NR_CAGENTS; i < NR_AGENTS; i++) {
+    //   agents[i]->update_signal();
+    // }
 
     this->step();
     this->update_cycles(1);

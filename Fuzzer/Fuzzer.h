@@ -8,6 +8,8 @@
 #include "../TLAgent/CAgent.h"
 #include "../TLAgent/ULAgent.h"
 #include "../Fuzzer/Case.h"
+#include "../CacheModel/FakeL1/fake_l1.h"
+#include "../CacheModel/FakePTW/fake_ptw.h"
 
 class Fuzzer {
 protected:
@@ -17,7 +19,8 @@ protected:
 public:
   Fuzzer() = default;
   ~Fuzzer() = default;
-  virtual void tick(std::shared_ptr<tl_agent::BaseAgent> *agent, int id , int mode) = 0;
+  // virtual void tick(std::shared_ptr<tl_agent::BaseAgent> *agent, int id , int mode) = 0;
+  virtual void tick(std::shared_ptr<tl_agent::BaseAgent> *agent, int id , int mode, std::shared_ptr<fake_l1::FakeL1> *l1) = 0;
   void set_cycles(uint64_t *cycles) { this->cycles = cycles; }
 
   void init_testcase(void){
@@ -46,9 +49,12 @@ private:
 
 public:
   ULFuzzer(std::shared_ptr<tl_agent::ULAgent> ulAgent);
-  void randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent);
+  // void randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent);
+  void randomTest(std::shared_ptr<tl_agent::BaseAgent> *agent, std::shared_ptr<fake_l1::FakeL1> *l1);
+
   void caseTest(int id);
-  void tick(std::shared_ptr<tl_agent::BaseAgent> *agent, int id, int mode);
+  // void tick(std::shared_ptr<tl_agent::BaseAgent> *agent, int id, int mode);
+  void tick(std::shared_ptr<tl_agent::BaseAgent> *agent, int id, int mode, std::shared_ptr<fake_l1::FakeL1> *l1);
 };
 
 class CFuzzer : public Fuzzer {
@@ -61,5 +67,12 @@ public:
   void caseTest(int id);
   void tick(std::shared_ptr<tl_agent::BaseAgent> *agent, int id, int mode);
 };
+
+// tl_base_agent::TLCTransaction randomTest2(bool do_alias, uint8_t bus_type, std::shared_ptr<tl_agent::BaseAgent> *agent);
+
+
+tl_base_agent::TLCTransaction randomTest2(bool do_alias, uint8_t bus_type, std::shared_ptr<fake_ptw::FakePTW> *ptw, std::shared_ptr<fake_ptw::FakePTW> *dma);
+
+tl_base_agent::TLCTransaction randomTest3(std::shared_ptr<fake_ptw::FakePTW> *ptw, std::shared_ptr<fake_ptw::FakePTW> *dma,std::shared_ptr<fake_l1::FakeL1> *l1, int bus_type);
 
 #endif // TLC_TEST_FUZZER_H

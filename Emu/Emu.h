@@ -17,6 +17,9 @@
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
 #include "../Monitor/Monitor.h"
+#include "../CacheModel/FakeL1/fake_l1.h"
+#include "../CacheModel/FakePTW/fake_ptw.h"
+#include "../Sequencer/sequencer.h"
 
 class Emu {
 private:
@@ -40,6 +43,17 @@ private:
   bool random_mode = true;
   inline char *cycle_wavefile(uint64_t cycles, time_t t);
   void parse_args(int argc, char **argv);
+
+  typedef fake_l1::FakeL1 FakeL1_t;
+  typedef fake_ptw::FakePTW FakePTW_t;
+  typedef fake_ptw::FakePTW FakeDMA_t;
+  std::shared_ptr<FakeL1_t> l1[NR_CAGENTS];
+  std::shared_ptr<FakePTW_t> ptw[NR_PTWAGT];
+  std::shared_ptr<FakeDMA_t> dma[NR_DMAAGT];
+
+  typedef sequencer::Sequencer Sequencer_t;
+  std::shared_ptr<Sequencer_t> sqr;
+
 
 public:
   Emu(int argc, char **argv);

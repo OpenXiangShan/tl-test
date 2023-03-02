@@ -46,8 +46,8 @@ template <typename T> class PendingTrans {
 public:
   int beat_cnt;
   int nr_beat;
-  std::shared_ptr<T> info;
 
+  std::shared_ptr<T> info;
   PendingTrans() {
     nr_beat = 0;
     beat_cnt = 0;
@@ -112,6 +112,7 @@ public:
                  "Try to free unused SourceID!");
       used_ids->erase(pending_freeid);
       idle_ids->insert(pending_freeid);
+      printf("free %d\n", pending_freeid);
       pending_freeid = -1;
     }
   }
