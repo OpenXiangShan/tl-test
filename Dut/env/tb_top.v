@@ -152,4 +152,8 @@ module tb_top(
   )tl_monitor_set(
     .clock(io_clock)
   );
+
+  huancun_assert huancun_assert_inst(.clock(io_clock));
+
 endmodule
+

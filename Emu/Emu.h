@@ -10,6 +10,7 @@
 #include <getopt.h>
 #if VM_TRACE == 1
 #include "verilated_vcd_c.h"
+#include "verilated_fst_c.h"
 #endif
 #include "../Fuzzer/Fuzzer.h"
 #include "../TLAgent/CAgent.h"
@@ -20,6 +21,8 @@
 #include "../CacheModel/FakeL1/fake_l1.h"
 #include "../CacheModel/FakePTW/fake_ptw.h"
 #include "../Sequencer/sequencer.h"
+#include "../Monitor/DIR_Monitor.h"
+
 
 class Emu {
 private:
@@ -27,14 +30,20 @@ private:
   typedef tl_agent::ULAgent ULAgent_t;
   typedef tl_agent::CAgent CAgent_t;
   typedef tl_monitor::Monitor Monitor_t;
+  typedef DIR_monitor::DIR_Monitor DIR_Monitor_t;
+  
+  typedef fake_l1::FakeL1 FakeL1_t;
+  typedef fake_ptw::FakePTW FakePTW_t;
+  typedef fake_ptw::FakePTW FakeDMA_t;
+  typedef sequencer::Sequencer Sequencer_t;
 
   const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
   Vtb_top *dut_ptr;
-  VerilatedVcdC *tfp;
+  // VerilatedVcdC *tfp;
+  VerilatedFstC *tfp;
   GlobalBoard<paddr_t> *globalBoard;
-  std::shared_ptr<BaseAgent_t>agents[NR_AGENTS];
-  std::shared_ptr<Fuzzer>fuzzers[NR_AGENTS];
   std::shared_ptr<Monitor_t>monitors[NR_TL_MONITOR];
+  std::shared_ptr<DIR_Monitor_t>dir_monitors[NR_DIR_MONITOR];
   uint64_t seed = 0, wave_begin = 0, wave_end = 0;
   bool en_monitor = false;
   bool enable_wave = true;
@@ -44,14 +53,9 @@ private:
   inline char *cycle_wavefile(uint64_t cycles, time_t t);
   void parse_args(int argc, char **argv);
 
-  typedef fake_l1::FakeL1 FakeL1_t;
-  typedef fake_ptw::FakePTW FakePTW_t;
-  typedef fake_ptw::FakePTW FakeDMA_t;
   std::shared_ptr<FakeL1_t> l1[NR_CAGENTS];
   std::shared_ptr<FakePTW_t> ptw[NR_PTWAGT];
   std::shared_ptr<FakeDMA_t> dma[NR_DMAAGT];
-
-  typedef sequencer::Sequencer Sequencer_t;
   std::shared_ptr<Sequencer_t> sqr;
 
 
@@ -120,7 +124,8 @@ inline char *Emu::cycle_wavefile(uint64_t cycles, time_t t) {
   char *pwd = getcwd(NULL, 0);
   tlc_assert(pwd != NULL, "Wavefile cannot be opened!");
   int len = snprintf(buf, 1024, "%s/%s_%lu", pwd, buf_time, cycles);
-  strcpy(buf + len, ".vcd");
+  // strcpy(buf + len, ".vcd");
+  strcpy(buf + len, ".fst");
   printf("dump wave to %s...\n", buf);
   return buf;
 }

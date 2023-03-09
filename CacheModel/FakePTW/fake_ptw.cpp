@@ -30,6 +30,8 @@ namespace fake_ptw {
 
     void FakePTW::transaction_input(tl_base_agent::TLCTransaction tr) {
         using namespace tl_base_agent;
+        if(local_probe(tr.addr)) 
+            return;
         switch (tr.opcode)
         {
             case GET_AUTO:

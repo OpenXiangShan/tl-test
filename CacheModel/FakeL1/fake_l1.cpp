@@ -94,8 +94,8 @@ namespace fake_l1 {
 
     void FakeL1::transaction_input(tl_base_agent::TLCTransaction tr) {
         using namespace tl_base_agent;
-        // if(local_probe(tr.addr))
-        //     return;
+        if(local_probe(tr.addr))
+            return;
         switch (tr.opcode) {
             case ACQUIRE_PERM:
                 do_acquirePerm(tr.addr, tr.param, tr.alias);
@@ -227,7 +227,7 @@ namespace fake_l1 {
                     }
                     // Log("== free == fireC %d\n", *channel_c.source);
                     this->c_idpool.freeid(*channel_c.source);
-                    Log("c_idpool free id => probeack %d\n", *channel_c.source);
+                    // Log("c_idpool free id => probeack %d\n", *channel_c.source);
                 }
             }
         }
@@ -267,7 +267,7 @@ namespace fake_l1 {
                         this->globalBoard->verify(addr, pendingD.info->data);
                         info->update_dirty(*channel_d.dirty, alias);
                         this->a_idpool.freeid(*channel_d.source);
-                        Log("a_idpool free id => GrantData %d\n",*channel_d.source);
+                        // Log("a_idpool free id => GrantData %d\n",*channel_d.source);
                         a_mshr_info->erase(*channel_d.source);
                         break;
                     }
@@ -275,7 +275,7 @@ namespace fake_l1 {
                         Log("[%ld] [D] [Grant %s] addr: %lx source: %d sink: %d\n", *cycles, param_str.c_str(), addr, *(channel_d.source), *(channel_d.sink));
                         info->update_dirty(*channel_d.dirty, alias);
                         this->a_idpool.freeid(*channel_d.source);
-                        Log("a_idpool free id => Grant %d\n",*channel_d.source);
+                        // Log("a_idpool free id => Grant %d\n",*channel_d.source);
                         a_mshr_info->erase(*channel_d.source);
                         break;
                     }
@@ -291,7 +291,7 @@ namespace fake_l1 {
                         info->unpending_priviledge(*cycles, alias);
                         this->globalBoard->unpending(addr);
                         this->c_idpool.freeid(*channel_d.source);
-                        Log("c_idpool free id => ReleaseAck %d\n", *channel_d.source);
+                        // Log("c_idpool free id => ReleaseAck %d\n", *channel_d.source);
                         c_mshr_info->erase(*channel_d.source);
                         break;
                     }
@@ -820,6 +820,7 @@ out:
         // block inner Release
         if (this->agent->pendingC.is_pending() && *this->agent->pendingC.info->address == address)
             return true;
+        // we already have this block
         std::shared_ptr<tl_agent::C_SBEntry> entry = cache_info->query(address);
         for (int i = 0; i < 4; i++) {
             if (entry->status[i] != S_INVALID && entry->status[i] != S_VALID)

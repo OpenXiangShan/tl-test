@@ -6,6 +6,9 @@ namespace tl_interface{
   int32_t tlu_info_array_counter = 0;
   std::shared_ptr<TLInfo> monitor_info_array[NR_TL_MONITOR];
   int32_t monitor_info_array_counter = 0;
+  //dir
+  std::shared_ptr<DIRInfo> dir_monitor_info_array[NR_DIR_MONITOR];
+  int32_t dir_monitor_info_array_counter = 0;
 
   using namespace tl_agent;
   TLInfo::TLInfo(uint64_t cid, uint8_t bt)
@@ -144,6 +147,43 @@ namespace tl_interface{
     port->e.alias    = nullptr;
   }
 
+  DIRInfo::DIRInfo(uint64_t cid, uint8_t bt)
+  {
+    id.reset(new uint64_t(cid));
+    bus_type.reset(new uint8_t(bt));
+
+    dirWReq_ready.reset(new uint8_t(1));//ready
+    dirWReq_valid.reset(new uint8_t(0));//valid
+    dirWReq_bits_set.reset(new paddr_t(0));//addr
+    dirWReq_bits_way.reset(new uint8_t(0));//addr
+    dirWReq_bits_data_dirty.reset(new uint8_t(0));
+    dirWReq_bits_data_state.reset(new uint8_t(0));
+    dirWReq_bits_data_clientStates_0.reset(new uint8_t(0));
+    dirWReq_bits_data_clientStates_1.reset(new uint8_t(0));
+    dirWReq_bits_data_prefetch.reset(new uint8_t(0));
+
+    tagWReq_ready.reset(new uint8_t(1));//ready
+    tagWReq_valid.reset(new uint8_t(0));//valid
+    tagWReq_bits_set.reset(new paddr_t(0));//addr
+    tagWReq_bits_way.reset(new uint8_t(0));//addr
+    tagWReq_bits_tag.reset(new paddr_t(0));//addr
+    
+    clientDirWReq_ready.reset(new uint8_t(1));//ready
+    clientDirWReq_valid.reset(new uint8_t(0));//valid
+    clientDirWReq_bits_set.reset(new paddr_t(0));//addr
+    clientDirWReq_bits_way.reset(new uint8_t(0));//addr
+    clientDirWReq_bits_data_0_state.reset(new uint8_t(0));
+    clientDirWReq_bits_data_0_alias.reset(new uint8_t(0));
+    clientDirWReq_bits_data_1_state.reset(new uint8_t(0));
+    clientDirWReq_bits_data_1_alias.reset(new uint8_t(0));
+    
+    clientTagWreq_ready.reset(new uint8_t(1));//ready
+    clientTagWreq_valid.reset(new uint8_t(0));//valid
+    clientTagWreq_bits_set.reset(new paddr_t(0));//addr
+    clientTagWreq_bits_way.reset(new uint8_t(0));//addr
+    clientTagWreq_bits_tag.reset(new paddr_t(0));//addr
+  }
+
   std::shared_ptr<TLInfo> find_tlc_info(uint64_t cid, uint8_t bt){
     tlc_assert(tlc_info_array_counter != 0, "No TLC agent was created!");
     bool found = false;
@@ -196,6 +236,25 @@ namespace tl_interface{
 
   void register_monitor_info(std::shared_ptr<TLInfo> p){
     monitor_info_array[monitor_info_array_counter++] = p;
+  }
+
+  //DIRInfo
+  std::shared_ptr<DIRInfo> find_dir_monitor_info(uint64_t id, uint8_t bt){
+    tlc_assert(dir_monitor_info_array_counter != 0, "No DIR Monitor was created!");
+    bool found = false;
+    int32_t idx = dir_monitor_info_array_counter;
+    while(idx --> 0){
+      if(*(dir_monitor_info_array[idx]->id) == id && *(dir_monitor_info_array[idx]->bus_type) == bt){
+        found = true;
+        break;
+      }
+    }
+    tlc_assert(found, "DIRInfo: core ID or agent type not found!");
+    return dir_monitor_info_array[idx];
+  }
+
+  void register_dir_monitor_info(std::shared_ptr<DIRInfo> p){
+    dir_monitor_info_array[dir_monitor_info_array_counter++] = p;
   }
 
 }
@@ -478,6 +537,79 @@ void tlc_monitor_eval(
     *(info->e_sink) = *e_sink;
     *(info->e_valid) = e_valid;
     *(info->e_ready) = e_ready;
+  }
+
+  void dir_monitor_eval(
+  const svBitVecVal*    id,
+  const svBitVecVal*    bus_type,
+
+  svBit                 dirWReq_ready,//ready
+  svBit                 dirWReq_valid,//valid
+  const svBitVecVal*    dirWReq_bits_set,//addr
+  const svBitVecVal*    dirWReq_bits_way,//addr
+  svBit                 dirWReq_bits_data_dirty,
+  const svBitVecVal*    dirWReq_bits_data_state,
+  const svBitVecVal*    dirWReq_bits_data_clientStates_0,
+  const svBitVecVal*    dirWReq_bits_data_clientStates_1,
+  svBit                 dirWReq_bits_data_prefetch,
+
+  svBit                 tagWReq_ready,//ready
+  svBit                 tagWReq_valid,//valid
+  const svBitVecVal*    tagWReq_bits_set,//addr
+  const svBitVecVal*    tagWReq_bits_way,//addr
+  const svBitVecVal*    tagWReq_bits_tag,//addr
+  
+  svBit                 clientDirWReq_ready,//ready
+  svBit                 clientDirWReq_valid,//valid
+  const svBitVecVal*    clientDirWReq_bits_set,//addr
+  const svBitVecVal*    clientDirWReq_bits_way,//addr
+  const svBitVecVal*    clientDirWReq_bits_data_0_state,
+  const svBitVecVal*    clientDirWReq_bits_data_0_alias,
+  const svBitVecVal*    clientDirWReq_bits_data_1_state,
+  const svBitVecVal*    clientDirWReq_bits_data_1_alias,
+  svBit                 clientTagWreq_ready,//ready
+  svBit                 clientTagWreq_valid,//valid
+  const svBitVecVal*    clientTagWreq_bits_set,//addr
+  const svBitVecVal*    clientTagWreq_bits_way,//addr
+  const svBitVecVal*    clientTagWreq_bits_tag//addr
+  ){
+    uint64_t cid = *(const uint64_t*)id;
+    uint8_t  bt  = *(const uint8_t*)bus_type;
+    if(tl_interface::dir_monitor_info_array_counter == 0)return;
+    std::shared_ptr<tl_interface::DIRInfo> dir_info = tl_interface::find_dir_monitor_info(cid, bt);
+    
+    *(dir_info->dirWReq_ready) = dirWReq_ready;//ready
+    *(dir_info->dirWReq_valid) = dirWReq_valid;//valid
+    *(dir_info->dirWReq_bits_set) = *(paddr_t *)dirWReq_bits_set;//addr
+    *(dir_info->dirWReq_bits_way) = *dirWReq_bits_way;//addr
+    *(dir_info->dirWReq_bits_data_dirty) = dirWReq_bits_data_dirty;
+    *(dir_info->dirWReq_bits_data_state) = *dirWReq_bits_data_state;
+    *(dir_info->dirWReq_bits_data_clientStates_0) = *dirWReq_bits_data_clientStates_0;
+    *(dir_info->dirWReq_bits_data_clientStates_1) = *dirWReq_bits_data_clientStates_1;
+    *(dir_info->dirWReq_bits_data_prefetch) = dirWReq_bits_data_prefetch;
+
+    *(dir_info->tagWReq_ready) = tagWReq_ready;//ready
+    *(dir_info->tagWReq_valid) = tagWReq_valid;//valid
+    *(dir_info->tagWReq_bits_set) = *(paddr_t *)tagWReq_bits_set;//addr
+    *(dir_info->tagWReq_bits_way) = *tagWReq_bits_way;//addr
+    *(dir_info->tagWReq_bits_tag) = *(paddr_t *)tagWReq_bits_tag;//addr
+    
+    *(dir_info->clientDirWReq_ready) = clientDirWReq_ready;//ready
+    *(dir_info->clientDirWReq_valid) = clientDirWReq_valid;//valid
+    *(dir_info->clientDirWReq_bits_set) = *(paddr_t *)clientDirWReq_bits_set;//addr
+    *(dir_info->clientDirWReq_bits_way) = *clientDirWReq_bits_way;//addr
+    *(dir_info->clientDirWReq_bits_data_0_state) = *clientDirWReq_bits_data_0_state;
+    *(dir_info->clientDirWReq_bits_data_0_alias) = *clientDirWReq_bits_data_0_alias;
+    *(dir_info->clientDirWReq_bits_data_1_state) = *clientDirWReq_bits_data_1_state;
+    *(dir_info->clientDirWReq_bits_data_1_alias) = *clientDirWReq_bits_data_1_alias;
+    *(dir_info->clientTagWreq_ready) = clientTagWreq_ready;//ready
+    *(dir_info->clientTagWreq_valid) = clientTagWreq_valid;//valid
+    *(dir_info->clientTagWreq_bits_set) = *(paddr_t *)clientTagWreq_bits_set;//addr
+    *(dir_info->clientTagWreq_bits_way) = *clientTagWreq_bits_way;//addr
+    *(dir_info->clientTagWreq_bits_tag) = *(paddr_t *)clientTagWreq_bits_tag;//addr
+
+
+    
   }
 #ifdef __cplusplus
 }

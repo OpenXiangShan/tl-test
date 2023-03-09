@@ -9,10 +9,25 @@ module tl_monitor_collect#(
 )(
   input wire clock
 );
+//TL
 `define CORE0 tb_top.l_soc.moduleInstance
 `define CORE1 tb_top.l_soc.auto_moduleInstance
 `define L3 tb_top.l_soc.l3cacheOpt
 `define DMA tb_top.l_soc.misc.axi42tl
+//DIR
+`define L2DIR0 tb_top.l_soc.moduleInstance.l2cache.slices_0.directory//core0 L2 slice0
+`define L2DIR1 tb_top.l_soc.moduleInstance.l2cache.slices_1.directory//core0 L2 slice1
+`define L2DIR2 tb_top.l_soc.moduleInstance.l2cache.slices_2.directory//core0 L2 slice2
+`define L2DIR3 tb_top.l_soc.moduleInstance.l2cache.slices_3.directory//core0 L2 slice3
+`define L2DIR4 tb_top.l_soc.auto_moduleInstance.l2cache.slices_0.directory//core1 L2 slice0
+`define L2DIR5 tb_top.l_soc.auto_moduleInstance.l2cache.slices_1.directory//core1 L2 slice1
+`define L2DIR6 tb_top.l_soc.auto_moduleInstance.l2cache.slices_2.directory//core1 L2 slice2
+`define L2DIR7 tb_top.l_soc.auto_moduleInstance.l2cache.slices_3.directory//core1 L2 slice3
+`define L3DIR0 tb_top.l_soc.l3cacheOpt.slices_0.directory//L3 slice0
+`define L3DIR1 tb_top.l_soc.l3cacheOpt.slices_1.directory//L3 slice1
+`define L3DIR2 tb_top.l_soc.l3cacheOpt.slices_2.directory//L3 slice2
+`define L3DIR3 tb_top.l_soc.l3cacheOpt.slices_3.directory//L3 slice3
+
 
 `define DCACHE_BUS_TYPE 0
 `define ICACHE_BUS_TYPE 1
@@ -20,6 +35,7 @@ module tl_monitor_collect#(
 `define L3_BUS_TYPE 3
 `define DMA_BUS_TYPE 4
 `define PTW_BUS_TYPE 5
+`define DIR_BUS_TYPE 6 
   tl_monitor#(.SIZE_WD(SIZE_WD),.ADDR_WD(ADDR_WD),.DATA_WD(DATA_WD),
     .SOURCE_WD(SOURCE_WD),.SINK_WD(SINK_WD),.USER_WD(USER_WD),.ECHO_WD(ECHO_WD)
     )core0_monitor(
@@ -415,10 +431,433 @@ module tl_monitor_collect#(
     //Channel E
     .e_sink(0),.e_valid(0),.e_ready(0)
   );
+
+  //L2DIR0
+  dir_monitor#(
+    )dir_monitor_0(
+    .clock(clock),.id(0),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(`L2DIR0.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L2DIR0.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L2DIR0.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR0.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR0.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR0.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR0.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR0.io_dirWReq_bits_data_prefetch),
+    .io_tagWReq_valid(`L2DIR0.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L2DIR0.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L2DIR0.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR0.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L2DIR0.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L2DIR0.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR0.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR0.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR0.io_clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR0.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR0.io_clientDirWReq_bits_data_1_alias),
+    .io_clientTagWreq_valid(`L2DIR0.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L2DIR0.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR0.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR0.io_clientTagWreq_bits_tag)
+  );
+  //L2DIR1
+  dir_monitor#(
+    )dir_monitor_1(
+    .clock(clock),.id(1),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(`L2DIR1.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L2DIR1.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L2DIR1.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR1.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR1.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR1.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR1.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR1.io_dirWReq_bits_data_prefetch),
+    .io_tagWReq_valid(`L2DIR1.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L2DIR1.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L2DIR1.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR1.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L2DIR1.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L2DIR1.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR1.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR1.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR1.io_clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR1.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR1.io_clientDirWReq_bits_data_1_alias),
+    .io_clientTagWreq_valid(`L2DIR1.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L2DIR1.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR1.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR1.io_clientTagWreq_bits_tag)
+  );
+  //L2DIR2
+  dir_monitor#(
+    )dir_monitor_2(
+    .clock(clock),.id(2),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(`L2DIR2.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L2DIR2.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L2DIR2.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR2.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR2.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR2.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR2.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR2.io_dirWReq_bits_data_prefetch),
+    .io_tagWReq_valid(`L2DIR2.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L2DIR2.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L2DIR2.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR2.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L2DIR2.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L2DIR2.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR2.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR2.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR2.io_clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR2.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR2.io_clientDirWReq_bits_data_1_alias),
+    .io_clientTagWreq_valid(`L2DIR2.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L2DIR2.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR2.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR2.io_clientTagWreq_bits_tag)
+  );
+  //L2DIR3
+  dir_monitor#(
+    )dir_monitor_3(
+    .clock(clock),.id(3),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(`L2DIR3.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L2DIR3.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L2DIR3.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR3.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR3.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR3.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR3.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR3.io_dirWReq_bits_data_prefetch),
+    .io_tagWReq_valid(`L2DIR3.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L2DIR3.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L2DIR3.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR3.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L2DIR3.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L2DIR3.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR3.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR3.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR3.io_clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR3.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR3.io_clientDirWReq_bits_data_1_alias),
+    .io_clientTagWreq_valid(`L2DIR3.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L2DIR3.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR3.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR3.io_clientTagWreq_bits_tag)
+  );
+  //L2DIR4
+  dir_monitor#(
+    )dir_monitor_4(
+    .clock(clock),.id(4),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(`L2DIR4.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L2DIR4.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L2DIR4.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR4.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR4.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR4.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR4.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR4.io_dirWReq_bits_data_prefetch),
+    .io_tagWReq_valid(`L2DIR4.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L2DIR4.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L2DIR4.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR4.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L2DIR4.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L2DIR4.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR4.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR4.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR4.io_clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR4.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR4.io_clientDirWReq_bits_data_1_alias),
+    .io_clientTagWreq_valid(`L2DIR4.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L2DIR4.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR4.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR4.io_clientTagWreq_bits_tag)
+  );
+  //L2DIR5
+  dir_monitor#(
+    )dir_monitor_5(
+    .clock(clock),.id(5),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(`L2DIR5.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L2DIR5.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L2DIR5.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR5.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR5.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR5.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR5.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR5.io_dirWReq_bits_data_prefetch),
+    .io_tagWReq_valid(`L2DIR5.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L2DIR5.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L2DIR5.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR5.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L2DIR5.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L2DIR5.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR5.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR5.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR5.io_clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR5.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR5.io_clientDirWReq_bits_data_1_alias),
+    .io_clientTagWreq_valid(`L2DIR5.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L2DIR5.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR5.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR5.io_clientTagWreq_bits_tag)
+  );
+  //L2DIR6
+  dir_monitor#(
+    )dir_monitor_6(
+    .clock(clock),.id(6),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(`L2DIR6.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L2DIR6.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L2DIR6.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR6.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR6.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR6.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR6.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR6.io_dirWReq_bits_data_prefetch),
+    .io_tagWReq_valid(`L2DIR6.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L2DIR6.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L2DIR6.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR6.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L2DIR6.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L2DIR6.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR6.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR6.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR6.io_clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR6.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR6.io_clientDirWReq_bits_data_1_alias),
+    .io_clientTagWreq_valid(`L2DIR6.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L2DIR6.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR6.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR6.io_clientTagWreq_bits_tag)
+  );
+  //L2DIR7
+  dir_monitor#(
+    )dir_monitor_7(
+    .clock(clock),.id(7),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(`L2DIR7.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L2DIR7.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L2DIR7.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR7.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR7.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR7.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR7.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR7.io_dirWReq_bits_data_prefetch),
+    .io_tagWReq_valid(`L2DIR7.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L2DIR7.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L2DIR7.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR7.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L2DIR7.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L2DIR7.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR7.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR7.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR7.io_clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR7.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR7.io_clientDirWReq_bits_data_1_alias),
+    .io_clientTagWreq_valid(`L2DIR7.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L2DIR7.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR7.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR7.io_clientTagWreq_bits_tag)
+  );
+  //L3DIR0
+  dir_monitor_L3#(
+    )dir_monitor_8(
+    .clock(clock),.id(8),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(`L3DIR0.io_dirWReq_ready),
+    .io_tagWReq_ready(`L3DIR0.io_tagWReq_ready),
+    .io_clientDirWReq_ready(`L3DIR0.io_clientDirWReq_ready),
+    .io_clientTagWreq_ready(`L3DIR0.io_clientTagWreq_ready),
+
+    .io_dirWReq_valid(`L3DIR0.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L3DIR0.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L3DIR0.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L3DIR0.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L3DIR0.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L3DIR0.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L3DIR0.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(0),
+    .io_tagWReq_valid(`L3DIR0.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L3DIR0.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L3DIR0.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L3DIR0.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L3DIR0.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L3DIR0.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L3DIR0.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L3DIR0.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(0),
+    .io_clientDirWReq_bits_data_1_state(`L3DIR0.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(0),
+    .io_clientTagWreq_valid(`L3DIR0.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L3DIR0.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L3DIR0.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L3DIR0.io_clientTagWreq_bits_tag)
+  );
+  //L3DIR1
+  dir_monitor_L3#(
+    )dir_monitor_9(
+    .clock(clock),.id(9),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(`L3DIR1.io_dirWReq_ready),
+    .io_tagWReq_ready(`L3DIR1.io_tagWReq_ready),
+    .io_clientDirWReq_ready(`L3DIR1.io_clientDirWReq_ready),
+    .io_clientTagWreq_ready(`L3DIR1.io_clientTagWreq_ready),
+
+    .io_dirWReq_valid(`L3DIR1.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L3DIR1.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L3DIR1.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L3DIR1.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L3DIR1.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L3DIR1.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L3DIR1.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(0),
+    .io_tagWReq_valid(`L3DIR1.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L3DIR1.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L3DIR1.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L3DIR1.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L3DIR1.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L3DIR1.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L3DIR1.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L3DIR1.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(0),
+    .io_clientDirWReq_bits_data_1_state(`L3DIR1.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(0),
+    .io_clientTagWreq_valid(`L3DIR1.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L3DIR1.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L3DIR1.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L3DIR1.io_clientTagWreq_bits_tag)
+  );
+  //L3DIR2
+  dir_monitor_L3#(
+    )dir_monitor_10(
+    .clock(clock),.id(10),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(`L3DIR2.io_dirWReq_ready),
+    .io_tagWReq_ready(`L3DIR2.io_tagWReq_ready),
+    .io_clientDirWReq_ready(`L3DIR2.io_clientDirWReq_ready),
+    .io_clientTagWreq_ready(`L3DIR2.io_clientTagWreq_ready),
+
+    .io_dirWReq_valid(`L3DIR2.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L3DIR2.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L3DIR2.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L3DIR2.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L3DIR2.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L3DIR2.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L3DIR2.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(0),
+    .io_tagWReq_valid(`L3DIR2.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L3DIR2.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L3DIR2.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L3DIR2.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L3DIR2.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L3DIR2.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L3DIR2.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L3DIR2.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(0),
+    .io_clientDirWReq_bits_data_1_state(`L3DIR2.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(0),
+    .io_clientTagWreq_valid(`L3DIR2.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L3DIR2.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L3DIR2.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L3DIR2.io_clientTagWreq_bits_tag)
+  );
+  //L3DIR3
+  dir_monitor_L3#(
+    )dir_monitor_11(
+    .clock(clock),.id(11),.bus_type(`DIR_BUS_TYPE),
+
+    .io_dirWReq_ready(`L3DIR3.io_dirWReq_ready),
+    .io_tagWReq_ready(`L3DIR3.io_tagWReq_ready),
+    .io_clientDirWReq_ready(`L3DIR3.io_clientDirWReq_ready),
+    .io_clientTagWreq_ready(`L3DIR3.io_clientTagWreq_ready),
+
+    .io_dirWReq_valid(`L3DIR3.io_dirWReq_valid),
+    .io_dirWReq_bits_set(`L3DIR3.io_dirWReq_bits_set),
+    .io_dirWReq_bits_way(`L3DIR3.io_dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(`L3DIR3.io_dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(`L3DIR3.io_dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(`L3DIR3.io_dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L3DIR3.io_dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(0),
+    .io_tagWReq_valid(`L3DIR3.io_tagWReq_valid),
+    .io_tagWReq_bits_set(`L3DIR3.io_tagWReq_bits_set),
+    .io_tagWReq_bits_way(`L3DIR3.io_tagWReq_bits_way),
+    .io_tagWReq_bits_tag(`L3DIR3.io_tagWReq_bits_tag),
+    .io_clientDirWReq_valid(`L3DIR3.io_clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(`L3DIR3.io_clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(`L3DIR3.io_clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L3DIR3.io_clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(0),
+    .io_clientDirWReq_bits_data_1_state(`L3DIR3.io_clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(0),
+    .io_clientTagWreq_valid(`L3DIR3.io_clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(`L3DIR3.io_clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(`L3DIR3.io_clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(`L3DIR3.io_clientTagWreq_bits_tag)
+  );
+
+
 `undef CORE0
 `undef CORE1
 `undef L3
 `undef DMA
+`undef L2DIR0
+`undef L2DIR1
+`undef L2DIR2
+`undef L2DIR3
+`undef L2DIR4
+`undef L2DIR5
+`undef L2DIR6
+`undef L2DIR7
+`undef L3DIR0
+`undef L3DIR1
+`undef L3DIR2
+`undef L3DIR3
 
 `undef DCACHE_BUS_TYPE
 `undef ICACHE_BUS_TYPE
@@ -426,4 +865,5 @@ module tl_monitor_collect#(
 `undef L3_BUS_TYPE
 `undef DMA_BUS_TYPE
 `undef PTW_BUS_TYPE
+`undef DIR_BUS_TYPE
 endmodule

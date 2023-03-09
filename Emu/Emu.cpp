@@ -83,32 +83,11 @@ Emu::Emu(int argc, char **argv) {
     dma[i-NR_CAGENTS-NR_PTWAGT].reset(new FakeDMA_t(globalBoard, i, &Cycles, 0xffffffffffffffffL, DMA_BUS_TYPE));
   }
 
-  sqr.reset(new Sequencer_t);
-  // Init agents
-  // for (int i = 0; i < NR_CAGENTS; i++) {
-  //   agents[i].reset(new CAgent_t(globalBoard, i, &Cycles, i / 2, i % 2));
-  //   fuzzers[i].reset(new CFuzzer(std::dynamic_pointer_cast<tl_agent::CAgent>(agents[i])));
-  //   fuzzers[i]->set_cycles(&Cycles); 
-  // }
-
-  // for (int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
-  //   agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, i % 2, PTW_BUS_TYPE));
-  //   fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
-  //   fuzzers[i]->set_cycles(&Cycles);
-  // }
-
-  // for (int i = NR_CAGENTS + NR_PTWAGT; i < NR_AGENTS; i++) {
-  //   agents[i].reset(new ULAgent_t(globalBoard, i, &Cycles, 0xffffffffffffffffL, DMA_BUS_TYPE));
-  //   fuzzers[i].reset(new ULFuzzer(std::dynamic_pointer_cast<tl_agent::ULAgent>(agents[i])));
-  //   fuzzers[i]->set_cycles(&Cycles);
-  // }
+  sqr.reset(new Sequencer_t(&Cycles));
 
   if (random_mode == false)
   {
-    for (int i = 0; i < NR_AGENTS; i++)
-    {
-      fuzzers[i]->init_testcase();//Input file test.txt
-    }
+    sqr->init_testcase(); // Input file test.txt
   }
   
 
@@ -124,11 +103,16 @@ Emu::Emu(int argc, char **argv) {
     for (int i = NR_TILE_MONITOR + NR_L3_MONITOR; i < NR_TL_MONITOR; i++) {
       monitors[i].reset(new tl_monitor::Monitor(&Cycles, i - NR_TILE_MONITOR - NR_L3_MONITOR, DMA_BUS_TYPE));
     }
+
+    for (int i = 0; i < NR_DIR_MONITOR; i++) {
+      dir_monitors[i].reset(new DIR_monitor::DIR_Monitor(&Cycles, i, DIR_BUS_TYPE));
+    }
   }
 #if VM_TRACE == 1
   if (this->enable_wave) {
     Verilated::traceEverOn(true); // Verilator must compute traced signals
-    tfp = new VerilatedVcdC;
+    // tfp = new VerilatedVcdC;
+    tfp = new VerilatedFstC;
     dut_ptr->trace(tfp, 99); // Trace 99 levels of hierarchy
     time_t now = time(NULL);
     tfp->open(cycle_wavefile(Cycles, now));
@@ -146,12 +130,17 @@ Emu::~Emu() {
 }
 
 //reset_sys
-void Emu::reset_sys(uint64_t n){
+void Emu::reset_sys(uint64_t n) {
     reset(n);
     this->globalBoard->clear();
-    for (size_t i = 0; i < NR_AGENTS; i++)
-    {
-      agents[i]->clear();
+    for(int i = 0; i < NR_CAGENTS; i++) {
+      l1[i]->clear();
+    }
+    for(int i = 0; i < NR_PTWAGT; i++) {
+      ptw[i]->clear();
+    }
+    for(int i = 0; i < NR_DMAAGT; i++) {
+      dma[i]->clear();
     }
 }
 
@@ -161,23 +150,14 @@ void Emu::execute(uint64_t nr_cycle) {
       for(int i = 0; i < NR_TL_MONITOR; i++){
         monitors[i]->print_info();
       }
+      for(int i = 0; i < NR_DIR_MONITOR; i++){
+        dir_monitors[i]->print_info();
+      }
     }
 
-    // if(fuzzers[0]->do_reset(Cycles)){//reset message store in agent 0
-    //   reset_sys(10);
-    // }
-
-    // for (int i = 0; i < NR_AGENTS; i++) {
-    //   agents[i]->handle_channel();
-    // }
-
-    // for (int i = 0; i < NR_AGENTS; i++) {
-    //   fuzzers[i]->tick(agents, i, random_mode);
-    // }
-
-    // for (int i = 0; i < NR_AGENTS; i++) {
-    //   agents[i]->update_signal();
-    // }
+    if(sqr->do_reset(Cycles)){
+      reset_sys(10);
+    }
     
     for (int i = 0; i < NR_CAGENTS; i++) {
       l1[i]->handle_channel();
@@ -188,40 +168,39 @@ void Emu::execute(uint64_t nr_cycle) {
     for (int i = 0; i < NR_DMAAGT; i++) {
       dma[i]->handle_channel();
     }
-    // for (int i = NR_CAGENTS; i < NR_AGENTS; i++) {
-    //   agents[i]->handle_channel();
-    // }
 
-    for (int i = 0; i < NR_CAGENTS; i++) {
-      tl_base_agent::TLCTransaction tr = randomTest2(false, l1[i]->bus_type, ptw, dma);
-      l1[i]->transaction_input(tr);
+    if(random_mode) {
+      for (int i = 0; i < NR_CAGENTS; i++) {
+        // tl_base_agent::TLCTransaction tr = randomTest2(false, l1[i]->bus_type, ptw, dma);
+        tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLC, false, l1[i]->bus_type, ptw, dma);
+        l1[i]->transaction_input(tr);
+      }
+      for (int i = 0; i < NR_PTWAGT; i++) {
+        // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
+        tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, ptw[i]->bus_type, ptw, dma);
+        ptw[i]->transaction_input(tr);
+      }
+      for (int i = 0; i < NR_DMAAGT; i++) {
+        // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
+        tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, dma[i]->bus_type, ptw, dma);
+        dma[i]->transaction_input(tr);
+      }
+    }else{
+      for (int i = 0; i < NR_CAGENTS; i++) {
+        tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLC, i);
+        l1[i]->transaction_input(tr);
+      }
+      for (int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
+        tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLUL, i);
+        ptw[i-NR_CAGENTS]->transaction_input(tr);
+      }
+      for (int i = NR_CAGENTS + NR_PTWAGT; i < NR_CAGENTS + NR_PTWAGT + NR_DMAAGT; i++) {
+        tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLUL, i);
+        dma[i-NR_CAGENTS-NR_PTWAGT]->transaction_input(tr);
+      }
     }
-    for (int i = 0; i < NR_PTWAGT; i++) {
-      tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
-      ptw[i]->transaction_input(tr);
-    }
-    for (int i = 0; i < NR_DMAAGT; i++) {
-      tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
-      dma[i]->transaction_input(tr);
-    }
-    // for (int i = 0; i < 3; i++) {
-    //   // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
-    //   if(i == 0) {
-    //     tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[0]->bus_type);
-    //     ptw[0]->transaction_input(tr);
-    //   }
-    //   if(i == 1) {
-    //     tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[1]->bus_type);
-    //     ptw[1]->transaction_input(tr);
-    //   }
-    //   if(i == 3) {
-    //     tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[0]->bus_type);
-    //     dma[0]->transaction_input(tr);
-    //   }
-    // }
-    // for (int i = NR_CAGENTS; i < NR_AGENTS; i++) {
-    //   fuzzers[i]->tick(agents, i, random_mode, l1);
-    // }
+
+    
 
     for (int i = 0; i < NR_CAGENTS; i++) {
       l1[i]->update_signal();
@@ -232,9 +211,6 @@ void Emu::execute(uint64_t nr_cycle) {
     for (int i = 0; i < NR_DMAAGT; i++) {
       dma[i]->update_signal();
     }
-    // for (int i = NR_CAGENTS; i < NR_AGENTS; i++) {
-    //   agents[i]->update_signal();
-    // }
 
     this->step();
     this->update_cycles(1);

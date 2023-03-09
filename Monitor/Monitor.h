@@ -93,5 +93,18 @@ class Monitor{
   void fire_CAgent();
   void fire_ULAgent();
 };
+
+class DIR_Monitor{
+  private:
+  uint64_t* cycle;
+  uint64_t id;
+  uint8_t bus_type;
+  std::shared_ptr<DIRInfo> info;
+  public:
+  DIR_Monitor(uint64_t* c, uint64_t iid, uint8_t bt);
+  std::shared_ptr<DIRInfo> get_info();
+  void print_info();
+};
+
 }
 #endif //TLC_TEST_MONITOR_H

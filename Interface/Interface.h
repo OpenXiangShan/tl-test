@@ -96,6 +96,50 @@ namespace tl_interface{
   extern int32_t monitor_info_array_counter;
   std::shared_ptr<TLInfo> find_monitor_info(uint64_t id, uint8_t bt);
   void register_monitor_info(std::shared_ptr<TLInfo> p);
+
+  class DIRInfo{
+    public:
+    std::shared_ptr<uint64_t>             id;
+    std::shared_ptr<uint8_t>              bus_type;
+
+    std::shared_ptr<uint8_t>              dirWReq_ready;//ready
+    std::shared_ptr<uint8_t>              dirWReq_valid;//valid
+    std::shared_ptr<paddr_t>              dirWReq_bits_set;//addr
+    std::shared_ptr<uint8_t>              dirWReq_bits_way;//addr
+    std::shared_ptr<uint8_t>              dirWReq_bits_data_dirty;
+    std::shared_ptr<uint8_t>              dirWReq_bits_data_state;
+    std::shared_ptr<uint8_t>              dirWReq_bits_data_clientStates_0;
+    std::shared_ptr<uint8_t>              dirWReq_bits_data_clientStates_1;
+    std::shared_ptr<uint8_t>              dirWReq_bits_data_prefetch;
+
+    std::shared_ptr<uint8_t>              tagWReq_ready;//ready
+    std::shared_ptr<uint8_t>              tagWReq_valid;//valid
+    std::shared_ptr<paddr_t>              tagWReq_bits_set;//addr
+    std::shared_ptr<uint8_t>              tagWReq_bits_way;//addr
+    std::shared_ptr<paddr_t>              tagWReq_bits_tag;//addr
+    
+    std::shared_ptr<uint8_t>              clientDirWReq_ready;//ready
+    std::shared_ptr<uint8_t>              clientDirWReq_valid;//valid
+    std::shared_ptr<paddr_t>              clientDirWReq_bits_set;//addr
+    std::shared_ptr<uint8_t>              clientDirWReq_bits_way;//addr
+    std::shared_ptr<uint8_t>              clientDirWReq_bits_data_0_state;
+    std::shared_ptr<uint8_t>              clientDirWReq_bits_data_0_alias;
+    std::shared_ptr<uint8_t>              clientDirWReq_bits_data_1_state;
+    std::shared_ptr<uint8_t>              clientDirWReq_bits_data_1_alias;
+    std::shared_ptr<uint8_t>              clientTagWreq_ready;//ready
+    std::shared_ptr<uint8_t>              clientTagWreq_valid;//valid
+    std::shared_ptr<paddr_t>              clientTagWreq_bits_set;//addr
+    std::shared_ptr<uint8_t>              clientTagWreq_bits_way;//addr
+    std::shared_ptr<paddr_t>              clientTagWreq_bits_tag;//addr
+
+    DIRInfo(uint64_t cid, uint8_t ct);
+    //void connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port);
+  };
+
+  extern std::shared_ptr<DIRInfo> dir_monitor_info_array[NR_DIR_MONITOR];
+  extern int32_t dir_monitor_info_array_counter;
+  std::shared_ptr<DIRInfo> find_dir_monitor_info(uint64_t id, uint8_t bt);
+  void register_dir_monitor_info(std::shared_ptr<DIRInfo> p);
 }
 
 #ifdef __cplusplus
@@ -238,6 +282,41 @@ void tlc_monitor_eval(
   const svBitVecVal*    e_sink,
   svBit                 e_valid,
   svBit                 e_ready
+  );
+
+  void dir_monitor_eval(
+  const svBitVecVal*    id,
+  const svBitVecVal*    bus_type,
+
+  svBit                 dirWReq_ready,//ready
+  svBit                 dirWReq_valid,//valid
+  const svBitVecVal*    dirWReq_bits_set,//addr
+  const svBitVecVal*    dirWReq_bits_way,//addr
+  svBit                 dirWReq_bits_data_dirty,
+  const svBitVecVal*    dirWReq_bits_data_state,
+  const svBitVecVal*    dirWReq_bits_data_clientStates_0,
+  const svBitVecVal*    dirWReq_bits_data_clientStates_1,
+  svBit                 dirWReq_bits_data_prefetch,
+
+  svBit                 tagWReq_ready,//ready
+  svBit                 tagWReq_valid,//valid
+  const svBitVecVal*    tagWReq_bits_set,//addr
+  const svBitVecVal*    tagWReq_bits_way,//addr
+  const svBitVecVal*    tagWReq_bits_tag,//addr
+  
+  svBit                 clientDirWReq_ready,//ready
+  svBit                 clientDirWReq_valid,//valid
+  const svBitVecVal*    clientDirWReq_bits_set,//addr
+  const svBitVecVal*    clientDirWReq_bits_way,//addr
+  const svBitVecVal*    clientDirWReq_bits_data_0_state,
+  const svBitVecVal*    clientDirWReq_bits_data_0_alias,
+  const svBitVecVal*    clientDirWReq_bits_data_1_state,
+  const svBitVecVal*    clientDirWReq_bits_data_1_alias,
+  svBit                 clientTagWreq_ready,//ready
+  svBit                 clientTagWreq_valid,//valid
+  const svBitVecVal*    clientTagWreq_bits_set,//addr
+  const svBitVecVal*    clientTagWreq_bits_way,//addr
+  const svBitVecVal*    clientTagWreq_bits_tag//addr
   );
 #ifdef __cplusplus
 }

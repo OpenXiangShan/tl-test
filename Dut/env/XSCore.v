@@ -254,6 +254,7 @@ module XSCore(
 `define L3_BUS_TYPE 3
 `define DMA_BUS_TYPE 4
 `define PTW_BUS_TYPE 5
+`define DIR_BUS_TYPE 6
 
 //DPI-C function
   import "DPI-C" function void tlc_agent_eval (
@@ -501,5 +502,6 @@ module XSCore(
 `undef L3_BUS_TYPE
 `undef DMA_BUS_TYPE
 `undef PTW_BUS_TYPE
+`undef DIR_BUS_TYPE
 endmodule
 
