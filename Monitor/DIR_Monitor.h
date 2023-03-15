@@ -5,7 +5,6 @@
 #include "../Utils/ScoreBoard.h"
 
 namespace DIR_monitor{
-
 //core 0 L2DIR: [100] selfDir: [set][slice][way] self [TT] client [B] [B] 
 //core 0 L2DIR: [100] selfDir: [set][slice][way] tag: [tag]
 //clientDir: addr: 400 [B] [B] 
@@ -78,12 +77,14 @@ class Dir_key{
   uint8_t way;
 
   bool operator<(const Dir_key& key)const {
-        if(set != key.set){
-          return set < key.set;
-        }else if(slice != key.slice){
-          return slice < key.slice;
+        if(this->set == key.set){
+          if(this->slice == key.slice){
+            return this->way < key.way;
+          }else{
+            return this->slice < key.slice;
+          }
         }else{
-          return way < key.way;
+          return this->set < key.set;
         }
   }
 };
@@ -133,13 +134,13 @@ class DIR_Monitor{
   std::shared_ptr<DIRInfo> info;
   Dir_InfoEntry print;
   //self
-  ScoreBoard<Dir_key,Dir_Mes> Self_Dir_Storage[3];//2*L2 + L3;
-  ScoreBoard<Dir_key,paddr_t> Self_Dir_Tag_Storage[3];//2*L2 + L3;
-  check_pool Self_tag_check_pool[3];
+  ScoreBoard<Dir_key,Dir_Mes> *Self_Dir_Storage;//2*L2 + L3;
+  ScoreBoard<Dir_key,paddr_t> *Self_Dir_Tag_Storage;//2*L2 + L3;
+  check_pool Self_tag_check_pool;
   //client
-  ScoreBoard<Dir_key,Dir_Mes> Client_Dir_Storage[3];//2*L2 + L3;
-  ScoreBoard<Dir_key,paddr_t> Client_Dir_Tag_Storage[3];//2*L2 + L3;
-  check_pool Client_tag_check_pool[3];
+  ScoreBoard<Dir_key,Dir_Mes> *Client_Dir_Storage;//2*L2 + L3;
+  ScoreBoard<Dir_key,paddr_t> *Client_Dir_Tag_Storage;//2*L2 + L3;
+  check_pool Client_tag_check_pool;
   //shift bits
   uint8_t L2_bit[4] = {8,6,17,15};//set,slice,self tag,client tag
   uint8_t L3_bit[4] = {8,6,20,19};
@@ -154,7 +155,9 @@ class DIR_Monitor{
     CLIENT = false,
   };
   public:
-  DIR_Monitor(uint64_t* c, uint64_t iid, uint8_t bt);
+  DIR_Monitor(ScoreBoard<Dir_key,Dir_Mes> *const selfDir, ScoreBoard<Dir_key,paddr_t> *const selfTag
+              ,ScoreBoard<Dir_key,Dir_Mes> *const clientDir, ScoreBoard<Dir_key,paddr_t> *const clientTag
+              ,uint64_t* c, uint64_t iid, uint8_t bt);
   std::shared_ptr<DIRInfo> get_info();
   //self
   void print_info();

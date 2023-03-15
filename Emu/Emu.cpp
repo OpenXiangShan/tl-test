@@ -105,7 +105,7 @@ Emu::Emu(int argc, char **argv) {
     }
 
     for (int i = 0; i < NR_DIR_MONITOR; i++) {
-      dir_monitors[i].reset(new DIR_monitor::DIR_Monitor(&Cycles, i, DIR_BUS_TYPE));
+      dir_monitors[i].reset(new DIR_monitor::DIR_Monitor(selfDir, selfTag, clientDir, clientTag, &Cycles, i, DIR_BUS_TYPE));
     }
   }
 #if VM_TRACE == 1
