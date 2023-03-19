@@ -51,8 +51,10 @@ class FakeL1: public base_cache_model::BaseCacheModel<tl_interface::TLInfo> {
 
         // TODO： this function should be placed in private field
         bool local_probe(paddr_t address);
+
+        std::shared_ptr<tl_interface::TLInfo> get_info();
         
-    private:    
+    private: 
         // local cache model info
         std::shared_ptr<ScoreBoard<paddr_t, C_SBEntry>> cache_info;
         // agent info
@@ -76,7 +78,7 @@ class FakeL1: public base_cache_model::BaseCacheModel<tl_interface::TLInfo> {
         bool do_releaseData(paddr_t address, int param, std::shared_ptr<uint8_t[]>data, int alias);
         bool do_releaseDataAuto(paddr_t address, int alias);
         
-
+        
         void connect(); // connect port info to DPI-C interface
         void timeout_check();
 };

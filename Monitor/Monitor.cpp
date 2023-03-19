@@ -10,19 +10,7 @@ namespace tl_monitor{
     return this->info;
   }
 
-  string hex_to_str(uint64_t mask,int len,bool x){
-    string hexes[16] = {"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"};
-    string hexstring = "";
-    for (int i=0; i<len; i++){
-      int j = len-i-1;
-      int number = (mask >> 4*j) & 0xf;
-      hexstring += hexes[number];
-    }
-    if(x == true)
-      return "0x" + hexstring;
-    else 
-      return hexstring;
-  }
+  using namespace Tool;
 
   void Monitor::fire_ULA(){
     TLInfo a = *this->info;
@@ -290,6 +278,7 @@ namespace tl_monitor{
         case AccessAckData:
           info_chnl.op = "AccessAckData";
           info_chnl.param = "-";
+          break;
         case Grant:
           info_chnl.op = "Grant";
           switch (*d.d_param)

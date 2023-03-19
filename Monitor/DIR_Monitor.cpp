@@ -1,9 +1,5 @@
 #include "DIR_Monitor.h"
 
-#define GetBit(v, n) (((v) & ((uint64_t)1 << (n)))>0) //Get the n bit of v
-#define SetBit(v, n) ((v) |= ((uint64_t)1 << (n)))//Set the n bit of v to 1
-#define ClearBit(v, n) ((v) &= (~(uint64_t)1 << (n)))//Set the n bit of v to 0
-
 namespace DIR_monitor{
     //DIR
     DIR_Monitor::DIR_Monitor(ScoreBoard<Dir_key,Dir_Mes> *const selfDir, ScoreBoard<Dir_key,paddr_t> *const selfTag
@@ -18,66 +14,33 @@ namespace DIR_monitor{
         tl_interface::register_dir_monitor_info(this->info);
     }
 
-//------------------------------------Tool---------------------------------------------//    
-    
-    //get bit from begin to end, the first bit_index is 0
-    paddr_t Get_n_bit(paddr_t addr, uint8_t begin, uint8_t end){
-        paddr_t key = 0;
-        for (int i = end; i >= begin; i--)
-        {
-            key = (key<<1) + GetBit(addr,i);
-            //printf("bit: %d \n", GetBit(addr,i));
-        }
-        //printf("value: %lx \n", key);
-        return key;
+    std::shared_ptr<DIRInfo> DIR_Monitor::get_info(){
+        return this->info;
     }
 
-
-
-    string hex_to_str(uint64_t mask,int len,bool x){
-        string hexes[16] = {"0","1","2","3","4","5","6","7","8","9","a","b","c","d","e","f"};
-        string hexstring = "";
-        for (int i=0; i<len; i++){
-        int j = len-i-1;
-        int number = (mask >> 4*j) & 0xf;
-        hexstring += hexes[number];
+    void DIR_Monitor::print_info(){
+        if(*this->info->id < NR_DIR_L2_core0_MONITOR){
+            fire_Self_DIR(0,id,L2_bit);//0: core0; id: 0-3
+            fire_Client_DIR(0,id,L2_bit);//0: core0; id: 0-3
+        }else if(*this->info->id < NR_DIR_L2_core0_MONITOR+NR_DIR_L2_core1_MONITOR){
+            fire_Self_DIR(1,id-NR_DIR_L2_core0_MONITOR,L2_bit);//1: core1; id: 0-3
+            fire_Client_DIR(1,id-NR_DIR_L2_core0_MONITOR,L2_bit);//1: core1; id: 0-3
+        }else if(*this->info->id < NR_DIR_MONITOR){
+            fire_Self_DIR(2,id-NR_DIR_L2_core0_MONITOR-NR_DIR_L2_core1_MONITOR,L3_bit);//2: L3; id: 0-3
+            fire_Client_DIR(2,id-NR_DIR_L2_core0_MONITOR-NR_DIR_L2_core1_MONITOR,L3_bit);//2: L3; id: 0-3
+        }else{
+            printf("DIR info input error\n");
         }
-        if(x == true)
-        return "0x" + hexstring;
-        else 
-        return hexstring;
-    }
-
-    string stateTostring(uint8_t state){
-        string s;
-        switch (state)
-        {
-        case TIP:
-            s = "TT";
-            break;
-        case TRUNK:
-            s = "T";
-            break;
-        case BRANCH:
-            s = "B";
-            break;
-        case INVALID:
-            s = "N";
-            break;
-        default: s = "error";
-            break;
-        }
-        return s;
-    }
-
-    bool DIR_Monitor::check(uint8_t mod, Dir_key key){
-        return true;
+        
     }
 
 //------------------------------------Self---------------------------------------------//
+    using namespace Tool;
 
     void DIR_Monitor::fire_Self_DIR(uint8_t mod, paddr_t slice, uint8_t bit[4]){
+        //INIT
         std::shared_ptr<DIRInfo> fire_Info = info;
+        self_tag_write = false;
         
         //self_dir_tag
         if(*fire_Info->tagWReq_valid&&*fire_Info->tagWReq_ready){
@@ -100,6 +63,10 @@ namespace DIR_monitor{
 
             //check
             Self_tag_check_pool.erase_check(key);
+
+            // flag for Mes_Collect
+            self_tag_write = true;
+            self_write_addr = (*tag << bit[self_tag_index]) + (key.set << bit[set_index]) + (key.slice << bit[slice_index]);
         }
 
         //self_dir_state
@@ -188,7 +155,9 @@ namespace DIR_monitor{
 //------------------------------------Client---------------------------------------------//
 
     void DIR_Monitor::fire_Client_DIR(uint8_t mod, paddr_t slice, uint8_t bit[4]){
+        //INIT
         std::shared_ptr<DIRInfo> fire_Info = info;
+         client_tag_write = false;
         
         //Client_dir_tag
         if(*fire_Info->clientTagWreq_valid&&*fire_Info->clientTagWreq_ready){
@@ -211,6 +180,10 @@ namespace DIR_monitor{
 
             //check
             Client_tag_check_pool.erase_check(key);
+
+            // flag for Mes_Collect
+            client_tag_write = true;
+            client_write_addr = (*tag << bit[client_tag_index]) + (key.set << bit[set_index]) + (key.slice << bit[slice_index]);
         }
 
         //client_dir_state
@@ -291,27 +264,6 @@ namespace DIR_monitor{
         //print
         print.all = print.all + print.add_tag(CLIENT);
         printf("%s\n", print.all.c_str());
-    }
- 
-
-    std::shared_ptr<DIRInfo> DIR_Monitor::get_info(){
-        return this->info;
-    }
-
-    void DIR_Monitor::print_info(){
-        if(*this->info->id < NR_DIR_L2_core0_MONITOR){
-            fire_Self_DIR(0,id,L2_bit);//0: core0; id: 0-3
-            fire_Client_DIR(0,id,L2_bit);//0: core0; id: 0-3
-        }else if(*this->info->id < NR_DIR_L2_core0_MONITOR+NR_DIR_L2_core1_MONITOR){
-            fire_Self_DIR(1,id-NR_DIR_L2_core0_MONITOR,L2_bit);//1: core1; id: 0-3
-            fire_Client_DIR(1,id-NR_DIR_L2_core0_MONITOR,L2_bit);//1: core1; id: 0-3
-        }else if(*this->info->id < NR_DIR_MONITOR){
-            fire_Self_DIR(2,id-NR_DIR_L2_core0_MONITOR-NR_DIR_L2_core1_MONITOR,L3_bit);//2: L3; id: 0-3
-            fire_Client_DIR(2,id-NR_DIR_L2_core0_MONITOR-NR_DIR_L2_core1_MONITOR,L3_bit);//2: L3; id: 0-3
-        }else{
-            printf("DIR info input error\n");
-        }
-        
     }
 
 }

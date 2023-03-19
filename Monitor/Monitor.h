@@ -2,6 +2,7 @@
 #define TLC_TEST_MONITOR_H
 #include "../Interface/Interface.h"
 #include "../Utils/Common.h"
+#include "../Monitor/Tool.h"
 
 namespace tl_monitor{
 
@@ -73,12 +74,12 @@ using namespace tl_interface;
 class Monitor{
   private:
   uint64_t* cycle;
-  uint64_t id;
-  uint8_t bus_type;
   std::shared_ptr<TLInfo> info;
   info_BaseEntry info_base;
   info_ChnlEntry info_chnl;
   public:
+  uint64_t id;
+  uint8_t bus_type;
   Monitor(uint64_t* c, uint64_t iid, uint8_t bt);
   std::shared_ptr<TLInfo> get_info();
   void print_info();
@@ -92,18 +93,6 @@ class Monitor{
 
   void fire_CAgent();
   void fire_ULAgent();
-};
-
-class DIR_Monitor{
-  private:
-  uint64_t* cycle;
-  uint64_t id;
-  uint8_t bus_type;
-  std::shared_ptr<DIRInfo> info;
-  public:
-  DIR_Monitor(uint64_t* c, uint64_t iid, uint8_t bt);
-  std::shared_ptr<DIRInfo> get_info();
-  void print_info();
 };
 
 }

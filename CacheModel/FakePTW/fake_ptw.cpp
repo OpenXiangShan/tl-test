@@ -22,6 +22,10 @@ namespace fake_ptw {
         this->connect();
     }
 
+    std::shared_ptr<tl_interface::TLInfo> FakePTW::get_info(){
+        return this->tl_info;
+    }
+
     void FakePTW::connect() {
         this->tl_info.reset(new tl_interface::TLInfo(core_id,bus_type));
         tl_interface::register_tlu_info(this->tl_info);

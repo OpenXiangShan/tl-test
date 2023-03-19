@@ -1,1 +1,1 @@
-add_library(Monitor Monitor.h Monitor.cpp DIR_Monitor.h DIR_Monitor.cpp)
+add_library(Monitor Monitor.h Monitor.cpp DIR_Monitor.h DIR_Monitor.cpp Tool.h)

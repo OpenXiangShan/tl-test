@@ -22,6 +22,7 @@
 #include "../CacheModel/FakePTW/fake_ptw.h"
 #include "../Sequencer/sequencer.h"
 #include "../Monitor/DIR_Monitor.h"
+#include "../Cover/MesCollect.h"
 
 
 class Emu {
@@ -38,6 +39,8 @@ private:
   typedef fake_ptw::FakePTW FakePTW_t;
   typedef fake_ptw::FakePTW FakeDMA_t;
   typedef sequencer::Sequencer Sequencer_t;
+
+  typedef Cover::Mes_Collect Mes_Collect_t;
 
   const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
   Vtb_top *dut_ptr;
@@ -66,6 +69,7 @@ private:
   std::shared_ptr<FakeDMA_t> dma[NR_DMAAGT];
   std::shared_ptr<Sequencer_t> sqr;
 
+  std::shared_ptr<Mes_Collect_t> mes_collect;
   
 
 

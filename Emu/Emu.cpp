@@ -107,7 +107,13 @@ Emu::Emu(int argc, char **argv) {
     for (int i = 0; i < NR_DIR_MONITOR; i++) {
       dir_monitors[i].reset(new DIR_monitor::DIR_Monitor(selfDir, selfTag, clientDir, clientTag, &Cycles, i, DIR_BUS_TYPE));
     }
+
+    //cover
+    mes_collect.reset(new Cover::Mes_Collect(selfDir, selfTag, clientDir, clientTag));
   }
+
+  
+
 #if VM_TRACE == 1
   if (this->enable_wave) {
     Verilated::traceEverOn(true); // Verilator must compute traced signals
@@ -147,13 +153,37 @@ void Emu::reset_sys(uint64_t n) {
 void Emu::execute(uint64_t nr_cycle) {
   while (Cycles < nr_cycle) {
     if(this->en_monitor){
+      //-----------Monitor-----------//
       for(int i = 0; i < NR_TL_MONITOR; i++){
         monitors[i]->print_info();
       }
       for(int i = 0; i < NR_DIR_MONITOR; i++){
         dir_monitors[i]->print_info();
       }
+
+      //-----------Cover-----------//
+      for (int i = 0; i < NR_CAGENTS; i++) {//D$ & I$
+        mes_collect->fire_Mes_Collect(l1[i]->get_info(),l1[i]->core_id,l1[i]->bus_type);
+      }
+      for (int i = 0; i < NR_PTWAGT; i++) {//PTW
+        mes_collect->fire_Mes_Collect(ptw[i]->get_info(),ptw[i]->core_id,ptw[i]->bus_type);
+      }
+      // for (int i = 0; i < NR_DMAAGT; i++) {//DMA
+      //   mes_collect->fire_Mes_Collect(dma[i]->get_info(),dma[i]->core_id,dma[i]->bus_type);
+      // }
+      for (int i = 0; i < NR_TL_MONITOR; i++) {//L2-L3 & L3-MEM
+        mes_collect->fire_Mes_Collect(monitors[i]->get_info(),monitors[i]->id,monitors[i]->bus_type);
+      }
+
+      for (int i = 0; i < NR_DIR_MONITOR; i++) {//DIR
+        mes_collect->update_pool(dir_monitors[i]->self_tag_be_write(), i, DIR_monitor::SELF);
+        mes_collect->update_pool(dir_monitors[i]->client_tag_be_write(), i, DIR_monitor::CLIENT);
+      }
+      mes_collect->check_time_out();
+      //--------------------------//
     }
+
+    
 
     if(sqr->do_reset(Cycles)){
       reset_sys(10);

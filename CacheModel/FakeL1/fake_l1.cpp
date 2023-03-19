@@ -60,6 +60,10 @@ namespace fake_l1 {
 
     }
 
+    std::shared_ptr<tl_interface::TLInfo> FakeL1::get_info(){
+        return this->tl_info;
+    }
+
     void FakeL1::connect() {
         // tl_info will finally be connected to DPI-C interface
         // to do this, we should register tl_info into the interface

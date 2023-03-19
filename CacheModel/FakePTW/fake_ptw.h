@@ -33,6 +33,8 @@ class FakePTW: public base_cache_model::BaseCacheModel<tl_interface::TLInfo> {
 
         bool local_probe(paddr_t address);
 
+        std::shared_ptr<tl_interface::TLInfo> get_info();
+
     private:
         IDPool a_idpool;
         std::shared_ptr<tl_interface::TLInfo> &tl_info = bus_info;

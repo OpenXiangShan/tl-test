@@ -19,6 +19,7 @@ namespace base_cache_model {
     class BaseCacheModel {
         public:
             int bus_type;
+            uint64_t core_id;
             BaseCacheModel() {};
             ~BaseCacheModel() = default;
             virtual void transaction_input() {};
@@ -45,7 +46,6 @@ namespace base_cache_model {
         
         protected:
             int id;
-            uint64_t core_id;
             GlobalBoard<paddr_t> *globalBoard; // global scoreboard
             uint64_t *cycles; // global cycles
             std::shared_ptr<BusInfo> bus_info;
