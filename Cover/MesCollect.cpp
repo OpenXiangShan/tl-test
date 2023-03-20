@@ -3,11 +3,14 @@
 namespace Cover {
 
     Mes_Collect::Mes_Collect(ScoreBoard<DIR_monitor::Dir_key,DIR_monitor::Dir_Mes> *const selfDir, ScoreBoard<DIR_monitor::Dir_key,paddr_t> *const selfTag
-              ,ScoreBoard<DIR_monitor::Dir_key,DIR_monitor::Dir_Mes> *const clientDir, ScoreBoard<DIR_monitor::Dir_key,paddr_t> *const clientTag){
+              ,ScoreBoard<DIR_monitor::Dir_key,DIR_monitor::Dir_Mes> *const clientDir, ScoreBoard<DIR_monitor::Dir_key,paddr_t> *const clientTag
+                ,Mes_Com *const mc){
         this->Self_Dir_Storage = selfDir;
         this->Self_Dir_Tag_Storage = selfTag;
         this->Client_Dir_Storage = clientDir;
         this->Client_Dir_Tag_Storage = clientTag;
+        this->mes_com = mc;
+        
     }
 
 
@@ -347,6 +350,7 @@ namespace Cover {
         pk.state = State;
         pk.state.valid = state_valid;
         printf("SEND SUCCESS! opcode = %d addr = %lx valid: %d\n", pk.mes.opcode, pk.mes.address, pk.state.valid);
+        mes_com->arbiter(pk);
     }
 
 

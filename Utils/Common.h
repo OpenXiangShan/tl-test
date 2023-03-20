@@ -59,6 +59,9 @@ enum {
   CHNLC,
   CHNLD,
   CHNLE,
+  LEVEL_L1L2 = 0,
+  LEVEL_L2L3,
+  LEVEL_L3MEM,
 };
 
 const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;

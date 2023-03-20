@@ -109,7 +109,8 @@ Emu::Emu(int argc, char **argv) {
     }
 
     //cover
-    mes_collect.reset(new Cover::Mes_Collect(selfDir, selfTag, clientDir, clientTag));
+    mes_com = new Cover::Mes_Com();
+    mes_collect.reset(new Cover::Mes_Collect(selfDir, selfTag, clientDir, clientTag, mes_com));
   }
 
   

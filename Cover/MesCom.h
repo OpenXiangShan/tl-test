@@ -5,6 +5,7 @@
 #include "../Utils/Common.h"
 #include "../TLAgent/Port.h"
 #include "../Cover/Utils.h"
+#include <set>
 
 namespace Cover {
 
@@ -58,9 +59,12 @@ private:
     };
     std::map<link_index,link_col> link;
     link_index first_col_index;
+    std::set<tlMes> legal_next_Mes_d;//down
+    std::set<tlMes> legal_next_Mes_u;//up
 public:
     void reset(){link.clear();}
     void update(package pk);
+    // bool check_req(tlMes mes);
     bool check_finish();
     void print();
 };
@@ -70,7 +74,9 @@ class Mes_Com{
 private:
     std::map<paddr_t, link> queue;
 public:
+    Mes_Com(){};
     void arbiter(package pk);
+    
 };
 
 

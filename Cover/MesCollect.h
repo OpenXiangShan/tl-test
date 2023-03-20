@@ -155,7 +155,7 @@ public:
 class Mes_Collect{
 private:
 
-    std::shared_ptr<Mes_Com> mes_com;
+    Mes_Com *mes_com;
 
     std::shared_ptr<tl_interface::TLInfo> tl_info;
 
@@ -201,7 +201,8 @@ private:
     cacheState get_state_info(paddr_t addr);
 public:   
     Mes_Collect(ScoreBoard<DIR_monitor::Dir_key,DIR_monitor::Dir_Mes> *const selfDir, ScoreBoard<DIR_monitor::Dir_key,paddr_t> *const selfTag
-              ,ScoreBoard<DIR_monitor::Dir_key,DIR_monitor::Dir_Mes> *const clientDir, ScoreBoard<DIR_monitor::Dir_key,paddr_t> *const clientTag);
+              ,ScoreBoard<DIR_monitor::Dir_key,DIR_monitor::Dir_Mes> *const clientDir, ScoreBoard<DIR_monitor::Dir_key,paddr_t> *const clientTag
+              ,Mes_Com *const mc);
 
     void fire_Mes_Collect(const std::shared_ptr<tl_interface::TLInfo> info,uint64_t core_id, uint8_t bus_type);
 

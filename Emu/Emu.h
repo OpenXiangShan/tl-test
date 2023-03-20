@@ -23,6 +23,7 @@
 #include "../Sequencer/sequencer.h"
 #include "../Monitor/DIR_Monitor.h"
 #include "../Cover/MesCollect.h"
+#include "../Cover/MesCom.h"
 
 
 class Emu {
@@ -41,6 +42,7 @@ private:
   typedef sequencer::Sequencer Sequencer_t;
 
   typedef Cover::Mes_Collect Mes_Collect_t;
+  typedef Cover::Mes_Com Mes_Com_t;
 
   const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
   Vtb_top *dut_ptr;
@@ -70,7 +72,7 @@ private:
   std::shared_ptr<Sequencer_t> sqr;
 
   std::shared_ptr<Mes_Collect_t> mes_collect;
-  
+  Mes_Com_t *mes_com;
 
 
 public:
