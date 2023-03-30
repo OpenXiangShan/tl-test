@@ -3,4 +3,6 @@ add_library(Cover
         MesCollect.cpp
         MesCom.h
         MesCom.cpp
-        Utils.h)
+        MesPointInit.h
+        Utils.h
+        Report.h)

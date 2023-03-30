@@ -1,3 +1,5 @@
+#pragma once
+
 #ifndef TLC_TEST_UTILS_H
 #define TLC_TEST_UTILST_H
 

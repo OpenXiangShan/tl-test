@@ -13,15 +13,15 @@ Write Case according to the following format
 Format:				
 case	cycle	agent	agentid	link	operation	opcode	param	paramcode	address	uesr	
 Example:					
-0	100	    D0	    0	0	AB	6	NtoT	1	1	0						
-0	9000	D1	    2	1	AP	7	NtoT	1	1	0						
-0	9000	PTW0	4	2	GET	4	0	    0	1	0						
-0	9000	DMA	    6	3	PFD	0	0	    0	1	0						
-0	9000	I1	    3	4	AB	6	NtoB	0	1	0						
-0	9500	DMA	    6	5	PPD	1	0	    0	1	0						
-0	9500	D1	    2	6	AP	7	NtoT	1	1	0						
-0	10000	RESET	0	-1	RE	16	0	    0	0	0						
-0	10050	D1	    2	7	RD	8	TtoN	1	0	0
+0	8500	D0	    0	0	AB	6	NtoT	1	1	0						
+0	9500	D1	    2	1	AP	7	NtoT	1	1	0						
+0	10000	PTW0	4	2	GET	4	0	    0	1	0						
+0	10500	DMA	    6	3	PFD	0	0	    0	1	0						
+0	11000	I1	    3	4	AB	6	NtoB	0	1	0						
+0	11500	DMA	    6	5	PPD	1	0	    0	1	0						
+0	12000	D1	    2	6	AP	7	NtoT	1	1	0						
+0	12500	RESET	0	-1	RE	16	0	    0	0	0						
+0	13000	D1	    2	7	RD	8	TtoN	1	0	0
 
 
 Description:

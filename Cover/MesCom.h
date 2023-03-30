@@ -1,28 +1,13 @@
 #ifndef TLC_TEST_MESCOM_H
 #define TLC_TEST_MESCOM_H
 
-
+#include "../Monitor/Tool.h"
 #include "../Utils/Common.h"
 #include "../TLAgent/Port.h"
-#include "../Cover/Utils.h"
+#include "../Cover/Report.h"
 #include <set>
 
 namespace Cover {
-
-// TODO: now only support request with different addresses recording
-// class com_key{
-// public:
-    //paddr_t addr;
-    // uint8_t n;
-
-    // bool operator<(const com_key& key)const {
-    //     if(this->addr == key.addr){
-    //         return this->n < key.n;
-    //     }else{
-    //         return this->addr < key.addr;
-    //     }
-    // }
-// };
 
 class link_index{
 public:
@@ -34,6 +19,14 @@ public:
             return this->core_id < key.core_id;
         }else{
             return this->bus_type < key.bus_type;
+        }
+    }
+
+    bool operator!=(const link_index& key)const {
+        if(this->bus_type == key.bus_type){
+            return this->core_id != key.core_id;
+        }else{
+            return this->bus_type != key.bus_type;
         }
     }
 };
@@ -59,22 +52,32 @@ private:
     };
     std::map<link_index,link_col> link;
     link_index first_col_index;
-    std::set<tlMes> legal_next_Mes_d;//down
-    std::set<tlMes> legal_next_Mes_u;//up
+    bool first_in_link = true;
 public:
-    void reset(){link.clear();}
-    void update(package pk);
-    // bool check_req(tlMes mes);
+    void reset(){link.clear(); first_col_index.bus_type = AGENT_BUS_TYPE_MAX; first_col_index.core_id = ID_MAX; }
+
+    // TODO: collet all message 
+    void update_all(package pk);
+
+    // only collect the first message link
+    bool updata_first(package pk);
+
     bool check_finish();
     void print();
+    link_col get_first_col(){
+        return link[first_col_index];
+    }
 };
 
 
 class Mes_Com{
 private:
+    Report *report;
     std::map<paddr_t, link> queue;
 public:
-    Mes_Com(){};
+    Mes_Com(Report *const rp){
+        this->report = rp;
+    };
     void arbiter(package pk);
     
 };

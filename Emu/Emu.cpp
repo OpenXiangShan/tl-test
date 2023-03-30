@@ -109,7 +109,8 @@ Emu::Emu(int argc, char **argv) {
     }
 
     //cover
-    mes_com = new Cover::Mes_Com();
+    report = new Cover::Report();
+    mes_com = new Cover::Mes_Com(report);
     mes_collect.reset(new Cover::Mes_Collect(selfDir, selfTag, clientDir, clientTag, mes_com));
   }
 
@@ -166,9 +167,9 @@ void Emu::execute(uint64_t nr_cycle) {
       for (int i = 0; i < NR_CAGENTS; i++) {//D$ & I$
         mes_collect->fire_Mes_Collect(l1[i]->get_info(),l1[i]->core_id,l1[i]->bus_type);
       }
-      for (int i = 0; i < NR_PTWAGT; i++) {//PTW
-        mes_collect->fire_Mes_Collect(ptw[i]->get_info(),ptw[i]->core_id,ptw[i]->bus_type);
-      }
+      // for (int i = 0; i < NR_PTWAGT; i++) {//PTW
+      //   mes_collect->fire_Mes_Collect(ptw[i]->get_info(),ptw[i]->core_id,ptw[i]->bus_type);
+      // }
       // for (int i = 0; i < NR_DMAAGT; i++) {//DMA
       //   mes_collect->fire_Mes_Collect(dma[i]->get_info(),dma[i]->core_id,dma[i]->bus_type);
       // }
@@ -177,8 +178,10 @@ void Emu::execute(uint64_t nr_cycle) {
       }
 
       for (int i = 0; i < NR_DIR_MONITOR; i++) {//DIR
-        mes_collect->update_pool(dir_monitors[i]->self_tag_be_write(), i, DIR_monitor::SELF);
-        mes_collect->update_pool(dir_monitors[i]->client_tag_be_write(), i, DIR_monitor::CLIENT);
+        mes_collect->update_pool(dir_monitors[i]->self_be_write(), i, DIR_monitor::SELF);
+        mes_collect->update_pool(dir_monitors[i]->self_be_write_1(), i, DIR_monitor::SELF);
+        mes_collect->update_pool(dir_monitors[i]->client_be_write(), i, DIR_monitor::CLIENT);
+        mes_collect->update_pool(dir_monitors[i]->client_be_write_1(), i, DIR_monitor::CLIENT);
       }
       mes_collect->check_time_out();
       //--------------------------//
@@ -200,17 +203,18 @@ void Emu::execute(uint64_t nr_cycle) {
       dma[i]->handle_channel();
     }
 
-    if(random_mode) {
+    if(random_mode && Cycles >= 10000) {
       for (int i = 0; i < NR_CAGENTS; i++) {
         // tl_base_agent::TLCTransaction tr = randomTest2(false, l1[i]->bus_type, ptw, dma);
         tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLC, false, l1[i]->bus_type, ptw, dma);
         l1[i]->transaction_input(tr);
       }
-      for (int i = 0; i < NR_PTWAGT; i++) {
-        // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
-        tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, ptw[i]->bus_type, ptw, dma);
-        ptw[i]->transaction_input(tr);
-      }
+      // for (int i = 0; i < NR_PTWAGT; i++) {
+      //   // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
+      //   tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, ptw[i]->bus_type, ptw, dma);
+      //   if(tr.addr != 0x80000000)
+      //     ptw[i]->transaction_input(tr);
+      // }
       for (int i = 0; i < NR_DMAAGT; i++) {
         // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
         tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, dma[i]->bus_type, ptw, dma);
@@ -245,5 +249,8 @@ void Emu::execute(uint64_t nr_cycle) {
 
     this->step();
     this->update_cycles(1);
+  }
+  if(this->en_monitor){
+    report->print_report();
   }
 }

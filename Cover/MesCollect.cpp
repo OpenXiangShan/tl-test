@@ -25,27 +25,27 @@ namespace Cover {
         if(*tl_info->a_valid && *tl_info->a_ready){
             handle_ChnlA_info(core_id,bus_type);
             //for test
-            printf("MES address = %lx\n", Mes.address);
+            // printf("MES address = %lx\n", Mes.address);
         }
         if(*tl_info->b_valid && *tl_info->b_ready){
             handle_ChnlB_info(core_id,bus_type);
             //for test
-            printf("MES address = %lx\n", Mes.address);
+            // printf("MES address = %lx\n", Mes.address);
         }
         if(*tl_info->c_valid && *tl_info->c_ready){
             handle_ChnlC_info(core_id,bus_type);
             //for test
-            printf("MES address = %lx\n", Mes.address);
+            // printf("MES address = %lx\n", Mes.address);
         }
         if(*tl_info->d_valid && *tl_info->d_ready){
             handle_ChnlD_info(core_id,bus_type);
             //for test
-            printf("MES address = %lx\n", Mes.address);
+            // printf("MES address = %lx\n", Mes.address);
         }
         if(*tl_info->e_valid && *tl_info->e_ready){
             handle_ChnlE_info(core_id,bus_type);
             //for test
-            printf("MES address = %lx\n", Mes.address);
+            // printf("MES address = %lx\n", Mes.address);
         }
 
         
@@ -118,7 +118,7 @@ namespace Cover {
         }
     }
 
-    // source erase 1: ReleaseAck*
+    // source erase 1: ReleaseAck
     // source erase 2: Grant*
     // source erase 3: AccessAck*
     // sink in: Grant*
@@ -152,17 +152,15 @@ namespace Cover {
         // Waiting for State to be written
         // no need to wait ReleaseAck because DIR write before ReleaseAck
         if(Mes.opcode == AccessAck || Mes.opcode == AccessAckData){
-            if(Mes.bus_type == DCACHE_BUS_TYPE || Mes.bus_type == ICACHE_BUS_TYPE || Mes.bus_type == PTW_BUS_TYPE)//L1-L2
-                pool.add_wating(Mes.address, core_id, Mes);
-            else if(Mes.bus_type == TILE_BUS_TYPE || Mes.bus_type == DMA_BUS_TYPE)//L2-L3
-                pool.add_wating(Mes.address, ID_L3, Mes);
-            else if(Mes.bus_type == L3_BUS_TYPE)// L3-MEM
+            if(Mes.bus_type == PTW_BUS_TYPE || Mes.bus_type == DMA_BUS_TYPE){
+                State = get_state_info(Mes.address);
+                send(true);
+            }else if(Mes.bus_type != ICACHE_BUS_TYPE && Mes.bus_type != DCACHE_BUS_TYPE){
                 send(false);
-            else{
+            }else{
                 printf("CHNL:%d BUSTPYE:%d", Mes.chnl,Mes.bus_type);
                 tlc_assert(false,"Illegal BUSTYPE!");
-            }
-                
+            }        
         }else if(Mes.opcode == ReleaseAck){
             State = get_state_info(Mes.address);
             send(true);
@@ -206,34 +204,34 @@ namespace Cover {
                 
         // Init
         cacheState State;
-        State.L1[0][DCACHE_BUS_TYPE]    =   INVALID;
-        State.L1[0][ICACHE_BUS_TYPE]    =   INVALID;
-        State.L1[1][DCACHE_BUS_TYPE]    =   INVALID;
-        State.L1[1][ICACHE_BUS_TYPE]    =   INVALID;
-        State.L2[0]                     =   INVALID;
-        State.L2[1]                     =   INVALID;
-        State.L3                        =   INVALID;
+        State.L1[ID_CORE0][DCACHE_BUS_TYPE]    =   INVALID;
+        State.L1[ID_CORE0][ICACHE_BUS_TYPE]    =   INVALID;
+        State.L1[ID_CORE1][DCACHE_BUS_TYPE]    =   INVALID;
+        State.L1[ID_CORE1][ICACHE_BUS_TYPE]    =   INVALID;
+        State.L2[ID_CORE0]                     =   INVALID;
+        State.L2[ID_CORE1]                     =   INVALID;
+        State.L3                               =   INVALID;
 
         //---------collect L1 Cache State---------//
         // Addr to Key
         paddr_t L1_tag;
         Dir_key L1_key;
         L1_tag          =   Get_n_bit(addr, L2_bit[client_tag_index], 64);
-        L1_key.set      =   Get_n_bit(addr, L2_bit[set_index], L2_bit[client_tag_index]);
-        L1_key.slice    =   Get_n_bit(addr, L2_bit[slice_index], L2_bit[set_index]);
+        L1_key.set      =   Get_n_bit(addr, L2_bit[set_index], L2_bit[client_tag_index]-1);
+        L1_key.slice    =   Get_n_bit(addr, L2_bit[slice_index], L2_bit[set_index]-1);
         // query
         for(uint8_t mod = 0; mod <= 1; mod++){//Search for core0/1 L2
             for (uint8_t i = 0; i < N_WAY; i++)//Search for 0-7 way
             {
                 L1_key.way = i;
                 if(Client_Dir_Tag_Storage[mod].haskey(L1_key)){
-                    printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L1_tag, L1_key.set, L1_key.slice, L1_key.way);
-                    printf("%d Has Key\n",mod);
+                    // printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L1_tag, L1_key.set, L1_key.slice, L1_key.way);
+                    // printf("%d Has Key\n",mod);
                     if(*Client_Dir_Tag_Storage[mod].query(L1_key) == L1_tag){
-                        printf("Tag Ture\n");
+                        // printf("Tag Ture\n");
                         State.L1[mod][DCACHE_BUS_TYPE] = Client_Dir_Storage[mod].query(L1_key)->client[DCACHE_BUS_TYPE];
                         State.L1[mod][ICACHE_BUS_TYPE] = Client_Dir_Storage[mod].query(L1_key)->client[ICACHE_BUS_TYPE];
-                        printf("D:[%s] I:[%s]\n", stateTostring(State.L1[mod][DCACHE_BUS_TYPE]).c_str(), stateTostring(State.L1[mod][ICACHE_BUS_TYPE]).c_str());
+                        // printf("D:[%s] I:[%s]\n", stateTostring(State.L1[mod][DCACHE_BUS_TYPE]).c_str(), stateTostring(State.L1[mod][ICACHE_BUS_TYPE]).c_str());
                     }
                 }
             }
@@ -244,20 +242,20 @@ namespace Cover {
         paddr_t L2_tag;
         Dir_key L2_key;
         L2_tag          =   Get_n_bit(addr, L2_bit[self_tag_index], 64);
-        L2_key.set      =   Get_n_bit(addr, L2_bit[set_index], L2_bit[self_tag_index]);
-        L2_key.slice    =   Get_n_bit(addr, L2_bit[slice_index], L2_bit[set_index]);
+        L2_key.set      =   Get_n_bit(addr, L2_bit[set_index], L2_bit[self_tag_index]-1);
+        L2_key.slice    =   Get_n_bit(addr, L2_bit[slice_index], L2_bit[set_index]-1);
         // query
         for(uint8_t mod = 0; mod <= 1; mod++){//Search for core0/1 L2
             for (uint8_t i = 0; i < N_WAY; i++)//Search for 0-7 way
             {
                 L2_key.way = i;
                 if(Self_Dir_Tag_Storage[mod].haskey(L2_key)){
-                    printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L2_tag, L2_key.set, L2_key.slice, L2_key.way);
-                    printf("%d Has Key\n",mod);
+                    // printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L2_tag, L2_key.set, L2_key.slice, L2_key.way);
+                    // printf("%d Has Key\n",mod);
                     if(*Self_Dir_Tag_Storage[mod].query(L2_key) == L2_tag){
-                        printf("Tag Ture\n");
+                        // printf("Tag Ture\n");
                         State.L2[mod] = Self_Dir_Storage[mod].query(L2_key)->self;
-                        printf("L2:[%s]\n", stateTostring(State.L2[mod]).c_str());
+                        // printf("L2:[%s]\n", stateTostring(State.L2[mod]).c_str());
                     }
                 }
             }
@@ -268,23 +266,24 @@ namespace Cover {
         paddr_t L3_tag;
         Dir_key L3_key;
         L3_tag          =   Get_n_bit(addr, L3_bit[self_tag_index], 64);
-        L3_key.set      =   Get_n_bit(addr, L3_bit[set_index], L3_bit[self_tag_index]);
-        L3_key.slice    =   Get_n_bit(addr, L3_bit[slice_index], L3_bit[set_index]);
+        L3_key.set      =   Get_n_bit(addr, L3_bit[set_index], L3_bit[self_tag_index]-1);
+        L3_key.slice    =   Get_n_bit(addr, L3_bit[slice_index], L3_bit[set_index]-1);
         // query
         uint8_t mod = 2;//Search for L3
         for (uint8_t i = 0; i < N_WAY; i++)//Search for 0-7 way
         {
             L3_key.way = i;
+            // printf("Search for l3 %d\n", L3_key.way);
             if(Self_Dir_Tag_Storage[mod].haskey(L3_key)){
-                printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L3_tag, L3_key.set, L3_key.slice, L3_key.way);
-                printf("%d Has Key\n",mod);
+                // printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L3_tag, L3_key.set, L3_key.slice, L3_key.way);
+                // printf("%d Has Key\n",mod);
                 if(*Self_Dir_Tag_Storage[mod].query(L3_key) == L3_tag){
-                    printf("Tag Ture\n");
+                    // printf("Tag Ture\n");
                     State.L3 = Self_Dir_Storage[mod].query(L3_key)->self;
-                    printf("L3:[%s]\n", stateTostring(State.L3).c_str());
+                    // printf("L3:[%s]\n", stateTostring(State.L3).c_str());
                 }
             }
-        }
+        } 
 
         return State;
     }
@@ -307,9 +306,7 @@ namespace Cover {
     }
 
     void Mes_Collect::update_pool(paddr_t addr, uint64_t dir_id, bool DIR){
-        //pool_check
-        
-        
+
         if(addr == 0x0)
             return;
 

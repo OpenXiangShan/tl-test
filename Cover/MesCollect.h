@@ -29,7 +29,7 @@ private:
     // This is a risky operation because 
     // Other operations within max_cycle 
     // may also rewrite the DIR
-    const uint64_t max_cycle = 10;
+    const uint64_t max_cycle = 15;
     std::map<paddr_t,storage> self_pool[ID_MAX-1];//[id]id:0->core0 L2; 1->core1 L2; 2->L3
     std::map<paddr_t,storage> client_pool[ID_MAX-1];
 public:
@@ -91,22 +91,22 @@ public:
       {
         if(self_pool[id].size() > 0){
             for (auto [key, val] : self_pool[id]) {
-                if(val.n == 1){
+                if(val.n <= 1){
                     mes = self_pool[id][key].mes;
                     erase_self_wating(key, id);
                     erase_client_wating(key, id);
-                    printf("erase SELF [%ld] [%lx]\n",id ,mes.address);
+                    printf("erase SELF wating: [%ld] [%lx]\n",id ,mes.address);
                     return mes;
                 }
             }
         } 
         if(client_pool[id].size() > 0){
             for (auto [key, val] : client_pool[id]) {
-                if(val.n == 1){
+                if(val.n <= 1){
                     mes = client_pool[id][key].mes;
                     erase_self_wating(key, id);
                     erase_client_wating(key, id);
-                    printf("erase CLIENT [%ld] [%lx]\n",id ,mes.address);
+                    printf("erase CLIENT wating: [%ld] [%lx]\n",id ,mes.address);
                     return mes;
                 }
             }
@@ -125,12 +125,12 @@ public:
             for (auto [key, val] : self_pool[id]) {
                 if(val.n == 0){
                     printf("ADDR:%lx ",key);
-                    tlc_assert(false,"Self DIR POOL wire time out!\n");
+                    tlc_assert(false,"Self DIR POOL write time out!\n");
                 }else{
                     st.mes = val.mes;
                     st.n = val.n-1;
                     self_pool[id][key] = st;
-                    printf("SELF: id:%ld key:%lx val:%ld\n",id, key, st.n);
+                    // printf("SELF: id:%ld key:%lx val:%ld\n",id, key, st.n);
                 }
             }
         } 
@@ -138,12 +138,12 @@ public:
             for (auto [key, val] : client_pool[id]) {
                 if(val.n == 0){
                     printf("ADDR:%lx ",key);
-                    tlc_assert(false,"Client DIR POOL wire time out!\n");
+                    tlc_assert(false,"Client DIR POOL write time out!\n");
                 }else{
                     st.mes = val.mes;
                     st.n = val.n-1;
                     client_pool[id][key] = st;
-                    printf("CLIENT: id:%ld key:%lx val:%ld\n",id, key, st.n);
+                    // printf("CLIENT: id:%ld key:%lx val:%ld\n",id, key, st.n);
                 }
             }
         }

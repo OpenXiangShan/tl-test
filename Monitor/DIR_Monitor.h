@@ -131,9 +131,12 @@ class check_pool{
       printf("check cycle: %ld\n",key_pool[key]);
     }
 
-    void erase_check(Dir_key key){
-      if(key_pool.count(key) > 0)
+    bool erase_check(Dir_key key){
+      if(key_pool.count(key) > 0){
         key_pool.erase(key);
+        return true;
+      }
+      return false;
     }
 
     void check_time_out(void){
@@ -160,14 +163,18 @@ private:
   ScoreBoard<Dir_key,Dir_Mes> *Self_Dir_Storage;//2*L2 + L3;
   ScoreBoard<Dir_key,paddr_t> *Self_Dir_Tag_Storage;//2*L2 + L3;
   check_pool Self_tag_check_pool;
-  bool self_tag_write;
+  bool self_write;
   paddr_t self_write_addr;
+  bool self_write_1;
+  paddr_t self_write_addr_1;
   //client
   ScoreBoard<Dir_key,Dir_Mes> *Client_Dir_Storage;//2*L2 + L3;
   ScoreBoard<Dir_key,paddr_t> *Client_Dir_Tag_Storage;//2*L2 + L3;
   check_pool Client_tag_check_pool;
-  bool client_tag_write;
+  bool client_write;
   paddr_t client_write_addr;
+  bool client_write_1;
+  paddr_t client_write_addr_1;
 
 public:
   uint64_t id;
@@ -177,17 +184,21 @@ public:
               ,ScoreBoard<Dir_key,Dir_Mes> *const clientDir, ScoreBoard<Dir_key,paddr_t> *const clientTag
               ,uint64_t* c, uint64_t iid, uint8_t bt);
   std::shared_ptr<DIRInfo> get_info();
+
   //self
   void print_info();
   void fire_Self_DIR(uint8_t mod, paddr_t slice, uint8_t bit[4]);
   void print_Self_DIR(uint8_t mod, Dir_key key);
   void print_Self_DIR_TAG(uint8_t mod, Dir_key key);
-  paddr_t self_tag_be_write(void){if(self_tag_write) return self_write_addr;else return 0x0;}
+  paddr_t self_be_write(void){if(self_write) return self_write_addr;else return 0x0;}
+  paddr_t self_be_write_1(void){if(self_write_1) return self_write_addr_1;else return 0x0;}
+  
   //client
   void fire_Client_DIR(uint8_t mod, paddr_t slice, uint8_t bit[4]);
   void print_Client_DIR(uint8_t mod, Dir_key key);
   void print_Client_DIR_TAG(uint8_t mod, Dir_key key);
-  paddr_t client_tag_be_write(void){if(client_tag_write) return client_write_addr;else return 0x0;}
+  paddr_t client_be_write(void){if(client_write) return client_write_addr;else return 0x0;}
+  paddr_t client_be_write_1(void){if(client_write_1) return client_write_addr_1;else return 0x0;}
 };
 
 }

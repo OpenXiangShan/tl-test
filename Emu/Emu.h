@@ -24,6 +24,7 @@
 #include "../Monitor/DIR_Monitor.h"
 #include "../Cover/MesCollect.h"
 #include "../Cover/MesCom.h"
+#include "../Cover/Report.h"
 
 
 class Emu {
@@ -43,6 +44,7 @@ private:
 
   typedef Cover::Mes_Collect Mes_Collect_t;
   typedef Cover::Mes_Com Mes_Com_t;
+  typedef Cover::Report Report_t;
 
   const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
   Vtb_top *dut_ptr;
@@ -73,6 +75,7 @@ private:
 
   std::shared_ptr<Mes_Collect_t> mes_collect;
   Mes_Com_t *mes_com;
+  Report_t *report;
 
 
 public:

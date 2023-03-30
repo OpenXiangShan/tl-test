@@ -57,10 +57,26 @@ namespace Tool{
         case INVALID:
             s = "N";
             break;
-        default: s = "error";
+        default: s = "error" + to_string(state);
             break;
         }
         return s;
+    }
+
+    static void print(const int *states){
+        const int N_CACHE_NUM = 7;
+        string s[N_CACHE_NUM];
+
+        for (size_t i = 0; i < N_CACHE_NUM; i++)
+        {
+            s[i] = stateTostring(states[i]);
+        }
+
+        static int num = 0;
+        printf("\nNUM[%d]:\n",num++);
+        printf("[%s]-[%s]   [%s]-[%s]\n"  , s[0].c_str(), s[1].c_str(), s[2].c_str(), s[3].c_str() );
+        printf("  [%s]       [%s]\n"      , s[4].c_str(), s[5].c_str());
+        printf("       [%s]\n"            , s[6].c_str());
     }
 
 

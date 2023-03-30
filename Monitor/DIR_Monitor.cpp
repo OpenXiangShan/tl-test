@@ -40,7 +40,8 @@ namespace DIR_monitor{
     void DIR_Monitor::fire_Self_DIR(uint8_t mod, paddr_t slice, uint8_t bit[4]){
         //INIT
         std::shared_ptr<DIRInfo> fire_Info = info;
-        self_tag_write = false;
+        self_write = false;
+        self_write_1 = false;
         
         //self_dir_tag
         if(*fire_Info->tagWReq_valid&&*fire_Info->tagWReq_ready){
@@ -62,11 +63,14 @@ namespace DIR_monitor{
             print_Self_DIR_TAG(mod,key);
 
             //check
-            Self_tag_check_pool.erase_check(key);
+            bool check_finish;
+            check_finish = Self_tag_check_pool.erase_check(key);
 
             // flag for Mes_Collect
-            self_tag_write = true;
-            self_write_addr = (*tag << bit[self_tag_index]) + (key.set << bit[set_index]) + (key.slice << bit[slice_index]);
+            if(check_finish){
+                self_write_1 = true;
+                self_write_addr_1 = (*tag << bit[self_tag_index]) + (key.set << bit[set_index]) + (key.slice << bit[slice_index]);
+            }
         }
 
         //self_dir_state
@@ -91,7 +95,7 @@ namespace DIR_monitor{
             //print
             print_Self_DIR(mod,key);
 
-            //check
+            //check self write but tag no write
             //if self state == INVALID,self client state and tag useless, no need to change tag
             if(!Self_Dir_Tag_Storage[mod].haskey(key) && state.self != INVALID){
                 printf("check: %s\n", print.add_tag(true).c_str());
@@ -101,7 +105,13 @@ namespace DIR_monitor{
                                     + (key.set << bit[set_index])
                                     + (key.slice << bit[slice_index]);
                 printf("self dir addr: %s\n", hex_to_str(addr,8,false).c_str());
+
+                // flag for Mes_Collect
+                self_write = true;
+                self_write_addr = addr;
             }
+
+            
         }
 
         //check
@@ -157,7 +167,8 @@ namespace DIR_monitor{
     void DIR_Monitor::fire_Client_DIR(uint8_t mod, paddr_t slice, uint8_t bit[4]){
         //INIT
         std::shared_ptr<DIRInfo> fire_Info = info;
-         client_tag_write = false;
+        client_write = false;
+        client_write_1 = false;
         
         //Client_dir_tag
         if(*fire_Info->clientTagWreq_valid&&*fire_Info->clientTagWreq_ready){
@@ -179,11 +190,14 @@ namespace DIR_monitor{
             print_Client_DIR_TAG(mod,key);
 
             //check
-            Client_tag_check_pool.erase_check(key);
+            bool check_finish;
+            check_finish = Client_tag_check_pool.erase_check(key);
 
             // flag for Mes_Collect
-            client_tag_write = true;
-            client_write_addr = (*tag << bit[client_tag_index]) + (key.set << bit[set_index]) + (key.slice << bit[slice_index]);
+            if(check_finish){
+                client_write_1 = true;
+                client_write_addr_1 = (*tag << bit[client_tag_index]) + (key.set << bit[set_index]) + (key.slice << bit[slice_index]);
+            }
         }
 
         //client_dir_state
@@ -207,7 +221,7 @@ namespace DIR_monitor{
             //print
             print_Client_DIR(mod,key);
 
-            //check
+            // check client write but tag no write
             if(!Client_Dir_Tag_Storage[mod].haskey(key)){
                 printf("check: %s\n", print.add_tag(true).c_str());
                 Client_tag_check_pool.add_check(key);
@@ -216,6 +230,8 @@ namespace DIR_monitor{
                                     + (key.set << bit[set_index])
                                     + (key.slice << bit[slice_index]);
                 printf("Client dir addr: %s\n", hex_to_str(addr,8,false).c_str());
+                client_write = true;
+                client_write_addr = addr;
             }
         }
 
