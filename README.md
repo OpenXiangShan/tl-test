@@ -21,6 +21,7 @@ Please see https://github.com/OpenXiangShan/HuanCun/blob/non-inclusive/src/test/
 > cmake .. -DDUT_DIR=${PATH_TO_HUANCUN}/build
 For trace-dump, add -DTRACE=1
 For multi-thread, add -DTHREAD=${NR_THREADS}
+For gdb support, add -DCMAKE_BUILD_TYPE=Debug
 
 > make
 ```
