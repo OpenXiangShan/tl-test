@@ -399,7 +399,8 @@ namespace tl_agent {
                     }
                     case Grant: {
                         Log("[%ld] [Grant] addr: %hx\n", *cycles, addr);
-                        // info->update_dirty(*chnD.dirty, alias);
+                        // Always set dirty in acquireperm txns
+                        info->update_dirty(true, alias);
                         break;
                     }
                     case ReleaseAck: {
