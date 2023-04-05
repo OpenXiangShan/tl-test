@@ -50,7 +50,7 @@ namespace tl_monitor{
       info_chnl.needHint = std::to_string(*a.a_user_needHint);
       //print
       std::string print_info = info_base.add() + info_chnl.ula_add();
-      printf("%s\n", print_info.c_str());
+      HLOG(P_SW,"%s\n", print_info.c_str());
     }
   }
 
@@ -85,7 +85,7 @@ namespace tl_monitor{
         info_chnl.data = "-";
       //print
       std::string print_info = info_base.add() + info_chnl.uld_add();
-      printf("%s\n", print_info.c_str());
+      HLOG(P_SW,"%s\n", print_info.c_str());
     }
   }
 
@@ -156,7 +156,7 @@ namespace tl_monitor{
       info_chnl.needHint = std::to_string(*a.a_user_needHint);
       //print
       std::string print_info = info_base.add() + info_chnl.ca_add();
-      printf("%s\n", print_info.c_str());
+      HLOG(P_SW,"%s\n", print_info.c_str());
     }
   }
 
@@ -188,7 +188,7 @@ namespace tl_monitor{
       info_chnl.needdata = std::to_string(*b.b_needdata);
       //print
       std::string print_info = info_base.add() + info_chnl.cb_add();
-      printf("%s\n", print_info.c_str());
+      HLOG(P_SW,"%s\n", print_info.c_str());
     }
   }
 
@@ -261,7 +261,7 @@ namespace tl_monitor{
       info_chnl.blockisdirty = std::to_string(*c.c_echo_blockisdirty);
       //print
       std::string print_info = info_base.add() + info_chnl.cc_add();
-      printf("%s\n", print_info.c_str());
+      HLOG(P_SW,"%s\n", print_info.c_str());
     }
   }
 
@@ -318,7 +318,7 @@ namespace tl_monitor{
       info_chnl.blockisdirty = std::to_string(*d.d_echo_blockisdirty);
       //print
       std::string print_info = info_base.add() + info_chnl.cd_add();
-      printf("%s\n", print_info.c_str());
+      HLOG(P_SW,"%s\n", print_info.c_str());
     }
   }
 
@@ -331,7 +331,7 @@ namespace tl_monitor{
       info_chnl.sink = std::to_string(*e.e_sink);
       //print
       std::string print_info = info_base.add() + info_chnl.ce_add();
-      printf("%s\n", print_info.c_str());
+      HLOG(P_SW,"%s\n", print_info.c_str());
     }
   }
 
@@ -361,7 +361,7 @@ namespace tl_monitor{
         info_base.module = "uncache - DMA: ";
         fire_ULAgent(); 
         break;
-      default:printf("Unkown\n");break;
+      default:HLOG(P_SW,"Unkown\n");break;
     }
   }
 

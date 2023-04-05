@@ -44,8 +44,8 @@ public:
       st.tag = false;
       self_pool[id].insert({key,st});
       client_pool[id].insert({key,st});
-      printf("self waiting cycle:[%lx] [%ld]\n", key, self_pool[id][key].n);
-      printf("client waiting cycle:[%lx] [%ld]\n", key, client_pool[id][key].n);
+      HLOG(P_SW,"self waiting cycle:[%lx] [%ld]\n", key, self_pool[id][key].n);
+      HLOG(P_SW,"client waiting cycle:[%lx] [%ld]\n", key, client_pool[id][key].n);
     }
 
     bool self_haskey(paddr_t key, uint8_t id){
@@ -149,7 +149,7 @@ public:
                     mes = self_pool[id][key].mes;
                     erase_self_wating(key, id);
                     erase_client_wating(key, id);
-                    printf("erase SELF wating: [%ld] [%lx]\n",id ,mes.address);
+                    HLOG(P_SW,"erase SELF wating: [%ld] [%lx]\n",id ,mes.address);
                     return mes;
                 }
             }
@@ -162,7 +162,7 @@ public:
                     mes = self_pool[id][key].mes;
                     erase_self_wating(key, id);
                     erase_client_wating(key, id);
-                    printf("erase CLIENT wating: [%ld] [%lx]\n",id ,mes.address);
+                    HLOG(P_SW,"erase CLIENT wating: [%ld] [%lx]\n",id ,mes.address);
                     return mes;
                 }
             }
@@ -182,13 +182,13 @@ public:
               paddr_t key = it->first;
               storage val = it->second;
                 if(val.n == 0){
-                    printf("ADDR:%lx ",key);
+                    HLOG(P_SW,"ADDR:%lx ",key);
                     tlc_assert(false,"Self DIR POOL write time out!\n");
                 }else{
                     st.mes = val.mes;
                     st.n = val.n-1;
                     self_pool[id][key] = st;
-                    // printf("SELF: id:%ld key:%lx val:%ld\n",id, key, st.n);
+                    // HLOG(P_SW,"SELF: id:%ld key:%lx val:%ld\n",id, key, st.n);
                 }
             }
         } 
@@ -197,13 +197,13 @@ public:
               paddr_t key = it->first;
               storage val = it->second;
                 if(val.n == 0){
-                    printf("ADDR:%lx ",key);
+                    HLOG(P_SW,"ADDR:%lx ",key);
                     tlc_assert(false,"Self DIR POOL write time out!\n");
                 }else{
                     st.mes = val.mes;
                     st.n = val.n-1;
                     self_pool[id][key] = st;
-                    // printf("SELF: id:%ld key:%lx val:%ld\n",id, key, st.n);
+                    // HLOG(P_SW,"SELF: id:%ld key:%lx val:%ld\n",id, key, st.n);
                 }
             }
         }

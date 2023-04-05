@@ -130,13 +130,13 @@ public:
         }
         
         // for(std::set<check_point>::iterator it = point.begin(); it != point.end(); it++){
-        //     printf("%d  %d  %d  %d  %d\n",it->mes[N_CH], it->mes[N_OP], it->mes[N_PA], it->mes[N_SCR], it->mes[N_CORE]);
+        //     HLOG(P_SW,"%d  %d  %d  %d  %d\n",it->mes[N_CH], it->mes[N_OP], it->mes[N_PA], it->mes[N_SCR], it->mes[N_CORE]);
         //     Tool::print(it->b_states);
         //     Tool::print(&it->e_states[0]);
         // }
         
-        printf("Input Trans num = %ld\n", num);
-        printf("%s Input Trans Success!\n", infile.c_str());
+        HLOG(P_SW,"Input Trans num = %ld\n", num);
+        HLOG(P_SW,"%s Input Trans Success!\n", infile.c_str());
     }
 };
 

@@ -29,7 +29,7 @@ namespace DIR_monitor{
             fire_Self_DIR(2,id-NR_DIR_L2_core0_MONITOR-NR_DIR_L2_core1_MONITOR,L3_bit);//2: L3; id: 0-3
             fire_Client_DIR(2,id-NR_DIR_L2_core0_MONITOR-NR_DIR_L2_core1_MONITOR,L3_bit);//2: L3; id: 0-3
         }else{
-            printf("DIR info input error\n");
+            HLOG(P_SW,"DIR info input error\n");
         }
 
     }
@@ -113,13 +113,13 @@ namespace DIR_monitor{
             //check self write but tag no write
             //if self state == INVALID,self client state and tag useless, no need to change tag
             if(!Self_Dir_Tag_Storage[mod].haskey(key) && state.self != INVALID){
-                printf("check: %s\n", print.add_tag(true).c_str());
+                HLOG(P_SW,"check: %s\n", print.add_tag(true).c_str());
                 Self_tag_check_pool.add_check(key);
             }else if(Self_Dir_Tag_Storage[mod].haskey(key)){//print addr
                 paddr_t addr = (*Self_Dir_Tag_Storage[mod].query(key) << bit[self_tag_index])
                                     + (key.set << bit[set_index])
                                     + (key.slice << bit[slice_index]);
-                printf("self dir addr: %s\n", hex_to_str(addr,8,false).c_str());
+                HLOG(P_SW,"self dir addr: %s\n", hex_to_str(addr,8,false).c_str());
 
                 // flag for Mes_Collect
                 self_write = true;
@@ -153,7 +153,7 @@ namespace DIR_monitor{
         
         //print
         print.all = print.all + print.add_self();
-        printf("%s\n", print.all.c_str());
+        HLOG(P_SW,"%s\n", print.all.c_str());
     }
 
     void DIR_Monitor::print_Self_DIR_TAG(uint8_t mod, Dir_key key){
@@ -173,7 +173,7 @@ namespace DIR_monitor{
 
         //print
         print.all = print.all + print.add_tag(SELF);
-        printf("%s\n", print.all.c_str());
+        HLOG(P_SW,"%s\n", print.all.c_str());
     }
 
 
@@ -253,13 +253,13 @@ namespace DIR_monitor{
 
             // check client write but tag no write
             if(!Client_Dir_Tag_Storage[mod].haskey(key)){
-                printf("check: %s\n", print.add_tag(true).c_str());
+                HLOG(P_SW,"check: %s\n", print.add_tag(true).c_str());
                 Client_tag_check_pool.add_check(key);
             }else if(Client_Dir_Tag_Storage[mod].haskey(key)){//print addr
                 paddr_t addr = (*Client_Dir_Tag_Storage[mod].query(key) << bit[client_tag_index])
                                     + (key.set << bit[set_index])
                                     + (key.slice << bit[slice_index]);
-                printf("Client dir addr: %s\n", hex_to_str(addr,8,false).c_str());
+                HLOG(P_SW,"Client dir addr: %s\n", hex_to_str(addr,8,false).c_str());
                 client_write = true;
                 client_write_addr = addr;
             }
@@ -289,7 +289,7 @@ namespace DIR_monitor{
         
         //print
         print.all = print.all + print.add_client();
-        printf("%s\n", print.all.c_str());
+        HLOG(P_SW,"%s\n", print.all.c_str());
     }
 
     void DIR_Monitor::print_Client_DIR_TAG(uint8_t mod, Dir_key key){
@@ -309,7 +309,7 @@ namespace DIR_monitor{
 
         //print
         print.all = print.all + print.add_tag(CLIENT);
-        printf("%s\n", print.all.c_str());
+        HLOG(P_SW,"%s\n", print.all.c_str());
     }
 
 }

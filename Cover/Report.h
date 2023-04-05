@@ -23,7 +23,7 @@ static bool com_states(const int *s0, const int *s1){
 
 using namespace std;
 
-// printf("chnl[%d]  op[%d]  pa[%d]  scr[%d]  core[%d]\n",it->mes[N_CH], it->mes[N_OP], it->mes[N_PA], it->mes[N_SCR], it->mes[N_CORE]);
+// HLOG(P_SW_T,"chnl[%d]  op[%d]  pa[%d]  scr[%d]  core[%d]\n",it->mes[N_CH], it->mes[N_OP], it->mes[N_PA], it->mes[N_SCR], it->mes[N_CORE]);
 
 static string ChnlToString(const int ch){
     switch(ch){
@@ -143,7 +143,6 @@ public:
 
         std::set<check_point>::iterator it = point->find(cp);
         if(it != point->end()){
-            printf("true!\n");
             if(com_states(it->e_states, cp.e_states)){
                 done_point.insert(*it);
                 point->erase(it);
@@ -157,83 +156,83 @@ public:
 
     void print_report(){
 
-        printf("\n\ndone point: [%ld]\n", done_point.size());
+        HLOG(P_SW_T,"\n\ndone point: [%ld]\n", done_point.size());
         for(std::set<check_point>::iterator it = done_point.begin(); it != done_point.end(); it++){
-            printf("chnl[%s]  op[%s]  pa[%s]  scr[%s]  core[%d]\n", ChnlToString(it->mes[N_CH]).c_str(), OpToString(it->mes[N_CH], it->mes[N_OP]).c_str()
+            HLOG(P_SW_T,"chnl[%s]  op[%s]  pa[%s]  scr[%s]  core[%d]\n", ChnlToString(it->mes[N_CH]).c_str(), OpToString(it->mes[N_CH], it->mes[N_OP]).c_str()
                                                                     , paramTostring(it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]).c_str()
                                                                     , idToString(it->mes[N_SCR]).c_str(), it->mes[N_CORE]);
             Tool::print(it->b_states);
             Tool::print(it->e_states);
         }
 
-        printf("\n\nerror point: [%ld]\n", error_point.size());
+        HLOG(P_SW_T,"\n\nerror point: [%ld]\n", error_point.size());
         for(std::set<check_point>::iterator it = error_point.begin(); it != error_point.end(); it++){
-            printf("chnl[%s]  op[%s]  pa[%s]  scr[%s]  core[%d] addr[%lx]\n", ChnlToString(it->mes[N_CH]).c_str(), OpToString(it->mes[N_CH], it->mes[N_OP]).c_str()
+            HLOG(P_SW_T,"chnl[%s]  op[%s]  pa[%s]  scr[%s]  core[%d] addr[%lx]\n", ChnlToString(it->mes[N_CH]).c_str(), OpToString(it->mes[N_CH], it->mes[N_OP]).c_str()
                                                                     , paramTostring(it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]).c_str()
                                                                     , idToString(it->mes[N_SCR]).c_str(), it->mes[N_CORE]
                                                                     , it->addr);
             Tool::print(it->b_states);
 
             std::set<check_point>::iterator correct_point = point->find(*it);
-            printf("\nCorrect:");
+            HLOG(P_SW_T,"\nCorrect:");
             Tool::print(correct_point->e_states);
-            printf("\nError:");
+            HLOG(P_SW_T,"\nError:");
             Tool::print(it->e_states);
             // printf error point
-            printf("%d  %d  %d  %d  %d\n", correct_point->mes[N_CH], correct_point->mes[N_OP], correct_point->mes[N_PA]
+            HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", correct_point->mes[N_CH], correct_point->mes[N_OP], correct_point->mes[N_PA]
                                             , correct_point->mes[N_SCR], correct_point->mes[N_CORE]);
             for (int i = 0; i < N_CACHE_NUM; i++)
             {
-                printf("%d  ", correct_point->b_states[i]);
+                HLOG(P_SW_T,"%d  ", correct_point->b_states[i]);
             }
-            printf("\n"); 
+            HLOG(P_SW_T,"\n"); 
             for (int i = 0; i < N_CACHE_NUM; i++)
             {
-                printf("%d  ", correct_point->e_states[i]);
+                HLOG(P_SW_T,"%d  ", correct_point->e_states[i]);
             }
-            printf("\n\n"); 
+            HLOG(P_SW_T,"\n\n"); 
         }
 
         // print report
-        printf("\n\n-----------------------TL-test report---------------------------------\n");
+        HLOG(P_SW_T,"\n\n-----------------------TL-test report---------------------------------\n");
 
-        printf("done point:\n\n");
+        HLOG(P_SW_T,"done point:\n\n");
         for(std::set<check_point>::iterator it = done_point.begin(); it != done_point.end(); it++){
-            printf("%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
+            HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
                                             , it->mes[N_SCR], it->mes[N_CORE]);
             for (int i = 0; i < N_CACHE_NUM; i++)
             {
-                printf("%d  ", it->b_states[i]);
+                HLOG(P_SW_T,"%d  ", it->b_states[i]);
             }
-            printf("\n"); 
+            HLOG(P_SW_T,"\n"); 
             for (int i = 0; i < N_CACHE_NUM; i++)
             {
-                printf("%d  ", it->e_states[i]);
+                HLOG(P_SW_T,"%d  ", it->e_states[i]);
             }
-            printf("\n"); 
+            HLOG(P_SW_T,"\n"); 
         }
 
-        printf("\nTo be Cover point:\n\n");
+        HLOG(P_SW_T,"\nTo be Cover point:\n\n");
         for(std::set<check_point>::iterator it = point->begin(); it != point->end(); it++){
-            printf("%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
+            HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
                                             , it->mes[N_SCR], it->mes[N_CORE]);
             for (int i = 0; i < N_CACHE_NUM; i++)
             {
-                printf("%d  ", it->b_states[i]);
+                HLOG(P_SW_T,"%d  ", it->b_states[i]);
             }
-            printf("\n"); 
+            HLOG(P_SW_T,"\n"); 
             for (int i = 0; i < N_CACHE_NUM; i++)
             {
-                printf("%d  ", it->e_states[i]);
+                HLOG(P_SW_T,"%d  ", it->e_states[i]);
             }
-            printf("\n"); 
+            HLOG(P_SW_T,"\n"); 
         }
 
-        printf("\n\nCoverage: %f\n", (done_point.size()/(double)TOTAL_POINT));
-        printf("Total Coverage: %f\n", ((TOTAL_POINT - point->size()) / (double)TOTAL_POINT));
-        printf("Seed : %ld     Cycles : %ld\n\n", seed, cycle);
+        HLOG(P_SW_T,"\n\nCoverage: %f\n", (done_point.size()/(double)TOTAL_POINT));
+        HLOG(P_SW_T,"Total Coverage: %f\n", ((TOTAL_POINT - point->size()) / (double)TOTAL_POINT));
+        HLOG(P_SW_T,"Seed : %ld     Cycles : %ld\n\n", seed, cycle);
 
-        printf("\n\n---------------------------------------------------------------------\n\n");
+        HLOG(P_SW_T,"\n\n---------------------------------------------------------------------\n\n");
         
     }
 

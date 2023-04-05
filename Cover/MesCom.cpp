@@ -10,20 +10,20 @@ void link::print(){
     for (auto it = link.begin(); it != link.end(); it++) {
         link_index key = it->first;
         link_col val = it->second;
-        printf("REQ: opcode [%d] param [%d] address [%lx]\n", val.Mes_Req.opcode, val.Mes_Req.param, val.Mes_Req.address);
-        printf("ACK: opcode [%d] param [%d] address [%lx]\n", val.Mes_Ack.opcode, val.Mes_Ack.param, val.Mes_Ack.address);
-        printf("ACK1: opcode [%d] param [%d] address [%lx]\n", val.Mes_Ack1.opcode, val.Mes_Ack1.param, val.Mes_Ack1.address);
+        HLOG(P_SW,"REQ: opcode [%d] param [%d] address [%lx]\n", val.Mes_Req.opcode, val.Mes_Req.param, val.Mes_Req.address);
+        HLOG(P_SW,"ACK: opcode [%d] param [%d] address [%lx]\n", val.Mes_Ack.opcode, val.Mes_Ack.param, val.Mes_Ack.address);
+        HLOG(P_SW,"ACK1: opcode [%d] param [%d] address [%lx]\n", val.Mes_Ack1.opcode, val.Mes_Ack1.param, val.Mes_Ack1.address);
         using namespace Tool;
         // Begin
-        printf("\n[%s]-[%s]  [%s]-[%s]\n" , stateTostring(val.State_b.L1[ID_CORE0][DCACHE_BUS_TYPE]).c_str() , stateTostring(val.State_b.L1[ID_CORE0][ICACHE_BUS_TYPE]).c_str() 
+        HLOG(P_SW,"\n[%s]-[%s]  [%s]-[%s]\n" , stateTostring(val.State_b.L1[ID_CORE0][DCACHE_BUS_TYPE]).c_str() , stateTostring(val.State_b.L1[ID_CORE0][ICACHE_BUS_TYPE]).c_str() 
                                         , stateTostring(val.State_b.L1[ID_CORE1][DCACHE_BUS_TYPE]).c_str() , stateTostring(val.State_b.L1[ID_CORE1][ICACHE_BUS_TYPE]).c_str() );
-        printf("  [%s]      [%s]\n"    , stateTostring(val.State_b.L2[ID_CORE0]).c_str(), stateTostring(val.State_b.L2[ID_CORE1]).c_str() );
-        printf("       [%s]\n\n"         , stateTostring(val.State_b.L3).c_str() );
+        HLOG(P_SW,"  [%s]      [%s]\n"    , stateTostring(val.State_b.L2[ID_CORE0]).c_str(), stateTostring(val.State_b.L2[ID_CORE1]).c_str() );
+        HLOG(P_SW,"       [%s]\n\n"         , stateTostring(val.State_b.L3).c_str() );
         // End
-        printf("[%s]-[%s]  [%s]-[%s]\n" , stateTostring(val.State_e.L1[ID_CORE0][DCACHE_BUS_TYPE]).c_str() , stateTostring(val.State_e.L1[ID_CORE0][ICACHE_BUS_TYPE]).c_str() 
+        HLOG(P_SW,"[%s]-[%s]  [%s]-[%s]\n" , stateTostring(val.State_e.L1[ID_CORE0][DCACHE_BUS_TYPE]).c_str() , stateTostring(val.State_e.L1[ID_CORE0][ICACHE_BUS_TYPE]).c_str() 
                                         , stateTostring(val.State_e.L1[ID_CORE1][DCACHE_BUS_TYPE]).c_str() , stateTostring(val.State_e.L1[ID_CORE1][ICACHE_BUS_TYPE]).c_str() );
-        printf("  [%s]      [%s]\n"    , stateTostring(val.State_e.L2[ID_CORE0]).c_str(), stateTostring(val.State_e.L2[ID_CORE1]).c_str() );
-        printf("       [%s]\n\n"         , stateTostring(val.State_e.L3).c_str() );
+        HLOG(P_SW,"  [%s]      [%s]\n"    , stateTostring(val.State_e.L2[ID_CORE0]).c_str(), stateTostring(val.State_e.L2[ID_CORE1]).c_str() );
+        HLOG(P_SW,"       [%s]\n\n"         , stateTostring(val.State_e.L3).c_str() );
     }
     
 }
@@ -181,7 +181,7 @@ bool link::check_finish(){
             
             print();
             // reset();
-            printf("LINK RESET\n");
+            HLOG(P_SW,"LINK RESET\n");
             return true;
         }
     }
@@ -191,7 +191,7 @@ bool link::check_finish(){
             
             print();
             // reset();
-            printf("LINK RESET\n");
+            HLOG(P_SW,"LINK RESET\n");
             return true;
         }
     }

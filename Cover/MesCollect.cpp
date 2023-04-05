@@ -25,27 +25,27 @@ namespace Cover {
         if(*tl_info->a_valid && *tl_info->a_ready){
             handle_ChnlA_info(core_id,bus_type);
             //for test
-            // printf("MES address = %lx\n", Mes.address);
+            // HLOG(P_SW,"MES address = %lx\n", Mes.address);
         }
         if(*tl_info->b_valid && *tl_info->b_ready){
             handle_ChnlB_info(core_id,bus_type);
             //for test
-            // printf("MES address = %lx\n", Mes.address);
+            // HLOG(P_SW,"MES address = %lx\n", Mes.address);
         }
         if(*tl_info->c_valid && *tl_info->c_ready){
             handle_ChnlC_info(core_id,bus_type);
             //for test
-            // printf("MES address = %lx\n", Mes.address);
+            // HLOG(P_SW,"MES address = %lx\n", Mes.address);
         }
         if(*tl_info->d_valid && *tl_info->d_ready){
             handle_ChnlD_info(core_id,bus_type);
             //for test
-            // printf("MES address = %lx\n", Mes.address);
+            // HLOG(P_SW,"MES address = %lx\n", Mes.address);
         }
         if(*tl_info->e_valid && *tl_info->e_ready){
             handle_ChnlE_info(core_id,bus_type);
             //for test
-            // printf("MES address = %lx\n", Mes.address);
+            // HLOG(P_SW,"MES address = %lx\n", Mes.address);
         }
 
         
@@ -158,7 +158,7 @@ namespace Cover {
             }else if(Mes.bus_type != ICACHE_BUS_TYPE && Mes.bus_type != DCACHE_BUS_TYPE){
                 send(false);
             }else{
-                printf("CHNL:%d BUSTPYE:%d", Mes.chnl,Mes.bus_type);
+                HLOG(P_SW,"CHNL:%d BUSTPYE:%d", Mes.chnl,Mes.bus_type);
                 tlc_assert(false,"Illegal BUSTYPE!");
             }        
         }else if(Mes.opcode == ReleaseAck){
@@ -190,7 +190,7 @@ namespace Cover {
         else if(Mes.bus_type == L3_BUS_TYPE)//L3-MEM
             send(false);
         else{
-            printf("CHNL:%d BUSTPYE:%d", Mes.chnl,Mes.bus_type);
+            HLOG(P_SW,"CHNL:%d BUSTPYE:%d", Mes.chnl,Mes.bus_type);
             tlc_assert(false,"Illegal BUSTYPE!");
         }
     }
@@ -225,13 +225,13 @@ namespace Cover {
             {
                 L1_key.way = i;
                 if(Client_Dir_Tag_Storage[mod].haskey(L1_key)){
-                    // printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L1_tag, L1_key.set, L1_key.slice, L1_key.way);
-                    // printf("%d Has Key\n",mod);
+                    // HLOG(P_SW,"[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L1_tag, L1_key.set, L1_key.slice, L1_key.way);
+                    // HLOG(P_SW,"%d Has Key\n",mod);
                     if(*Client_Dir_Tag_Storage[mod].query(L1_key) == L1_tag){
-                        // printf("Tag Ture\n");
+                        // HLOG(P_SW,"Tag Ture\n");
                         State.L1[mod][DCACHE_BUS_TYPE] = Client_Dir_Storage[mod].query(L1_key)->client[DCACHE_BUS_TYPE];
                         State.L1[mod][ICACHE_BUS_TYPE] = Client_Dir_Storage[mod].query(L1_key)->client[ICACHE_BUS_TYPE];
-                        // printf("D:[%s] I:[%s]\n", stateTostring(State.L1[mod][DCACHE_BUS_TYPE]).c_str(), stateTostring(State.L1[mod][ICACHE_BUS_TYPE]).c_str());
+                        // HLOG(P_SW,"D:[%s] I:[%s]\n", stateTostring(State.L1[mod][DCACHE_BUS_TYPE]).c_str(), stateTostring(State.L1[mod][ICACHE_BUS_TYPE]).c_str());
                     }
                 }
             }
@@ -250,12 +250,12 @@ namespace Cover {
             {
                 L2_key.way = i;
                 if(Self_Dir_Tag_Storage[mod].haskey(L2_key)){
-                    // printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L2_tag, L2_key.set, L2_key.slice, L2_key.way);
-                    // printf("%d Has Key\n",mod);
+                    // HLOG(P_SW,"[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L2_tag, L2_key.set, L2_key.slice, L2_key.way);
+                    // HLOG(P_SW,"%d Has Key\n",mod);
                     if(*Self_Dir_Tag_Storage[mod].query(L2_key) == L2_tag){
-                        // printf("Tag Ture\n");
+                        // HLOG(P_SW,"Tag Ture\n");
                         State.L2[mod] = Self_Dir_Storage[mod].query(L2_key)->self;
-                        // printf("L2:[%s]\n", stateTostring(State.L2[mod]).c_str());
+                        // HLOG(P_SW,"L2:[%s]\n", stateTostring(State.L2[mod]).c_str());
                     }
                 }
             }
@@ -273,14 +273,14 @@ namespace Cover {
         for (uint8_t i = 0; i < N_WAY; i++)//Search for 0-7 way
         {
             L3_key.way = i;
-            // printf("Search for l3 %d\n", L3_key.way);
+            // HLOG(P_SW,"Search for l3 %d\n", L3_key.way);
             if(Self_Dir_Tag_Storage[mod].haskey(L3_key)){
-                // printf("[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L3_tag, L3_key.set, L3_key.slice, L3_key.way);
-                // printf("%d Has Key\n",mod);
+                // HLOG(P_SW,"[%d] [%lx] [%lx] [%lx] [%x]\n", mod, L3_tag, L3_key.set, L3_key.slice, L3_key.way);
+                // HLOG(P_SW,"%d Has Key\n",mod);
                 if(*Self_Dir_Tag_Storage[mod].query(L3_key) == L3_tag){
-                    // printf("Tag Ture\n");
+                    // HLOG(P_SW,"Tag Ture\n");
                     State.L3 = Self_Dir_Storage[mod].query(L3_key)->self;
-                    // printf("L3:[%s]\n", stateTostring(State.L3).c_str());
+                    // HLOG(P_SW,"L3:[%s]\n", stateTostring(State.L3).c_str());
                 }
             }
         } 
@@ -297,7 +297,7 @@ namespace Cover {
             mes = pool.check_time();
             if(mes.address != 0x0){
                 Mes = mes;
-                // printf("check_time_out get_state_info\n");
+                HLOG(P_SW,"check_time_out get_state_info\n");
                 State = get_state_info(Mes.address);
                 send(true);
             }
@@ -325,8 +325,8 @@ namespace Cover {
 
             // check client && check tag and dir be write 
             if(!pool.client_haskey(addr, id) && pool.self_be_write_finish(addr, id)){
-                // printf("SELF update_pool get_state_info\n");
-                // printf("ADDR=%lx\n",addr);
+                HLOG(P_SW,"SELF update_pool get_state_info\n");
+                // HLOG(P_SW,"ADDR=%lx\n",addr);
                 Mes = pool.get_self(addr, id);
                 State = get_state_info(Mes.address);
                 send(true);
@@ -340,7 +340,7 @@ namespace Cover {
             pool.client_earse_DirOrTag(DirOrTag, addr, id);
             //check self
             if(!pool.self_haskey(addr, id) && pool.client_be_write_finish(addr, id)){
-                // printf("CLIENT update_pool get_state_info\n");
+                HLOG(P_SW,"CLIENT update_pool get_state_info\n");
                 Mes = pool.get_client(addr, id);
                 State = get_state_info(Mes.address);
                 send(true);
@@ -395,7 +395,7 @@ namespace Cover {
             }
         }
         
-        printf("SEND SUCCESS! opcode = %d addr = %lx valid: %d\n", pk.mes.opcode, pk.mes.address, pk.state.valid);
+        HLOG(P_SW,"SEND SUCCESS! opcode = %d addr = %lx valid: %d\n", pk.mes.opcode, pk.mes.address, pk.state.valid);
         mes_com->arbiter(pk);
     }
 

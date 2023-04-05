@@ -8,6 +8,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include "stdio.h"
 
 extern uint64_t Cycles;
 extern bool Verbose;
@@ -125,5 +126,20 @@ typedef uint64_t paddr_t;
 #define Dump(...) \
     do {} while(0)
 */
+
+enum{
+  P_SW_T = true,
+  P_SW = true,
+};
+
+#define __HLOG__  
+
+#ifdef __HLOG__  
+#define HLOG(sw,format,...) if(sw) printf(format, ##__VA_ARGS__)
+#else  
+#define HLOG(sw,format,...)  
+#endif  
+
+
 
 #endif // TLC_TEST_COMMON_H

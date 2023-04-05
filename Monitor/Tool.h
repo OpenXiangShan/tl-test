@@ -17,9 +17,9 @@ namespace Tool{
         for (int i = end; i >= begin; i--)
         {
             key = (key<<1) + GetBit(addr,i);
-            //printf("bit: %d \n", GetBit(addr,i));
+            //HLOG(P_SW_T,"bit: %d \n", GetBit(addr,i));
         }
-        //printf("value: %lx \n", key);
+        //HLOG(P_SW_T,"value: %lx \n", key);
         return key;
     }
 
@@ -74,10 +74,10 @@ namespace Tool{
         }
 
         static int num = 0;
-        printf("\nNUM[%d]:\n",num++);
-        printf("[%s]-[%s]   [%s]-[%s]\n"  , s[0].c_str(), s[1].c_str(), s[2].c_str(), s[3].c_str() );
-        printf("  [%s]       [%s]\n"      , s[4].c_str(), s[5].c_str());
-        printf("       [%s]\n"            , s[6].c_str());
+        HLOG(P_SW_T,"\nNUM[%d]:\n",num++);
+        HLOG(P_SW_T,"[%s]-[%s]   [%s]-[%s]\n"  , s[0].c_str(), s[1].c_str(), s[2].c_str(), s[3].c_str() );
+        HLOG(P_SW_T,"  [%s]       [%s]\n"      , s[4].c_str(), s[5].c_str());
+        HLOG(P_SW_T,"       [%s]\n"            , s[6].c_str());
     }
 
 

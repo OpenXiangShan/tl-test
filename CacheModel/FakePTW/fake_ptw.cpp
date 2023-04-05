@@ -287,10 +287,10 @@ namespace fake_ptw {
             auto value = it->second;
             if (value->status != S_INVALID && value->status != S_VALID) {
             if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
-                printf("Now time:   %lu\n", *this->cycles);
-                printf("Last stamp: %lu\n", value->time_stamp);
-                printf("Status:     %d\n", value->status);
-                printf("Address:    %lx\n", value->address);
+                HLOG(P_SW,"Now time:   %lu\n", *this->cycles);
+                HLOG(P_SW,"Last stamp: %lu\n", value->time_stamp);
+                HLOG(P_SW,"Status:     %d\n", value->status);
+                HLOG(P_SW,"Address:    %lx\n", value->address);
                 tlc_assert(false, "Transaction time out");
             }
             }

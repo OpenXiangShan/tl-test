@@ -458,8 +458,8 @@ void CAgent::fire_d() {
     if (!(exact_status == S_C_WAITING_D || exact_status == S_A_WAITING_D ||
           exact_status == S_C_WAITING_D_INTR ||
           exact_status == S_A_WAITING_D_INTR || exact_status == S_INVALID)) {
-      printf("fire_d: status of localboard is %d\n", exact_status);
-      printf("addr: 0x%lx\n", addr);
+      HLOG(P_SW_T,"fire_d: status of localboard is %d\n", exact_status);
+      HLOG(P_SW_T,"addr: 0x%lx\n", addr);
       tlc_assert(false, "Status error!");
     }
     if (pendingD.is_pending()) { // following beats
@@ -796,10 +796,10 @@ void CAgent::timeout_check() {
       if (value->status[i] != S_INVALID && value->status[i] != S_VALID) {
         if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
           Log("Time Out!\n");
-          printf("Now time:   %lu\n", *this->cycles);
-          printf("Last stamp: %lu\n", value->time_stamp);
-          printf("Status[0]:  %d\n", value->status[0]);
-          printf("Address:    0x%lx\n", it->first);
+          HLOG(P_SW_T,"Now time:   %lu\n", *this->cycles);
+          HLOG(P_SW_T,"Last stamp: %lu\n", value->time_stamp);
+          HLOG(P_SW_T,"Status[0]:  %d\n", value->status[0]);
+          HLOG(P_SW_T,"Address:    0x%lx\n", it->first);
           tlc_assert(false, "Transaction time out");
         }
       }

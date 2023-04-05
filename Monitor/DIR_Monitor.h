@@ -130,7 +130,7 @@ class check_pool{
 
     void add_check(Dir_key key){
       key_pool.insert({key,max_cycle});
-      printf("check cycle: %ld\n",key_pool[key]);
+      HLOG(P_SW,"check cycle: %ld\n",key_pool[key]);
     }
 
     bool erase_check(Dir_key key){

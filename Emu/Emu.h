@@ -99,7 +99,7 @@ inline void Emu::reset(uint64_t n) {
     dut_ptr->clock = 1;
     dut_ptr->eval();
   }
-  printf("reset is done!\n");
+  HLOG(P_SW_T,"reset is done!\n");
   fflush(stdout);
   dut_ptr->reset = 0;
 }
@@ -132,7 +132,7 @@ inline void Emu::step(){
 inline void Emu::update_cycles(uint64_t inc) {
   Cycles += inc;
   if (Cycles % 100000 == 0) {
-    printf("%lu cycles have passed!\n", Cycles);
+    HLOG(P_SW_T,"%lu cycles have passed!\n", Cycles);
   }
 }
 
@@ -145,7 +145,7 @@ inline char *Emu::cycle_wavefile(uint64_t cycles, time_t t) {
   int len = snprintf(buf, 1024, "%s/%s_%lu", pwd, buf_time, cycles);
   strcpy(buf + len, ".vcd");
   // strcpy(buf + len, ".fst");
-  printf("dump wave to %s...\n", buf);
+  HLOG(P_SW_T,"dump wave to %s...\n", buf);
   return buf;
 }
 

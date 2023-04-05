@@ -68,7 +68,7 @@ Emu::Emu(int argc, char **argv) {
   dut_ptr = new Vtb_top();
   globalBoard = new GlobalBoard<paddr_t>(); // address indexed
 
-  printf("[INFO] use seed: %ld\n", this->seed);
+  HLOG(P_SW_T,"[INFO] use seed: %ld\n", this->seed);
   srand(this->seed);
   
   for (int i = 0; i < NR_CAGENTS; i++) {
@@ -208,18 +208,21 @@ void Emu::execute(uint64_t nr_cycle) {
         // tl_base_agent::TLCTransaction tr = randomTest2(false, l1[i]->bus_type, ptw, dma);
         tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLC, false, l1[i]->bus_type, ptw, dma);
         l1[i]->transaction_input(tr);
+        // case	cycle	agent	agentid	link	operation	opcode	param	paramcode	address	uesr
+        static uint64_t link = 0;
+        HLOG(P_SW_T,"0  %ld CAgent %d %ld operation %d  param %d %lx 0\n", Cycles, i , link++, tr.opcode, tr.param, tr.addr);
       }
-      for (int i = 0; i < NR_PTWAGT; i++) {
-        // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
-        tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, ptw[i]->bus_type, ptw, dma);
-        if(tr.addr != 0x80000000)
-          ptw[i]->transaction_input(tr);
-      }
-      for (int i = 0; i < NR_DMAAGT; i++) {
-        // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
-        tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, dma[i]->bus_type, ptw, dma);
-        dma[i]->transaction_input(tr);
-      }
+      // for (int i = 0; i < NR_PTWAGT; i++) {
+      //   // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
+      //   tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, ptw[i]->bus_type, ptw, dma);
+      //   if(tr.addr != 0x80000000)
+      //     ptw[i]->transaction_input(tr);
+      // }
+      // for (int i = 0; i < NR_DMAAGT; i++) {
+      //   // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
+      //   tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, dma[i]->bus_type, ptw, dma);
+      //   dma[i]->transaction_input(tr);
+      // }
     }else{
       for (int i = 0; i < NR_CAGENTS; i++) {
         tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLC, i);

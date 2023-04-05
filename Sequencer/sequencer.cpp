@@ -20,7 +20,14 @@ std::shared_ptr<uint8_t[]> gen_putpartial_data(std::shared_ptr<uint8_t[]>putdata
 }
 
 paddr_t gen_rand_addr() {
-    return (rand() % 0x8) * (rand() % 0x80) * 0x40 + DRAM_OFFSET; // Tag + Set + Offset
+    // paddr_t tag_offset = 0xffff;
+    // if(rand() % 2){
+    //     tag_offset = tag_offset + 0x1;
+    // }else{
+    //     tag_offset = tag_offset + 0x2;
+    // }
+    paddr_t addr = (rand() % 0x8) * (rand() % 0x80) * 0x40 + DRAM_OFFSET; // Tag + Set + Offset
+    return addr; 
 }
 
 tl_base_agent::TLCTransaction Sequencer::random_test_fullsys(uint8_t tr_type, bool do_alias, uint8_t bus_type,
@@ -161,7 +168,7 @@ tl_base_agent::TLCTransaction Sequencer::case_test(uint8_t tr_type, int id) {
                     case testcase::reset_opcode: 
                         break;
                     default:
-                        printf("caseTest error\n");
+                        HLOG(P_SW_T,"caseTest error\n");
                         break;
                 }
             case TLUL:

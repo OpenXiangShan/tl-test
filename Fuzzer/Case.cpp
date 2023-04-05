@@ -95,7 +95,7 @@ namespace testcase {
                 agent_message[mes.id].update(cycle,mes);
             }
         }
-        printf("Input Case Success!\n");
+        HLOG(P_SW_T,"Input Case Success!\n");
 
     }
 

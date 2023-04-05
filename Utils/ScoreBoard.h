@@ -120,15 +120,15 @@ int GlobalBoard<T>::data_check(std::shared_ptr<const uint8_t[]>dut, std::shared_
                                std::string assert_info) {
   for (int i = 0; i < DATASIZE; i++) {
     if (dut[i] != ref[i]) {
-      printf("dut: ");
+      HLOG(P_SW_T,"dut: ");
       for (int j = 0; j < DATASIZE; j++) {
-        printf("%02hhx", dut[DATASIZE - 1 - j]);
+        HLOG(P_SW_T,"%02hhx", dut[DATASIZE - 1 - j]);
       }
-      printf("\nref: ");
+      HLOG(P_SW_T,"\nref: ");
       for (int j = 0; j < DATASIZE; j++) {
-        printf("%02hhx", ref[DATASIZE - 1 - j]);
+        HLOG(P_SW_T,"%02hhx", ref[DATASIZE - 1 - j]);
       }
-      printf("\n");
+      HLOG(P_SW_T,"\n");
       tlc_assert(false, assert_info.data());
       return -1;
     }
