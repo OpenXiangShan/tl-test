@@ -203,6 +203,7 @@ namespace fake_ptw {
         req_a->size.reset(new uint8_t(ceil(log2((double)DATASIZE))));
         req_a->mask.reset(new uint32_t(0xffffffffUL));
         req_a->source.reset(new uint32_t(this->a_idpool.getid()));
+        req_a->preferCache.reset(new uint8_t(0));
         pendingA.init(req_a, 1);
         Log("[%ld] [A] [Get] addr: %lx source: %d\n", *cycles, address, *(req_a->source));
         return true;
@@ -218,6 +219,7 @@ namespace fake_ptw {
         req_a->size.reset(new uint8_t(size));
         req_a->mask.reset(new uint32_t(mask));
         req_a->source.reset(new uint32_t(this->a_idpool.getid()));
+        req_a->preferCache.reset(new uint8_t(0));
         pendingA.init(req_a, 1);
         Log("[%ld] [A] [Get] addr: %lx size: %x\n", *cycles, address, size);
         return true;
@@ -238,6 +240,7 @@ namespace fake_ptw {
         req_a->mask.reset(new uint32_t(0xffffffffUL));
         req_a->source.reset(new uint32_t(this->a_idpool.getid()));
         req_a->data = data;
+        req_a->preferCache.reset(new uint8_t(0));
         pendingA.init(req_a, DATASIZE / BEATSIZE);
         Log("[%ld] [A] [PutFullData] addr: %lx source: %d data: ", *cycles, address, *(req_a->source));
         for (int i = 0; i < DATASIZE; i++) {
@@ -263,6 +266,7 @@ namespace fake_ptw {
         req_a->source.reset(new uint32_t(this->a_idpool.getid()));
         req_a->data = data;
         int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
+        req_a->preferCache.reset(new uint8_t(0));
         pendingA.init(req_a, nrBeat);
         Log("[%ld] [PutPartialData] addr: %lx source:%d size:%d mask:%x data: ", *cycles, address + offset, *(req_a->source), size, mask);
         int data_begin = offset;

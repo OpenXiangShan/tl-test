@@ -31,7 +31,7 @@ namespace DIR_monitor{
         }else{
             printf("DIR info input error\n");
         }
-        
+
     }
 
 //------------------------------------Self---------------------------------------------//
@@ -58,6 +58,21 @@ namespace DIR_monitor{
             tag.reset(new paddr_t);
             *tag = Get_n_bit(*fire_Info->tagWReq_bits_tag,0,19);
             Self_Dir_Tag_Storage[mod].update(key,tag);
+            // init dir
+            Dir_Mes state;
+            state.self = INVALID;
+            state.client[0] = INVALID;
+            state.client[1] = INVALID;
+            std::shared_ptr<Dir_Mes> data;
+            data.reset(new Dir_Mes(state));
+            if(Self_Dir_Storage[mod].haskey(key)){
+                Dir_Mes self_state = *Self_Dir_Storage[mod].query(key);
+                if(self_state.self > TIP || self_state.client[0] > TIP || self_state.client[1] > TIP){
+                    Self_Dir_Storage[mod].update(key, data);
+                } 
+            }else{
+                Self_Dir_Storage[mod].update(key, data);
+            }
 
             //print
             print_Self_DIR_TAG(mod,key);
@@ -185,6 +200,21 @@ namespace DIR_monitor{
             tag.reset(new paddr_t);
             *tag = Get_n_bit(*fire_Info->clientTagWreq_bits_tag,0,19);
             Client_Dir_Tag_Storage[mod].update(key,tag);
+            // init dir
+            Dir_Mes state;
+            state.self = INVALID;
+            state.client[0] = INVALID;
+            state.client[1] = INVALID;
+            std::shared_ptr<Dir_Mes> data;
+            data.reset(new Dir_Mes(state));
+            if(Client_Dir_Storage[mod].haskey(key)){
+                Dir_Mes client_state = *Client_Dir_Storage[mod].query(key);
+                if(client_state.client[0] > TIP || client_state.client[1] > TIP){
+                    Client_Dir_Storage[mod].update(key, data);
+                } 
+            }else{
+                Client_Dir_Storage[mod].update(key, data);
+            }
 
             //print
             print_Client_DIR_TAG(mod,key);
