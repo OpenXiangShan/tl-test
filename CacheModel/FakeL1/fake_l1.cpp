@@ -655,6 +655,10 @@ out:
         req_a->mask.reset(new uint32_t(0xffffffffUL));
         req_a->source.reset(new uint32_t(this->a_idpool.getid()));
         req_a->alias.reset(new uint8_t(alias));
+        if(bus_type == ICACHE_BUS_TYPE)
+            req_a->preferCache.reset(new uint8_t(1));
+        else    
+            req_a->preferCache.reset(new uint8_t(0));
         // Log("== id == acquire %d\n", *req_a->source);
         this->agent->pendingA.init(req_a, 1);
         switch (param) {

@@ -61,6 +61,7 @@ public:
   std::shared_ptr<Echo> echo;
   std::shared_ptr<uint8_t> corrupt;
   std::shared_ptr<uint8_t> alias;
+  std::shared_ptr<uint8_t> preferCache;
 };
 
 class ChnB : public Decoupled {

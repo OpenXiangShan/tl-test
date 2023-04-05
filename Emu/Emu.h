@@ -10,7 +10,7 @@
 #include <getopt.h>
 #if VM_TRACE == 1
 #include "verilated_vcd_c.h"
-#include "verilated_fst_c.h"
+// #include "verilated_fst_c.h"
 #endif
 #include "../Fuzzer/Fuzzer.h"
 #include "../TLAgent/CAgent.h"
@@ -48,8 +48,8 @@ private:
 
   const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
   Vtb_top *dut_ptr;
-  // VerilatedVcdC *tfp;
-  VerilatedFstC *tfp;
+  VerilatedVcdC *tfp;
+  // VerilatedFstC *tfp;
   GlobalBoard<paddr_t> *globalBoard;
   std::shared_ptr<Monitor_t>monitors[NR_TL_MONITOR];
   std::shared_ptr<DIR_Monitor_t>dir_monitors[NR_DIR_MONITOR];
@@ -143,8 +143,8 @@ inline char *Emu::cycle_wavefile(uint64_t cycles, time_t t) {
   char *pwd = getcwd(NULL, 0);
   tlc_assert(pwd != NULL, "Wavefile cannot be opened!");
   int len = snprintf(buf, 1024, "%s/%s_%lu", pwd, buf_time, cycles);
-  // strcpy(buf + len, ".vcd");
-  strcpy(buf + len, ".fst");
+  strcpy(buf + len, ".vcd");
+  // strcpy(buf + len, ".fst");
   printf("dump wave to %s...\n", buf);
   return buf;
 }

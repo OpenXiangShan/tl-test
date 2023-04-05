@@ -119,8 +119,8 @@ Emu::Emu(int argc, char **argv) {
 #if VM_TRACE == 1
   if (this->enable_wave) {
     Verilated::traceEverOn(true); // Verilator must compute traced signals
-    // tfp = new VerilatedVcdC;
-    tfp = new VerilatedFstC;
+    tfp = new VerilatedVcdC;
+    // tfp = new VerilatedFstC;
     dut_ptr->trace(tfp, 99); // Trace 99 levels of hierarchy
     time_t now = time(NULL);
     tfp->open(cycle_wavefile(Cycles, now));
@@ -203,7 +203,7 @@ void Emu::execute(uint64_t nr_cycle) {
       dma[i]->handle_channel();
     }
 
-    if(random_mode && Cycles >= 10000) {
+    if(random_mode && Cycles >= 8500) {
       for (int i = 0; i < NR_CAGENTS; i++) {
         // tl_base_agent::TLCTransaction tr = randomTest2(false, l1[i]->bus_type, ptw, dma);
         tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLC, false, l1[i]->bus_type, ptw, dma);

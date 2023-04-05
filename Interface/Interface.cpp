@@ -100,6 +100,7 @@ namespace tl_interface{
     port->a.corrupt  = a_corrupt; 
     port->a.usr      = a_user; 
     port->a.echo     = a_echo; 
+    port->a.preferCache = a_user_preferCache;
     //Channel B
     port->b.ready    = b_ready; 
     port->b.valid    = b_valid; 
