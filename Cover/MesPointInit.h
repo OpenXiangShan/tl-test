@@ -81,12 +81,9 @@ private:
     const int base_long = N_MES + N_CACHE_NUM*2;
     const long arr_size = (TOTAL_POINT+1) * (N_MES + N_CACHE_NUM*2);
 public:
-    set<check_point> point;
-    
-    void init(){
-        string arr[arr_size] = { };
+    void init(string infile, shared_ptr<set<check_point>> point){
+        string arr[arr_size];
         //read txt
-        string infile = "trans.txt";
         vector<string> vec;
         ifstream input(infile);
         if (input)
@@ -128,7 +125,7 @@ public:
             {
                 cp.e_states[i2-(N_MES+N_CACHE_NUM)] = stoi(arr[i+i2]);
             }  
-            point.insert(cp);
+            point->insert(cp);
             num++;
         }
         
@@ -139,7 +136,7 @@ public:
         // }
         
         printf("Input Trans num = %ld\n", num);
-        printf("Input Trans Success!\n");
+        printf("%s Input Trans Success!\n", infile.c_str());
     }
 };
 

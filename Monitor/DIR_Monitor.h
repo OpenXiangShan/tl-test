@@ -20,6 +20,8 @@ namespace DIR_monitor{
   enum{
     SELF = true,
     CLIENT = false,
+    DIR = 0,
+    TAG = 1,
   };
   enum{
     N_WAY = 8,

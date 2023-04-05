@@ -18,6 +18,8 @@ class storage{
 public:
     tlMes mes;
     uint64_t n;
+    bool dir;// dir be write
+    bool tag;// tag be write
 };
 
 // waiting state to be writed in L2 & L3
@@ -38,6 +40,8 @@ public:
       storage st;
       st.mes = mes;
       st.n = max_cycle;
+      st.dir = false;
+      st.tag = false;
       self_pool[id].insert({key,st});
       client_pool[id].insert({key,st});
       printf("self waiting cycle:[%lx] [%ld]\n", key, self_pool[id][key].n);
@@ -56,6 +60,54 @@ public:
         return true;
       else
         return false;
+    }
+
+    void self_earse_DirOrTag(uint8_t DirOrTag, paddr_t key, uint8_t id){
+      if(self_pool[id].count(key) > 0){
+        if(DirOrTag == DIR_monitor::DIR)
+          self_pool[id][key].dir = true;
+        else if(DirOrTag == DIR_monitor::TAG)
+          self_pool[id][key].tag = true;
+        else
+          tlc_assert(false,"client_earse_DirOrTag error!\n");
+      }else{
+        tlc_assert(false,"client_earse_DirOrTag error!\n");tlc_assert(false,"client_earse_DirOrTag error!\n");
+      }
+    }
+
+    bool self_be_write_finish(paddr_t key, uint8_t id){
+      if(self_pool[id].count(key) > 0){
+        if(self_pool[id][key].dir && self_pool[id][key].tag)
+          return true;
+        else
+          return false;
+      }else{
+        tlc_assert(false,"self_be_write_finish error!\n");
+      }
+    }
+
+    void client_earse_DirOrTag(uint8_t DirOrTag, paddr_t key, uint8_t id){
+      if(client_pool[id].count(key) > 0){
+        if(DirOrTag == DIR_monitor::DIR)
+          client_pool[id][key].dir = true;
+        else if(DirOrTag == DIR_monitor::TAG)
+          self_pool[id][key].tag = true;
+        else
+          tlc_assert(false,"client_earse_DirOrTag error!\n");
+      }else{
+        tlc_assert(false,"client_earse_DirOrTag error!\n");tlc_assert(false,"client_earse_DirOrTag error!\n");
+      }
+    }
+
+    bool client_be_write_finish(paddr_t key, uint8_t id){
+      if(client_pool[id].count(key) > 0){
+        if(client_pool[id][key].dir && client_pool[id][key].tag)
+          return true;
+        else
+          return false;
+      }else{
+        tlc_assert(false,"self_be_write_finish error!\n");
+      }
     }
 
     void erase_self_wating(paddr_t key, uint8_t id){
@@ -90,7 +142,9 @@ public:
       for (size_t id = 0; id < ID_MAX-1; id++)
       {
         if(self_pool[id].size() > 0){
-            for (auto [key, val] : self_pool[id]) {
+            for (auto it = self_pool[id].begin(); it != self_pool[id].end(); it++) {
+              paddr_t key = it->first;
+              storage val = it->second;
                 if(val.n <= 1){
                     mes = self_pool[id][key].mes;
                     erase_self_wating(key, id);
@@ -101,9 +155,11 @@ public:
             }
         } 
         if(client_pool[id].size() > 0){
-            for (auto [key, val] : client_pool[id]) {
+            for (auto it = client_pool[id].begin(); it != client_pool[id].end(); it++) {
+              paddr_t key = it->first;
+              storage val = it->second;
                 if(val.n <= 1){
-                    mes = client_pool[id][key].mes;
+                    mes = self_pool[id][key].mes;
                     erase_self_wating(key, id);
                     erase_client_wating(key, id);
                     printf("erase CLIENT wating: [%ld] [%lx]\n",id ,mes.address);
@@ -122,7 +178,9 @@ public:
       for (size_t id = 0; id < ID_MAX-1; id++)
       {
         if(self_pool[id].size() > 0){
-            for (auto [key, val] : self_pool[id]) {
+            for (auto it = self_pool[id].begin(); it != self_pool[id].end(); it++) {
+              paddr_t key = it->first;
+              storage val = it->second;
                 if(val.n == 0){
                     printf("ADDR:%lx ",key);
                     tlc_assert(false,"Self DIR POOL write time out!\n");
@@ -135,15 +193,17 @@ public:
             }
         } 
         if(client_pool[id].size() > 0){
-            for (auto [key, val] : client_pool[id]) {
+            for (auto it = client_pool[id].begin(); it != client_pool[id].end(); it++) {
+              paddr_t key = it->first;
+              storage val = it->second;
                 if(val.n == 0){
                     printf("ADDR:%lx ",key);
-                    tlc_assert(false,"Client DIR POOL write time out!\n");
+                    tlc_assert(false,"Self DIR POOL write time out!\n");
                 }else{
                     st.mes = val.mes;
                     st.n = val.n-1;
-                    client_pool[id][key] = st;
-                    // printf("CLIENT: id:%ld key:%lx val:%ld\n",id, key, st.n);
+                    self_pool[id][key] = st;
+                    // printf("SELF: id:%ld key:%lx val:%ld\n",id, key, st.n);
                 }
             }
         }
@@ -208,7 +268,7 @@ public:
 
     // pool
     void check_time_out(void);
-    void update_pool(paddr_t addr, uint64_t dir_id, bool DIR);
+    void update_pool(paddr_t addr, uint64_t dir_id, bool DIR, uint8_t DirOrTag);
 
     // send package to Mes_com
     void send(bool state_valid);

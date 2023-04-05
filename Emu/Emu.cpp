@@ -109,7 +109,7 @@ Emu::Emu(int argc, char **argv) {
     }
 
     //cover
-    report = new Cover::Report();
+    report = new Cover::Report(seed, exe_cycles);
     mes_com = new Cover::Mes_Com(report);
     mes_collect.reset(new Cover::Mes_Collect(selfDir, selfTag, clientDir, clientTag, mes_com));
   }
@@ -178,10 +178,10 @@ void Emu::execute(uint64_t nr_cycle) {
       }
 
       for (int i = 0; i < NR_DIR_MONITOR; i++) {//DIR
-        mes_collect->update_pool(dir_monitors[i]->self_be_write(), i, DIR_monitor::SELF);
-        mes_collect->update_pool(dir_monitors[i]->self_be_write_1(), i, DIR_monitor::SELF);
-        mes_collect->update_pool(dir_monitors[i]->client_be_write(), i, DIR_monitor::CLIENT);
-        mes_collect->update_pool(dir_monitors[i]->client_be_write_1(), i, DIR_monitor::CLIENT);
+            mes_collect->update_pool(dir_monitors[i]->self_be_write(), i, DIR_monitor::SELF, DIR_monitor::DIR);
+            mes_collect->update_pool(dir_monitors[i]->self_be_write_1(), i, DIR_monitor::SELF, DIR_monitor::TAG);
+            mes_collect->update_pool(dir_monitors[i]->client_be_write(), i, DIR_monitor::CLIENT, DIR_monitor::DIR);
+            mes_collect->update_pool(dir_monitors[i]->client_be_write_1(), i, DIR_monitor::CLIENT, DIR_monitor::TAG);
       }
       mes_collect->check_time_out();
       //--------------------------//

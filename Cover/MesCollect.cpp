@@ -131,7 +131,7 @@ namespace Cover {
         Mes.valid       =   true;
         //sink
         if(Mes.opcode == Grant || Mes.opcode == GrantData)
-            sink[bus_type][core_id].insert(std::pair(*tl_info->d_sink,
+            sink[bus_type][core_id].insert(std::make_pair(*tl_info->d_sink,
                     source[bus_type][core_id][CHNLA][*tl_info->d_source]));
         //source
         if(Mes.opcode == ReleaseAck || Mes.opcode == ReleaseData){
@@ -297,6 +297,7 @@ namespace Cover {
             mes = pool.check_time();
             if(mes.address != 0x0){
                 Mes = mes;
+                // printf("check_time_out get_state_info\n");
                 State = get_state_info(Mes.address);
                 send(true);
             }
@@ -305,7 +306,7 @@ namespace Cover {
         pool.update_time();
     }
 
-    void Mes_Collect::update_pool(paddr_t addr, uint64_t dir_id, bool DIR){
+    void Mes_Collect::update_pool(paddr_t addr, uint64_t dir_id, bool DIR, uint8_t DirOrTag){
 
         if(addr == 0x0)
             return;
@@ -318,23 +319,35 @@ namespace Cover {
         }else if(dir_id < NR_DIR_L2_core0_MONITOR+NR_DIR_L2_core1_MONITOR+NR_DIR_L3_MONITOR){
             id = ID_L3;
         }
-
+        // check self
         if(DIR == SELF && pool.self_haskey(addr, id)){
-            if(!pool.client_haskey(addr, id)){
-                printf("ADDR=%lx\n",addr);
+            pool.self_earse_DirOrTag(DirOrTag, addr, id);
+
+            // check client && check tag and dir be write 
+            if(!pool.client_haskey(addr, id) && pool.self_be_write_finish(addr, id)){
+                // printf("SELF update_pool get_state_info\n");
+                // printf("ADDR=%lx\n",addr);
                 Mes = pool.get_self(addr, id);
                 State = get_state_info(Mes.address);
                 send(true);
             }
-            pool.erase_self_wating(addr, id);
+
+            if(pool.self_be_write_finish(addr, id))
+                pool.erase_self_wating(addr, id);
         }
+        // check client && check tag and dir be write 
         else if(DIR == CLIENT && pool.client_haskey(addr, id)){
-            if(!pool.self_haskey(addr, id)){
+            pool.client_earse_DirOrTag(DirOrTag, addr, id);
+            //check self
+            if(!pool.self_haskey(addr, id) && pool.client_be_write_finish(addr, id)){
+                // printf("CLIENT update_pool get_state_info\n");
                 Mes = pool.get_client(addr, id);
                 State = get_state_info(Mes.address);
                 send(true);
             }
-            pool.erase_client_wating(addr, id);
+
+            if(pool.client_be_write_finish(addr, id))
+                pool.erase_client_wating(addr, id);
         }
             
     }
