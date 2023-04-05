@@ -209,12 +209,12 @@ void Emu::execute(uint64_t nr_cycle) {
         tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLC, false, l1[i]->bus_type, ptw, dma);
         l1[i]->transaction_input(tr);
       }
-      // for (int i = 0; i < NR_PTWAGT; i++) {
-      //   // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
-      //   tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, ptw[i]->bus_type, ptw, dma);
-      //   if(tr.addr != 0x80000000)
-      //     ptw[i]->transaction_input(tr);
-      // }
+      for (int i = 0; i < NR_PTWAGT; i++) {
+        // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);
+        tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, ptw[i]->bus_type, ptw, dma);
+        if(tr.addr != 0x80000000)
+          ptw[i]->transaction_input(tr);
+      }
       for (int i = 0; i < NR_DMAAGT; i++) {
         // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, dma[i]->bus_type);
         tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLUL, false, dma[i]->bus_type, ptw, dma);

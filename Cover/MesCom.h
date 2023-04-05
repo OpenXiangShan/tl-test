@@ -29,6 +29,14 @@ public:
             return this->bus_type != key.bus_type;
         }
     }
+
+    bool operator==(const link_index& key)const {
+        if(this->bus_type == key.bus_type){
+            return this->core_id == key.core_id;
+        }else{
+            return false;
+        }
+    }
 };
 
 class link_col{
@@ -44,17 +52,16 @@ public:
 // TODO: now only support one request transfer recording between two modules
 class link{
 private:
-    //mes type
-    enum{
-        REQ = 0,
-        ACK = 1,
-        ACK1 = 2,
-    };
     std::map<link_index,link_col> link;
     link_index first_col_index;
     bool first_in_link = true;
 public:
-    void reset(){link.clear(); first_col_index.bus_type = AGENT_BUS_TYPE_MAX; first_col_index.core_id = ID_MAX; }
+    void reset(){
+        link.clear(); 
+        first_col_index.bus_type = AGENT_BUS_TYPE_MAX; 
+        first_col_index.core_id = ID_MAX; 
+        first_in_link = true;
+    }
 
     // TODO: collet all message 
     void update_all(package pk);

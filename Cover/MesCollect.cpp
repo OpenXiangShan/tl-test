@@ -341,11 +341,47 @@ namespace Cover {
 
 //---------------------------send-------------------------------------//
 
+    bool req_has_data(uint8_t chnl, uint8_t opcode){
+        int mes_type;
+        switch(chnl){
+            case CHNLA: mes_type = REQ; break;
+            case CHNLB: mes_type = REQ; break;
+            case CHNLC:
+                if(opcode == ReleaseData)
+                    mes_type = REQ;
+                else if(opcode == ProbeAck || opcode == ProbeAckData)
+                    mes_type = ACK;
+                else
+                    tlc_assert(false,"Illegal opcode!");
+                break;
+            case CHNLD: mes_type = ACK; break;
+            case CHNLE: mes_type = ACK1; break;
+            default: tlc_assert(false,"Illegal Channel!"); break;
+        }
+        if(mes_type == REQ){
+            if(opcode == PutFullData || opcode == PutPartialData || opcode == ReleaseData)
+                return true;
+        }
+        return false;
+    }
+
     void Mes_Collect::send(bool state_valid){
         package pk;
         pk.mes = Mes;
         pk.state = State;
         pk.state.valid = state_valid;
+
+        // mes has data will be send twice, last send cancel
+        static std::set<tlMes> log;
+        if(req_has_data(Mes.chnl, Mes.opcode)){
+            if(log.count(Mes) > 0){
+                log.erase(Mes);
+                return;
+            }else{
+                log.insert(Mes);
+            }
+        }
+        
         printf("SEND SUCCESS! opcode = %d addr = %lx valid: %d\n", pk.mes.opcode, pk.mes.address, pk.state.valid);
         mes_com->arbiter(pk);
     }

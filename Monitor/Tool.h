@@ -57,7 +57,8 @@ namespace Tool{
         case INVALID:
             s = "N";
             break;
-        default: s = "error" + to_string(state);
+        default: 
+            s = "error" + to_string(state);
             break;
         }
         return s;

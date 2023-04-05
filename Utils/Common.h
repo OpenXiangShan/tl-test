@@ -63,6 +63,12 @@ enum {
   LEVEL_L2L3,
   LEVEL_L3MEM,
 };
+//mes type
+enum{
+    REQ = 0,
+    ACK = 1,
+    ACK1 = 2,
+};
 
 const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;
 typedef uint64_t paddr_t;

@@ -27,6 +27,25 @@ public:
     uint64_t core_id;//only work for L1 L2
     uint8_t bus_type;
     bool valid;
+
+    bool operator<(const tlMes& data) const{
+        if(opcode != data.opcode){
+            return opcode < data.opcode;
+        }        
+        if(param != data.param){
+            return param < data.param;
+        }
+        if(address != data.address){
+            return address < data.address;
+        }
+        if(chnl != data.chnl){
+            return chnl < data.chnl;
+        }
+        if(core_id != data.core_id){
+            return core_id < data.core_id;
+        }
+        return bus_type < data.bus_type;
+    }
 };
 
 class cacheState{

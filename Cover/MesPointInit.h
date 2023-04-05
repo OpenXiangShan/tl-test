@@ -35,7 +35,7 @@ enum{
     N_L3 = 6,
 };
 enum{
-    TOTAL_POINT = 1336,
+    TOTAL_POINT = 1776,
 };
 
 class check_point{
@@ -43,6 +43,7 @@ public:
     int mes[N_MES];
     int b_states[N_CACHE_NUM];
     int e_states[N_CACHE_NUM];  
+    paddr_t addr;
 
     bool operator<(const check_point& cp) const{
         // mes

@@ -113,24 +113,29 @@ bool link::updata_first(package pk){
 
 
     //---------------Checking input legitimacy----------------//
-    // only storage thie first message link and
+    // only storage the first message link and
     // Do not allow two modules in the system to request a block at the same time(not a sub-request)
     if(!link.empty() && index != first_col_index && mes_type == REQ){
         if(mes.chnl == CHNLC && mes.opcode == ReleaseData){
             reset();
-            return true;
+            return false;
         }else if(mes.chnl == CHNLB && mes.opcode == Probe){
             return false;
         }else{
             if(mes.bus_type == DCACHE_BUS_TYPE || mes.bus_type == ICACHE_BUS_TYPE 
                     || mes.bus_type == PTW_BUS_TYPE || mes.bus_type == DMA_BUS_TYPE){
                 reset();  
-                return true;
+                return false;
             }else{
                 return false;
             }
         }
+    // only storage the mes of first message link
     }else if(!link.empty() && index != first_col_index && (mes_type == ACK || mes_type == ACK1) ){
+        return false;
+    // if module send REQ in state write wait time
+    }else if(!link.empty() && index == first_col_index && mes_type == REQ){
+        reset();
         return false;
     }
 

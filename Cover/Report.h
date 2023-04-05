@@ -131,6 +131,8 @@ public:
         cp.e_states[N_CORE0_L2] = es.L2[ID_CORE0];
         cp.e_states[N_CORE1_L2] = es.L2[ID_CORE1];
         cp.e_states[N_L3] = es.L3;
+        // addr
+        cp.addr = m.address;
 
         std::set<check_point>::iterator it = point.find(cp);
         if(it != point.end()){
@@ -146,6 +148,7 @@ public:
     }
 
     void print_report(){
+
         printf("\n\ndone point: [%ld]\n", done_point.size());
         for(std::set<check_point>::iterator it = done_point.begin(); it != done_point.end(); it++){
             printf("chnl[%s]  op[%s]  pa[%s]  scr[%s]  core[%d]\n", ChnlToString(it->mes[N_CH]).c_str(), OpToString(it->mes[N_CH], it->mes[N_OP]).c_str()
@@ -154,11 +157,13 @@ public:
             Tool::print(it->b_states);
             Tool::print(it->e_states);
         }
+
         printf("\n\nerror point: [%ld]\n", error_point.size());
         for(std::set<check_point>::iterator it = error_point.begin(); it != error_point.end(); it++){
-            printf("chnl[%s]  op[%s]  pa[%s]  scr[%s]  core[%d]\n", ChnlToString(it->mes[N_CH]).c_str(), OpToString(it->mes[N_CH], it->mes[N_OP]).c_str()
+            printf("chnl[%s]  op[%s]  pa[%s]  scr[%s]  core[%d] addr[%lx]\n", ChnlToString(it->mes[N_CH]).c_str(), OpToString(it->mes[N_CH], it->mes[N_OP]).c_str()
                                                                     , paramTostring(it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]).c_str()
-                                                                    , idToString(it->mes[N_SCR]).c_str(), it->mes[N_CORE]);
+                                                                    , idToString(it->mes[N_SCR]).c_str(), it->mes[N_CORE]
+                                                                    , it->addr);
             Tool::print(it->b_states);
 
             std::set<check_point>::iterator correct_point = point.find(*it);
