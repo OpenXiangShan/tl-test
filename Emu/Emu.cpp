@@ -178,10 +178,10 @@ void Emu::execute(uint64_t nr_cycle) {
       }
 
       for (int i = 0; i < NR_DIR_MONITOR; i++) {//DIR
-            mes_collect->update_pool(dir_monitors[i]->self_be_write(), i, DIR_monitor::SELF, DIR_monitor::DIR);
-            mes_collect->update_pool(dir_monitors[i]->self_be_write_1(), i, DIR_monitor::SELF, DIR_monitor::TAG);
-            mes_collect->update_pool(dir_monitors[i]->client_be_write(), i, DIR_monitor::CLIENT, DIR_monitor::DIR);
-            mes_collect->update_pool(dir_monitors[i]->client_be_write_1(), i, DIR_monitor::CLIENT, DIR_monitor::TAG);
+            mes_collect->update_pool(dir_monitors[i]->self_be_write(), i, DIR_monitor::SELF);
+            mes_collect->update_pool(dir_monitors[i]->self_be_write_1(), i, DIR_monitor::SELF);
+            mes_collect->update_pool(dir_monitors[i]->client_be_write(), i, DIR_monitor::CLIENT);
+            mes_collect->update_pool(dir_monitors[i]->client_be_write_1(), i, DIR_monitor::CLIENT);
       }
       mes_collect->check_time_out();
       //--------------------------//
@@ -210,7 +210,7 @@ void Emu::execute(uint64_t nr_cycle) {
         l1[i]->transaction_input(tr);
         // case	cycle	agent	agentid	link	operation	opcode	param	paramcode	address	uesr
         static uint64_t link = 0;
-        HLOG(P_SW_T,"0  %ld CAgent %d %ld operation %d  param %d %lx 0\n", Cycles, i , link++, tr.opcode, tr.param, tr.addr);
+        // HLOG(P_SW_T,"0  %ld CAgent %d %ld operation %d  param %d %lx 0\n", Cycles, i , link++, tr.opcode, tr.param, tr.addr);
       }
       // for (int i = 0; i < NR_PTWAGT; i++) {
       //   // tl_base_agent::TLCTransaction tr = randomTest3(ptw, dma, l1, ptw[i]->bus_type);

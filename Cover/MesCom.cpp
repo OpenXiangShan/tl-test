@@ -7,9 +7,7 @@ using namespace tl_agent;
 //---------------------link------------------------//
 
 void link::print(){
-    for (auto it = link.begin(); it != link.end(); it++) {
-        link_index key = it->first;
-        link_col val = it->second;
+    for (auto [key, val] : link) {
         HLOG(P_SW,"REQ: opcode [%d] param [%d] address [%lx]\n", val.Mes_Req.opcode, val.Mes_Req.param, val.Mes_Req.address);
         HLOG(P_SW,"ACK: opcode [%d] param [%d] address [%lx]\n", val.Mes_Ack.opcode, val.Mes_Ack.param, val.Mes_Ack.address);
         HLOG(P_SW,"ACK1: opcode [%d] param [%d] address [%lx]\n", val.Mes_Ack1.opcode, val.Mes_Ack1.param, val.Mes_Ack1.address);

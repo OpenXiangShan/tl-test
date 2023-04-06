@@ -297,7 +297,6 @@ namespace Cover {
             mes = pool.check_time();
             if(mes.address != 0x0){
                 Mes = mes;
-                HLOG(P_SW,"check_time_out get_state_info\n");
                 State = get_state_info(Mes.address);
                 send(true);
             }
@@ -306,7 +305,7 @@ namespace Cover {
         pool.update_time();
     }
 
-    void Mes_Collect::update_pool(paddr_t addr, uint64_t dir_id, bool DIR, uint8_t DirOrTag){
+    void Mes_Collect::update_pool(paddr_t addr, uint64_t dir_id, bool DIR){
 
         if(addr == 0x0)
             return;
@@ -319,35 +318,23 @@ namespace Cover {
         }else if(dir_id < NR_DIR_L2_core0_MONITOR+NR_DIR_L2_core1_MONITOR+NR_DIR_L3_MONITOR){
             id = ID_L3;
         }
-        // check self
-        if(DIR == SELF && pool.self_haskey(addr, id)){
-            pool.self_earse_DirOrTag(DirOrTag, addr, id);
 
-            // check client && check tag and dir be write 
-            if(!pool.client_haskey(addr, id) && pool.self_be_write_finish(addr, id)){
-                HLOG(P_SW,"SELF update_pool get_state_info\n");
-                // HLOG(P_SW,"ADDR=%lx\n",addr);
+        if(DIR == SELF && pool.self_haskey(addr, id)){
+            if(!pool.client_haskey(addr, id)){
+                HLOG(P_SW,"ADDR=%lx\n",addr);
                 Mes = pool.get_self(addr, id);
                 State = get_state_info(Mes.address);
                 send(true);
             }
-
-            if(pool.self_be_write_finish(addr, id))
-                pool.erase_self_wating(addr, id);
+            pool.erase_self_wating(addr, id);
         }
-        // check client && check tag and dir be write 
         else if(DIR == CLIENT && pool.client_haskey(addr, id)){
-            pool.client_earse_DirOrTag(DirOrTag, addr, id);
-            //check self
-            if(!pool.self_haskey(addr, id) && pool.client_be_write_finish(addr, id)){
-                HLOG(P_SW,"CLIENT update_pool get_state_info\n");
+            if(!pool.self_haskey(addr, id)){
                 Mes = pool.get_client(addr, id);
                 State = get_state_info(Mes.address);
                 send(true);
             }
-
-            if(pool.client_be_write_finish(addr, id))
-                pool.erase_client_wating(addr, id);
+            pool.erase_client_wating(addr, id);
         }
             
     }

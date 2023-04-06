@@ -129,7 +129,7 @@ typedef uint64_t paddr_t;
 
 enum{
   P_SW_T = true,
-  P_SW = true,
+  P_SW = false,
 };
 
 #define __HLOG__  
