@@ -76,7 +76,20 @@ namespace testcase {
         reset_opcode = 16
     };
 
+    // case	cycle	agent	agentid	link	operation	opcode	param	paramcode	address	uesr	
     class Mes_Entry {
+    public:
+        int link;
+        int id;//agent_id
+        int test_case;
+        paddr_t addr;
+        uint8_t opcode;
+        uint8_t param;
+        uint8_t user;
+    };
+
+    //cycle	agentid	operation opcode paramcode address DIR_states	
+    class Mes_Entry_with_states {
     public:
         int link;
         int id;//agent_id

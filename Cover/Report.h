@@ -196,43 +196,43 @@ public:
         // print report
         HLOG(P_SW_T,"\n\n-----------------------TL-test report---------------------------------\n");
 
-        HLOG(P_SW_T,"done point:\n\n");
-        for(std::set<check_point>::iterator it = done_point.begin(); it != done_point.end(); it++){
-            HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
-                                            , it->mes[N_SCR], it->mes[N_CORE]);
-            for (int i = 0; i < N_CACHE_NUM; i++)
-            {
-                HLOG(P_SW_T,"%d  ", it->b_states[i]);
-            }
-            HLOG(P_SW_T,"\n"); 
-            for (int i = 0; i < N_CACHE_NUM; i++)
-            {
-                HLOG(P_SW_T,"%d  ", it->e_states[i]);
-            }
-            HLOG(P_SW_T,"\n"); 
-        }
+        // HLOG(P_SW_T,"done point:\n\n");
+        // for(std::set<check_point>::iterator it = done_point.begin(); it != done_point.end(); it++){
+        //     HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
+        //                                     , it->mes[N_SCR], it->mes[N_CORE]);
+        //     for (int i = 0; i < N_CACHE_NUM; i++)
+        //     {
+        //         HLOG(P_SW_T,"%d  ", it->b_states[i]);
+        //     }
+        //     HLOG(P_SW_T,"\n"); 
+        //     for (int i = 0; i < N_CACHE_NUM; i++)
+        //     {
+        //         HLOG(P_SW_T,"%d  ", it->e_states[i]);
+        //     }
+        //     HLOG(P_SW_T,"\n"); 
+        // }
 
-        HLOG(P_SW_T,"\nTo be Cover point:\n\n");
-        for(std::set<check_point>::iterator it = point->begin(); it != point->end(); it++){
-            HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
-                                            , it->mes[N_SCR], it->mes[N_CORE]);
-            for (int i = 0; i < N_CACHE_NUM; i++)
-            {
-                HLOG(P_SW_T,"%d  ", it->b_states[i]);
-            }
-            HLOG(P_SW_T,"\n"); 
-            for (int i = 0; i < N_CACHE_NUM; i++)
-            {
-                HLOG(P_SW_T,"%d  ", it->e_states[i]);
-            }
-            HLOG(P_SW_T,"\n"); 
-        }
+        // HLOG(P_SW_T,"\nTo be Cover point:\n\n");
+        // for(std::set<check_point>::iterator it = point->begin(); it != point->end(); it++){
+        //     HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
+        //                                     , it->mes[N_SCR], it->mes[N_CORE]);
+        //     for (int i = 0; i < N_CACHE_NUM; i++)
+        //     {
+        //         HLOG(P_SW_T,"%d  ", it->b_states[i]);
+        //     }
+        //     HLOG(P_SW_T,"\n"); 
+        //     for (int i = 0; i < N_CACHE_NUM; i++)
+        //     {
+        //         HLOG(P_SW_T,"%d  ", it->e_states[i]);
+        //     }
+        //     HLOG(P_SW_T,"\n"); 
+        // }
 
         HLOG(P_SW_T,"\n\nCoverage: %f\n", (done_point.size()/(double)TOTAL_POINT));
         HLOG(P_SW_T,"Total Coverage: %f\n", ((TOTAL_POINT - point->size()) / (double)TOTAL_POINT));
         HLOG(P_SW_T,"Seed : %ld     Cycles : %ld\n\n", seed, cycle);
 
-        HLOG(P_SW_T,"\n\n---------------------------------------------------------------------\n\n");
+        // HLOG(P_SW_T,"\n\n---------------------------------------------------------------------\n\n");
         
     }
 

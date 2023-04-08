@@ -102,6 +102,8 @@ namespace tl_interface{
     std::shared_ptr<uint64_t>             id;
     std::shared_ptr<uint8_t>              bus_type;
 
+    std::shared_ptr<uint8_t>              arbiter;//for dir_write
+
     std::shared_ptr<uint8_t>              dirWReq_ready;//ready
     std::shared_ptr<uint8_t>              dirWReq_valid;//valid
     std::shared_ptr<paddr_t>              dirWReq_bits_set;//addr
@@ -133,14 +135,24 @@ namespace tl_interface{
     std::shared_ptr<paddr_t>              clientTagWreq_bits_tag;//addr
 
     DIRInfo(uint64_t cid, uint8_t ct);
-    //void connect(std::shared_ptr<Port<ReqField, RespField, EchoField, BEATSIZE> > port);
+    // void connect(std::shared_ptr<DIR_Write_Port> port);
   };
 
   extern std::shared_ptr<DIRInfo> dir_monitor_info_array[NR_DIR_MONITOR];
   extern int32_t dir_monitor_info_array_counter;
   std::shared_ptr<DIRInfo> find_dir_monitor_info(uint64_t id, uint8_t bt);
   void register_dir_monitor_info(std::shared_ptr<DIRInfo> p);
+
+  extern std::shared_ptr<DIRInfo> dir_write_info_array[NR_DIR_MONITOR];
+  extern int32_t dir_write_info_array_counter;
+  std::shared_ptr<DIRInfo> find_dir_write_info(uint64_t id, uint8_t bt);
+  void register_dir_write_info(std::shared_ptr<DIRInfo> p);
+
 }
+
+
+
+
 
 #ifdef __cplusplus
 extern "C" {
@@ -317,6 +329,44 @@ void tlc_monitor_eval(
   const svBitVecVal*    clientTagWreq_bits_set,//addr
   const svBitVecVal*    clientTagWreq_bits_way,//addr
   const svBitVecVal*    clientTagWreq_bits_tag//addr
+  );
+
+  void dir_write_eval(
+  const svBitVecVal*    id,
+  const svBitVecVal*    bus_type,
+
+  svBit*                arbiter,
+
+  svBit                 dirWReq_ready,//ready
+  svBit*                 dirWReq_valid,//valid
+  svBitVecVal*          dirWReq_bits_set,//addr
+  svBitVecVal*          dirWReq_bits_way,//addr
+  svBit*                 dirWReq_bits_data_dirty,
+  svBitVecVal*          dirWReq_bits_data_state,
+  svBitVecVal*          dirWReq_bits_data_clientStates_0,
+  svBitVecVal*          dirWReq_bits_data_clientStates_1,
+  svBit*                 dirWReq_bits_data_prefetch,
+
+  svBit                 tagWReq_ready,//ready
+  svBit*                 tagWReq_valid,//valid
+  svBitVecVal*          tagWReq_bits_set,//addr
+  svBitVecVal*          tagWReq_bits_way,//addr
+  svBitVecVal*          tagWReq_bits_tag,//addr
+  
+  svBit                 clientDirWReq_ready,//ready
+  svBit*                 clientDirWReq_valid,//valid
+  svBitVecVal*          clientDirWReq_bits_set,//addr
+  svBitVecVal*          clientDirWReq_bits_way,//addr
+  svBitVecVal*          clientDirWReq_bits_data_0_state,
+  svBitVecVal*          clientDirWReq_bits_data_0_alias,
+  svBitVecVal*          clientDirWReq_bits_data_1_state,
+  svBitVecVal*           clientDirWReq_bits_data_1_alias,
+
+  svBit                 clientTagWreq_ready,//ready
+  svBit*                 clientTagWreq_valid,//valid
+  svBitVecVal*          clientTagWreq_bits_set,//addr
+  svBitVecVal*          clientTagWreq_bits_way,//addr
+  svBitVecVal*          clientTagWreq_bits_tag//addr
   );
 #ifdef __cplusplus
 }

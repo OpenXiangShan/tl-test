@@ -41,6 +41,7 @@ enum {
   PTW_BUS_TYPE = 5,
   AGENT_BUS_TYPE_MAX = 6,
   DIR_BUS_TYPE = 6,
+  DIR_WRITE_BUS_TYPE = 7,
   DCACHE_A_SOURCE_BEGIN = 0,
   DCACHE_A_SOURCE_END = 16,
   DCACHE_C_SOURCE_BEGIN = 16,
@@ -69,6 +70,11 @@ enum{
     REQ = 0,
     ACK = 1,
     ACK1 = 2,
+};
+//dir write
+enum{
+  DIR_WRITE = true,
+  DIR_NOT_WRITE = false
 };
 
 const uint64_t FULLMASK = 0xFFFFFFFFFFFFFFFF;
@@ -129,7 +135,7 @@ typedef uint64_t paddr_t;
 
 enum{
   P_SW_T = true,
-  P_SW = false,
+  P_SW = true,
 };
 
 #define __HLOG__  

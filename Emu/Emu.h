@@ -25,7 +25,7 @@
 #include "../Cover/MesCollect.h"
 #include "../Cover/MesCom.h"
 #include "../Cover/Report.h"
-
+#include "../DIR_Write/DIR_Write.h"
 
 class Emu {
 private:
@@ -36,6 +36,7 @@ private:
   typedef DIR_monitor::DIR_Monitor DIR_Monitor_t;
   typedef DIR_monitor::Dir_key Dir_key_t;
   typedef DIR_monitor::Dir_Mes Dir_Mes_t;
+  typedef dir_write::DIR_Write Dir_Write_t;
   
   typedef fake_l1::FakeL1 FakeL1_t;
   typedef fake_ptw::FakePTW FakePTW_t;
@@ -76,6 +77,8 @@ private:
   std::shared_ptr<Mes_Collect_t> mes_collect;
   Mes_Com_t *mes_com;
   Report_t *report;
+
+  std::shared_ptr<Dir_Write_t> dir_write_0;
 
 
 public:

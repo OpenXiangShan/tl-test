@@ -112,6 +112,9 @@ Emu::Emu(int argc, char **argv) {
     report = new Cover::Report(seed, exe_cycles);
     mes_com = new Cover::Mes_Com(report);
     mes_collect.reset(new Cover::Mes_Collect(selfDir, selfTag, clientDir, clientTag, mes_com));
+    
+    // DIR_Write
+    dir_write_0.reset(new dir_write::DIR_Write(0,DIR_WRITE_BUS_TYPE));
   }
 
   
@@ -155,6 +158,13 @@ void Emu::reset_sys(uint64_t n) {
 void Emu::execute(uint64_t nr_cycle) {
   while (Cycles < nr_cycle) {
     if(this->en_monitor){
+      //----------DIR_Write----------//
+      if(Cycles == 8500)
+        dir_write_0->test();
+      else
+        dir_write_0->close_test();
+
+
       //-----------Monitor-----------//
       for(int i = 0; i < NR_TL_MONITOR; i++){
         monitors[i]->print_info();
@@ -163,28 +173,28 @@ void Emu::execute(uint64_t nr_cycle) {
         dir_monitors[i]->print_info();
       }
 
-      //-----------Cover-----------//
-      for (int i = 0; i < NR_CAGENTS; i++) {//D$ & I$
-        mes_collect->fire_Mes_Collect(l1[i]->get_info(),l1[i]->core_id,l1[i]->bus_type);
-      }
-      // for (int i = 0; i < NR_PTWAGT; i++) {//PTW
-      //   mes_collect->fire_Mes_Collect(ptw[i]->get_info(),ptw[i]->core_id,ptw[i]->bus_type);
+      // //-----------Cover-----------//
+      // for (int i = 0; i < NR_CAGENTS; i++) {//D$ & I$
+      //   mes_collect->fire_Mes_Collect(l1[i]->get_info(),l1[i]->core_id,l1[i]->bus_type);
       // }
-      // for (int i = 0; i < NR_DMAAGT; i++) {//DMA
-      //   mes_collect->fire_Mes_Collect(dma[i]->get_info(),dma[i]->core_id,dma[i]->bus_type);
+      // // for (int i = 0; i < NR_PTWAGT; i++) {//PTW
+      // //   mes_collect->fire_Mes_Collect(ptw[i]->get_info(),ptw[i]->core_id,ptw[i]->bus_type);
+      // // }
+      // // for (int i = 0; i < NR_DMAAGT; i++) {//DMA
+      // //   mes_collect->fire_Mes_Collect(dma[i]->get_info(),dma[i]->core_id,dma[i]->bus_type);
+      // // }
+      // for (int i = 0; i < NR_TL_MONITOR; i++) {//L2-L3 & L3-MEM
+      //   mes_collect->fire_Mes_Collect(monitors[i]->get_info(),monitors[i]->id,monitors[i]->bus_type);
       // }
-      for (int i = 0; i < NR_TL_MONITOR; i++) {//L2-L3 & L3-MEM
-        mes_collect->fire_Mes_Collect(monitors[i]->get_info(),monitors[i]->id,monitors[i]->bus_type);
-      }
 
-      for (int i = 0; i < NR_DIR_MONITOR; i++) {//DIR
-            mes_collect->update_pool(dir_monitors[i]->self_be_write(), i, DIR_monitor::SELF);
-            mes_collect->update_pool(dir_monitors[i]->self_be_write_1(), i, DIR_monitor::SELF);
-            mes_collect->update_pool(dir_monitors[i]->client_be_write(), i, DIR_monitor::CLIENT);
-            mes_collect->update_pool(dir_monitors[i]->client_be_write_1(), i, DIR_monitor::CLIENT);
-      }
-      mes_collect->check_time_out();
-      //--------------------------//
+      // for (int i = 0; i < NR_DIR_MONITOR; i++) {//DIR
+      //       mes_collect->update_pool(dir_monitors[i]->self_be_write(), i, DIR_monitor::SELF);
+      //       mes_collect->update_pool(dir_monitors[i]->self_be_write_1(), i, DIR_monitor::SELF);
+      //       mes_collect->update_pool(dir_monitors[i]->client_be_write(), i, DIR_monitor::CLIENT);
+      //       mes_collect->update_pool(dir_monitors[i]->client_be_write_1(), i, DIR_monitor::CLIENT);
+      // }
+      // mes_collect->check_time_out();
+      // //--------------------------//
     }
 
     
@@ -209,7 +219,7 @@ void Emu::execute(uint64_t nr_cycle) {
         tl_base_agent::TLCTransaction tr = sqr->random_test_fullsys(sequencer::TLC, false, l1[i]->bus_type, ptw, dma);
         l1[i]->transaction_input(tr);
         // case	cycle	agent	agentid	link	operation	opcode	param	paramcode	address	uesr
-        static uint64_t link = 0;
+        // static uint64_t link = 0;
         // HLOG(P_SW_T,"0  %ld CAgent %d %ld operation %d  param %d %lx 0\n", Cycles, i , link++, tr.opcode, tr.param, tr.addr);
       }
       // for (int i = 0; i < NR_PTWAGT; i++) {
@@ -253,7 +263,7 @@ void Emu::execute(uint64_t nr_cycle) {
     this->step();
     this->update_cycles(1);
   }
-  if(this->en_monitor){
-    report->print_report();
-  }
+  // if(this->en_monitor){
+  //   report->print_report();
+  // }
 }

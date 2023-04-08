@@ -36,6 +36,8 @@ module tl_monitor_collect#(
 `define DMA_BUS_TYPE 4
 `define PTW_BUS_TYPE 5
 `define DIR_BUS_TYPE 6 
+`define DIR_WRITE_BUS_TYPE 7
+
   tl_monitor#(.SIZE_WD(SIZE_WD),.ADDR_WD(ADDR_WD),.DATA_WD(DATA_WD),
     .SOURCE_WD(SOURCE_WD),.SINK_WD(SINK_WD),.USER_WD(USER_WD),.ECHO_WD(ECHO_WD)
     )core0_monitor(
@@ -442,29 +444,32 @@ module tl_monitor_collect#(
     .io_clientDirWReq_ready(1'b1),
     .io_clientTagWreq_ready(1'b1),
 
-    .io_dirWReq_valid(`L2DIR0.io_dirWReq_valid),
-    .io_dirWReq_bits_set(`L2DIR0.io_dirWReq_bits_set),
-    .io_dirWReq_bits_way(`L2DIR0.io_dirWReq_bits_way),
-    .io_dirWReq_bits_data_dirty(`L2DIR0.io_dirWReq_bits_data_dirty),
-    .io_dirWReq_bits_data_state(`L2DIR0.io_dirWReq_bits_data_state),
-    .io_dirWReq_bits_data_clientStates_0(`L2DIR0.io_dirWReq_bits_data_clientStates_0),
-    .io_dirWReq_bits_data_clientStates_1(`L2DIR0.io_dirWReq_bits_data_clientStates_1),
-    .io_dirWReq_bits_data_prefetch(`L2DIR0.io_dirWReq_bits_data_prefetch),
-    .io_tagWReq_valid(`L2DIR0.io_tagWReq_valid),
-    .io_tagWReq_bits_set(`L2DIR0.io_tagWReq_bits_set),
-    .io_tagWReq_bits_way(`L2DIR0.io_tagWReq_bits_way),
-    .io_tagWReq_bits_tag(`L2DIR0.io_tagWReq_bits_tag),
-    .io_clientDirWReq_valid(`L2DIR0.io_clientDirWReq_valid),
-    .io_clientDirWReq_bits_set(`L2DIR0.io_clientDirWReq_bits_set),
-    .io_clientDirWReq_bits_way(`L2DIR0.io_clientDirWReq_bits_way),
-    .io_clientDirWReq_bits_data_0_state(`L2DIR0.io_clientDirWReq_bits_data_0_state),
-    .io_clientDirWReq_bits_data_0_alias(`L2DIR0.io_clientDirWReq_bits_data_0_alias),
-    .io_clientDirWReq_bits_data_1_state(`L2DIR0.io_clientDirWReq_bits_data_1_state),
-    .io_clientDirWReq_bits_data_1_alias(`L2DIR0.io_clientDirWReq_bits_data_1_alias),
-    .io_clientTagWreq_valid(`L2DIR0.io_clientTagWreq_valid),
-    .io_clientTagWreq_bits_set(`L2DIR0.io_clientTagWreq_bits_set),
-    .io_clientTagWreq_bits_way(`L2DIR0.io_clientTagWreq_bits_way),
-    .io_clientTagWreq_bits_tag(`L2DIR0.io_clientTagWreq_bits_tag)
+    .io_dirWReq_valid(`L2DIR0.selfDir_io_dir_w_valid),
+    .io_dirWReq_bits_set(`L2DIR0.selfDir_io_dir_w_bits_set),
+    .io_dirWReq_bits_way(`L2DIR0.selfDir_io_dir_w_bits_way),
+    .io_dirWReq_bits_data_dirty(`L2DIR0.selfDir_io_dir_w_bits_dir_dirty),
+    .io_dirWReq_bits_data_state(`L2DIR0.selfDir_io_dir_w_bits_dir_state),
+    .io_dirWReq_bits_data_clientStates_0(`L2DIR0.selfDir_io_dir_w_bits_dir_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(`L2DIR0.selfDir_io_dir_w_bits_dir_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(`L2DIR0.selfDir_io_dir_w_bits_dir_prefetch),
+
+    .io_tagWReq_valid(`L2DIR0.selfDir_io_tag_w_valid),
+    .io_tagWReq_bits_set(`L2DIR0.selfDir_io_tag_w_bits_set),
+    .io_tagWReq_bits_way(`L2DIR0.selfDir_io_tag_w_bits_way),
+    .io_tagWReq_bits_tag(`L2DIR0.selfDir_io_tag_w_bits_tag),
+
+    .io_clientDirWReq_valid(`L2DIR0.clientDir_io_dir_w_valid),
+    .io_clientDirWReq_bits_set(`L2DIR0.clientDir_io_dir_w_bits_set),
+    .io_clientDirWReq_bits_way(`L2DIR0.clientDir_io_dir_w_bits_way),
+    .io_clientDirWReq_bits_data_0_state(`L2DIR0.clientDir_io_dir_w_bits_dir_0_state),
+    .io_clientDirWReq_bits_data_0_alias(`L2DIR0.clientDir_io_dir_w_bits_dir_0_alias),
+    .io_clientDirWReq_bits_data_1_state(`L2DIR0.clientDir_io_dir_w_bits_dir_1_state),
+    .io_clientDirWReq_bits_data_1_alias(`L2DIR0.clientDir_io_dir_w_bits_dir_1_alias),
+    
+    .io_clientTagWreq_valid(`L2DIR0.clientDir_io_tag_w_valid),
+    .io_clientTagWreq_bits_set(`L2DIR0.clientDir_io_tag_w_bits_set),
+    .io_clientTagWreq_bits_way(`L2DIR0.clientDir_io_tag_w_bits_way),
+    .io_clientTagWreq_bits_tag(`L2DIR0.clientDir_io_tag_w_bits_tag)
   );
   //L2DIR1
   dir_monitor#(
@@ -842,6 +847,115 @@ module tl_monitor_collect#(
   );
 
 
+
+//--------------------------DIR_WRITE----------------------//
+
+  wire          arbiter;
+
+  wire          dirWReq_valid;
+  wire  [8:0]   dirWReq_bits_set;
+  wire  [2:0]   dirWReq_bits_way;
+  wire          dirWReq_bits_data_dirty;
+  wire  [1:0]   dirWReq_bits_data_state;
+  wire  [1:0]   dirWReq_bits_data_clientStates_0;
+  wire  [1:0]   dirWReq_bits_data_clientStates_1;
+  wire          dirWReq_bits_data_prefetch;
+
+  wire          tagWReq_valid;
+  wire  [8:0]   tagWReq_bits_set;
+  wire  [2:0]   tagWReq_bits_way;
+  wire  [18:0]  tagWReq_bits_tag;
+
+  wire          clientDirWReq_valid;
+  wire  [6:0]   clientDirWReq_bits_set;
+  wire  [2:0]   clientDirWReq_bits_way;
+  wire  [1:0]   clientDirWReq_bits_data_0_state;
+  wire  [1:0]   clientDirWReq_bits_data_0_alias;
+  wire  [1:0]   clientDirWReq_bits_data_1_state;
+  wire  [1:0]   clientDirWReq_bits_data_1_alias;
+
+  wire          clientTagWreq_valid;
+  wire  [6:0]   clientTagWreq_bits_set;
+  wire  [2:0]   clientTagWreq_bits_way;
+  wire  [20:0]  clientTagWreq_bits_tag;
+
+  //L2DIR0
+  dir_writer#(
+    )dir_writer_0(
+    .clock(clock),.id(0),.bus_type(`DIR_WRITE_BUS_TYPE),
+
+    .arbiter(arbiter),
+
+    .io_dirWReq_ready(1'b1),
+    .io_tagWReq_ready(1'b1),
+    .io_clientDirWReq_ready(1'b1),
+    .io_clientTagWreq_ready(1'b1),
+
+    .io_dirWReq_valid(dirWReq_valid),
+    .io_dirWReq_bits_set(dirWReq_bits_set),
+    .io_dirWReq_bits_way(dirWReq_bits_way),
+    .io_dirWReq_bits_data_dirty(dirWReq_bits_data_dirty),
+    .io_dirWReq_bits_data_state(dirWReq_bits_data_state),
+    .io_dirWReq_bits_data_clientStates_0(dirWReq_bits_data_clientStates_0),
+    .io_dirWReq_bits_data_clientStates_1(dirWReq_bits_data_clientStates_1),
+    .io_dirWReq_bits_data_prefetch(dirWReq_bits_data_prefetch),
+
+    .io_tagWReq_valid(tagWReq_valid),
+    .io_tagWReq_bits_set(tagWReq_bits_set),
+    .io_tagWReq_bits_way(tagWReq_bits_way),
+    .io_tagWReq_bits_tag(tagWReq_bits_tag),
+
+    .io_clientDirWReq_valid(clientDirWReq_valid),
+    .io_clientDirWReq_bits_set(clientDirWReq_bits_set),
+    .io_clientDirWReq_bits_way(clientDirWReq_bits_way),
+    .io_clientDirWReq_bits_data_0_state(clientDirWReq_bits_data_0_state),
+    .io_clientDirWReq_bits_data_0_alias(clientDirWReq_bits_data_0_alias),
+    .io_clientDirWReq_bits_data_1_state(clientDirWReq_bits_data_1_state),
+    .io_clientDirWReq_bits_data_1_alias(clientDirWReq_bits_data_1_alias),
+
+    .io_clientTagWreq_valid(clientTagWreq_valid),
+    .io_clientTagWreq_bits_set(clientTagWreq_bits_set),
+    .io_clientTagWreq_bits_way(clientTagWreq_bits_way),
+    .io_clientTagWreq_bits_tag(clientTagWreq_bits_tag)
+  );
+
+  assign `L2DIR0.arbiter = arbiter;
+
+  assign `L2DIR0.dirWReq_valid = dirWReq_valid;
+  assign `L2DIR0.dirWReq_bits_set = dirWReq_bits_set;
+  assign `L2DIR0.dirWReq_bits_way = dirWReq_bits_way;
+  assign `L2DIR0.dirWReq_bits_data_dirty = dirWReq_bits_data_dirty;
+  assign `L2DIR0.dirWReq_bits_data_state = dirWReq_bits_data_state;
+  assign `L2DIR0.dirWReq_bits_data_clientStates_0 = dirWReq_bits_data_clientStates_0;
+  assign `L2DIR0.dirWReq_bits_data_clientStates_1 = dirWReq_bits_data_clientStates_1;
+  assign `L2DIR0.dirWReq_bits_data_prefetch = dirWReq_bits_data_prefetch;
+
+  assign `L2DIR0.tagWReq_valid = tagWReq_valid;
+  assign `L2DIR0.tagWReq_bits_set = tagWReq_bits_set;
+  assign `L2DIR0.tagWReq_bits_way = tagWReq_bits_way;
+  assign `L2DIR0.tagWReq_bits_tag = tagWReq_bits_tag;
+
+  assign `L2DIR0.clientDirWReq_valid = clientDirWReq_valid;
+  assign `L2DIR0.clientDirWReq_bits_set = clientDirWReq_bits_set;
+  assign `L2DIR0.clientDirWReq_bits_way = clientDirWReq_bits_way;
+  assign `L2DIR0.clientDirWReq_bits_data_0_state = clientDirWReq_bits_data_0_state;
+  assign `L2DIR0.clientDirWReq_bits_data_0_alias = clientDirWReq_bits_data_0_alias;
+  assign `L2DIR0.clientDirWReq_bits_data_1_state = clientDirWReq_bits_data_1_state;
+  assign `L2DIR0.clientDirWReq_bits_data_1_alias = clientDirWReq_bits_data_1_alias;
+
+  assign `L2DIR0.clientTagWreq_valid = clientTagWreq_valid;
+  assign `L2DIR0.clientTagWreq_bits_set = clientTagWreq_bits_set;
+  assign `L2DIR0.clientTagWreq_bits_way = clientTagWreq_bits_way;
+  assign `L2DIR0.clientTagWreq_bits_tag = clientTagWreq_bits_tag;
+
+
+
+
+
+//-------------------------------------------------------------//
+
+
+
 `undef CORE0
 `undef CORE1
 `undef L3
@@ -866,4 +980,5 @@ module tl_monitor_collect#(
 `undef DMA_BUS_TYPE
 `undef PTW_BUS_TYPE
 `undef DIR_BUS_TYPE
+`undef DIR_WRITE_BUS_TYPE
 endmodule

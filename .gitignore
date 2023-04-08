@@ -1,4 +1,5 @@
 build
+build_temp
 cmake-build-debug
 .idea
 Dut/rtl

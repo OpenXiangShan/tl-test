@@ -37,6 +37,11 @@ class Sequencer {
             rt.read_test(case_mes);
         }
 
+        void init_testcase_with_init_states(void) {
+            testcase::read_file rt;
+            rt.read_test(case_mes);
+        }
+
         bool do_reset(uint64_t Cycles){
             if(case_mes[0].haskey(Cycles)){
                 if(case_mes[0].query(Cycles).opcode == testcase::reset_opcode){
@@ -48,6 +53,8 @@ class Sequencer {
         }
 
         tl_base_agent::TLCTransaction case_test(uint8_t tr_type, int id);
+
+        tl_base_agent::TLCTransaction case_test_with_init_states(uint8_t tr_type, int id);
 
         
     private:
