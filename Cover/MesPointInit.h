@@ -35,7 +35,7 @@ enum{
     N_L3 = 6,
 };
 enum{
-    TOTAL_POINT = 1776,
+    TOTAL_POINT = 1576,
 };
 
 class check_point{
@@ -49,15 +49,15 @@ public:
         // mes
         for (int i = 0; i < N_MES; i++)
         {
-            if(mes[i] != cp.mes[i]){
-                return mes[i] < cp.mes[i];
+            if(this->mes[i] != cp.mes[i]){
+                return this->mes[i] < cp.mes[i];
             }
         }
         // b_states
         for (int i = 0; i < N_CACHE_NUM; i++)
         {
-            if(b_states[i] != cp.b_states[i]){
-                return b_states[i] < cp.b_states[i];
+            if(this->b_states[i] != cp.b_states[i]){
+                return this->b_states[i] < cp.b_states[i];
             }
         }
         // e_states

@@ -6,6 +6,7 @@
 #include "../Cover/MesPointInit.h"
 #include "../Cover/Utils.h"
 #include "../TLAgent/Port.h"
+#include "../Sequencer/Case_with_states.h"
 
 namespace Cover {
 
@@ -98,6 +99,8 @@ static string idToString(const int id){
 
 //-------------------------Report-------------------------------//
 
+using namespace testcase_with_states;
+
 class Report: public MesPointInit{
 private:
     set<check_point> done_point;
@@ -106,12 +109,16 @@ private:
     shared_ptr<set<check_point>> point;
     uint64_t seed;
     uint64_t cycle;
+
+    Case_with_satets case_with_states;
 public:
     Report(uint64_t s, uint64_t c){
         point.reset(new set<check_point>);
         init("trans.txt", point);
         this->seed = s;
         this->cycle = c;
+
+        case_with_states.read_test("case.txt", false);
     }
     
     void record(tlMes m, cacheState bs, cacheState es){
@@ -146,9 +153,24 @@ public:
             if(com_states(it->e_states, cp.e_states)){
                 done_point.insert(*it);
                 point->erase(it);
+
+                // earse case
+                uint64_t erase_cycle;
+                
+                if(base_cycle == cycle_step)
+                    erase_cycle = (Cycles/cycle_step)*cycle_step;
+                else
+                    tlc_assert(false, "to do this");
+
+                if(case_with_states.tc.count(erase_cycle) > 0){
+                    case_with_states.tc.erase(erase_cycle);
+                    HLOG(P_SW_T,"erase case %ld", erase_cycle);
+                }
+                else{
+                    tlc_assert(false, "tc earse error!\n");
+                }
             }else{
                 error_point.insert(cp);
-
             }
         }
 
@@ -196,44 +218,71 @@ public:
         // print report
         HLOG(P_SW_T,"\n\n-----------------------TL-test report---------------------------------\n");
 
-        // HLOG(P_SW_T,"done point:\n\n");
-        // for(std::set<check_point>::iterator it = done_point.begin(); it != done_point.end(); it++){
-        //     HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
-        //                                     , it->mes[N_SCR], it->mes[N_CORE]);
-        //     for (int i = 0; i < N_CACHE_NUM; i++)
-        //     {
-        //         HLOG(P_SW_T,"%d  ", it->b_states[i]);
-        //     }
-        //     HLOG(P_SW_T,"\n"); 
-        //     for (int i = 0; i < N_CACHE_NUM; i++)
-        //     {
-        //         HLOG(P_SW_T,"%d  ", it->e_states[i]);
-        //     }
-        //     HLOG(P_SW_T,"\n"); 
-        // }
+        HLOG(P_SW_T,"done point:\n\n");
+        for(std::set<check_point>::iterator it = done_point.begin(); it != done_point.end(); it++){
+            HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
+                                            , it->mes[N_SCR], it->mes[N_CORE]);
+            for (int i = 0; i < N_CACHE_NUM; i++)
+            {
+                HLOG(P_SW_T,"%d  ", it->b_states[i]);
+            }
+            HLOG(P_SW_T,"\n"); 
+            for (int i = 0; i < N_CACHE_NUM; i++)
+            {
+                HLOG(P_SW_T,"%d  ", it->e_states[i]);
+            }
+            HLOG(P_SW_T,"\n"); 
+        }
 
-        // HLOG(P_SW_T,"\nTo be Cover point:\n\n");
-        // for(std::set<check_point>::iterator it = point->begin(); it != point->end(); it++){
-        //     HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
-        //                                     , it->mes[N_SCR], it->mes[N_CORE]);
-        //     for (int i = 0; i < N_CACHE_NUM; i++)
-        //     {
-        //         HLOG(P_SW_T,"%d  ", it->b_states[i]);
-        //     }
-        //     HLOG(P_SW_T,"\n"); 
-        //     for (int i = 0; i < N_CACHE_NUM; i++)
-        //     {
-        //         HLOG(P_SW_T,"%d  ", it->e_states[i]);
-        //     }
-        //     HLOG(P_SW_T,"\n"); 
-        // }
+        HLOG(P_SW_T,"\nTo be Cover point:\n\n");
+        for(std::set<check_point>::iterator it = point->begin(); it != point->end(); it++){
+            HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", it->mes[N_CH], it->mes[N_OP], it->mes[N_PA]
+                                            , it->mes[N_SCR], it->mes[N_CORE]);
+            for (int i = 0; i < N_CACHE_NUM; i++)
+            {
+                HLOG(P_SW_T,"%d  ", it->b_states[i]);
+            }
+            HLOG(P_SW_T,"\n"); 
+            for (int i = 0; i < N_CACHE_NUM; i++)
+            {
+                HLOG(P_SW_T,"%d  ", it->e_states[i]);
+            }
+            HLOG(P_SW_T,"\n"); 
+        }
 
         HLOG(P_SW_T,"\n\nCoverage: %f\n", (done_point.size()/(double)TOTAL_POINT));
         HLOG(P_SW_T,"Total Coverage: %f\n", ((TOTAL_POINT - point->size()) / (double)TOTAL_POINT));
         HLOG(P_SW_T,"Seed : %ld     Cycles : %ld\n\n", seed, cycle);
 
-        // HLOG(P_SW_T,"\n\n---------------------------------------------------------------------\n\n");
+        HLOG(P_SW_T,"\n\n---------------------------------------------------------------------\n\n");
         
+        
+
+        uint64_t num = case_with_states.num - case_with_states.tc.size();
+        if(num != done_point.size())
+            HLOG(P_SW_T,"Warring: done point[%ld] != done_case[%ld]\n\n", done_point.size(), num);
+        HLOG(P_SW_T,"\n\ndone case: %ld\n", num);
+        HLOG(P_SW_T,"need to do case:\n\n");
+
+        if(num > 0){
+            for (auto [key, val] : case_with_states.tc)
+            {
+                HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", val.agentid
+                                                , val.core_id
+                                                , val.chnl
+                                                , val.opcode
+                                                , val.param);
+                for (uint8_t i = 0; i <3; i++)
+                {
+                    HLOG(P_SW_T,"%d  %d  %d  %d  %d\n", val.state.self[3]
+                                                    , val.state.self_client[i][0]
+                                                    , val.state.self_client[i][1]
+                                                    , val.state.client[i][0]
+                                                    , val.state.client[i][1]);
+                }
+
+            }
+        }
     }
 
 };

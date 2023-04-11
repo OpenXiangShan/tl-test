@@ -523,33 +523,125 @@ module dir_writer(
   );
 
   end
+  
+endmodule
 
-  // assign io_dirWReq_valid = 0;
-  // assign io_dirWReq_bits_set = 0;
-  // assign io_dirWReq_bits_way = 0;
-  // assign io_dirWReq_bits_data_dirty = 0;
-  // assign io_dirWReq_bits_data_state = 0;
-  // assign io_dirWReq_bits_data_clientStates_0 = 0;
-  // assign io_dirWReq_bits_data_clientStates_1 = 0;
-  // assign io_dirWReq_bits_data_prefetch = 0;
+module dir_writer_l3(
+  input  wire        clock,
+  input  wire[63:0]  id,
+  input  wire[7:0]   bus_type,
 
-  // assign io_tagWReq_valid = 0;
-  // assign io_tagWReq_bits_set = 0;
-  // assign io_tagWReq_bits_way = 0;
-  // assign io_tagWReq_bits_tag = 0;
+  output  wire        arbiter,
 
-  // assign io_clientDirWReq_valid = 0;
-  // assign io_clientDirWReq_bits_set = 0;
-  // assign io_clientDirWReq_bits_way = 0;
-  // assign io_clientDirWReq_bits_data_0_state = 0;
-  // assign io_clientDirWReq_bits_data_0_alias = 0;
-  // assign io_clientDirWReq_bits_data_1_state = 0;
-  // assign io_clientDirWReq_bits_data_1_alias = 0;
+  input  wire        io_dirWReq_ready,
+  output  wire        io_dirWReq_valid,
+  output  wire[11:0]   io_dirWReq_bits_set,
+  output  wire[2:0]   io_dirWReq_bits_way,
+  output  wire        io_dirWReq_bits_data_dirty,
+  output  wire[1:0]   io_dirWReq_bits_data_state,
+  output  wire[1:0]   io_dirWReq_bits_data_clientStates_0,
+  output  wire[1:0]   io_dirWReq_bits_data_clientStates_1,
+  output  wire        io_dirWReq_bits_data_prefetch,
 
-  // assign io_clientTagWreq_valid = 0;
-  // assign io_clientTagWreq_bits_set = 0;
-  // assign io_clientTagWreq_bits_way = 0;
-  // assign io_clientTagWreq_bits_tag = 0;
+  input  wire        io_tagWReq_ready,
+  output  wire        io_tagWReq_valid,
+  output  wire[11:0]   io_tagWReq_bits_set,
+  output  wire[2:0]   io_tagWReq_bits_way,
+  output  wire[15:0]  io_tagWReq_bits_tag,
 
+  input  wire        io_clientDirWReq_ready,
+  output  wire        io_clientDirWReq_valid,
+  output  wire[10:0]   io_clientDirWReq_bits_set,
+  output  wire[2:0]   io_clientDirWReq_bits_way,
+  output  wire[1:0]   io_clientDirWReq_bits_data_0_state,
+  output  wire[1:0]   io_clientDirWReq_bits_data_0_alias,
+  output  wire[1:0]   io_clientDirWReq_bits_data_1_state,
+  output  wire[1:0]   io_clientDirWReq_bits_data_1_alias,
+
+  input  wire        io_clientTagWreq_ready,
+  output  wire        io_clientTagWreq_valid,
+  output  wire[10:0]   io_clientTagWreq_bits_set,
+  output  wire[2:0]   io_clientTagWreq_bits_way,
+  output  wire[16:0]  io_clientTagWreq_bits_tag
+);
+
+  import "DPI-C" function void dir_write_eval(
+  input  bit[63:0]  id,
+  input  bit[7:0]   bus_type,
+
+  output  bit        arbiter,
+
+  input  bit        io_dirWReq_ready,
+  output  bit        io_dirWReq_valid,
+  output  bit[11:0]   io_dirWReq_bits_set,
+  output  bit[2:0]   io_dirWReq_bits_way,
+  output  bit        io_dirWReq_bits_data_dirty,
+  output  bit[1:0]   io_dirWReq_bits_data_state,
+  output  bit[1:0]   io_dirWReq_bits_data_clientStates_0,
+  output  bit[1:0]   io_dirWReq_bits_data_clientStates_1,
+  output  bit        io_dirWReq_bits_data_prefetch,
+  
+  input  bit        io_tagWReq_ready,
+  output  bit        io_tagWReq_valid,
+  output  bit[11:0]   io_tagWReq_bits_set,
+  output  bit[2:0]   io_tagWReq_bits_way,
+  output  bit[15:0]  io_tagWReq_bits_tag,
+
+  input  bit        io_clientDirWReq_ready,
+  output  bit        io_clientDirWReq_valid,
+  output  bit[10:0]   io_clientDirWReq_bits_set,
+  output  bit[2:0]   io_clientDirWReq_bits_way,
+  output  bit[1:0]   io_clientDirWReq_bits_data_0_state,
+  output  bit[1:0]   io_clientDirWReq_bits_data_0_alias,
+  output  bit[1:0]   io_clientDirWReq_bits_data_1_state,
+  output  bit[1:0]   io_clientDirWReq_bits_data_1_alias,
+
+  input  bit        io_clientTagWreq_ready,
+  output  bit        io_clientTagWreq_valid,
+  output  bit[10:0]   io_clientTagWreq_bits_set,
+  output  bit[2:0]   io_clientTagWreq_bits_way,
+  output  bit[16:0]  io_clientTagWreq_bits_tag,
+  );
+
+  always@(posedge clock) begin
+    dir_write_eval(
+      id,
+      bus_type,
+
+      arbiter,
+
+      io_dirWReq_ready,
+      io_dirWReq_valid,
+      io_dirWReq_bits_set,
+      io_dirWReq_bits_way,
+      io_dirWReq_bits_data_dirty,
+      io_dirWReq_bits_data_state,
+      io_dirWReq_bits_data_clientStates_0,
+      io_dirWReq_bits_data_clientStates_1,
+      io_dirWReq_bits_data_prefetch,
+
+      io_tagWReq_ready,
+      io_tagWReq_valid,
+      io_tagWReq_bits_set,
+      io_tagWReq_bits_way,
+      io_tagWReq_bits_tag,
+
+      io_clientDirWReq_ready,
+      io_clientDirWReq_valid,
+      io_clientDirWReq_bits_set,
+      io_clientDirWReq_bits_way,
+      io_clientDirWReq_bits_data_0_state,
+      io_clientDirWReq_bits_data_0_alias,
+      io_clientDirWReq_bits_data_1_state,
+      io_clientDirWReq_bits_data_1_alias,
+
+      io_clientTagWreq_ready,
+      io_clientTagWreq_valid,
+      io_clientTagWreq_bits_set,
+      io_clientTagWreq_bits_way,
+      io_clientTagWreq_bits_tag
+  );
+
+  end
   
 endmodule

@@ -197,8 +197,7 @@ private:
     void handle_ChnlC_info(uint64_t core_id, uint8_t bus_type);
     void handle_ChnlD_info(uint64_t core_id, uint8_t bus_type);
     void handle_ChnlE_info(uint64_t core_id, uint8_t bus_type);
-    // Processing and packaging for Cache State
-    cacheState get_state_info(paddr_t addr);
+    
 public:   
     Mes_Collect(ScoreBoard<DIR_monitor::Dir_key,DIR_monitor::Dir_Mes> *const selfDir, ScoreBoard<DIR_monitor::Dir_key,paddr_t> *const selfTag
               ,ScoreBoard<DIR_monitor::Dir_key,DIR_monitor::Dir_Mes> *const clientDir, ScoreBoard<DIR_monitor::Dir_key,paddr_t> *const clientTag
@@ -212,6 +211,9 @@ public:
 
     // send package to Mes_com
     void send(bool state_valid);
+
+    // Processing and packaging for Cache State
+    cacheState get_state_info(paddr_t addr);
 };
 
 

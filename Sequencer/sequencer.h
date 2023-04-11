@@ -13,6 +13,7 @@
 #include "../CacheModel/FakeL1/fake_l1.h"
 #include "../CacheModel/FakePTW/fake_ptw.h"
 #include "../Fuzzer/Case.h"
+#include "../Sequencer/Case_with_states.h"
 
 namespace sequencer {
 
@@ -37,9 +38,8 @@ class Sequencer {
             rt.read_test(case_mes);
         }
 
-        void init_testcase_with_init_states(void) {
-            testcase::read_file rt;
-            rt.read_test(case_mes);
+        void init_testcase_with_states(void) {
+            case_with_states.read_test("case.txt", true);
         }
 
         bool do_reset(uint64_t Cycles){
@@ -49,17 +49,24 @@ class Sequencer {
                     return true;
                 }
             }
+            if(case_with_states.tc.count(Cycles) > 0){
+                if(case_with_states.tc[Cycles].opcode ==  testcase_with_states::reset_opcode){
+                    return true;
+                }
+            }
             return false;
         }
 
         tl_base_agent::TLCTransaction case_test(uint8_t tr_type, int id);
 
-        tl_base_agent::TLCTransaction case_test_with_init_states(uint8_t tr_type, int id);
+        tl_base_agent::TLCTransaction case_test_with_states(uint8_t tr_type, uint8_t bus_type, uint64_t core_id);
 
-        
+
+        testcase_with_states::Case_with_satets case_with_states;
     private:
         uint64_t *cycles;
         testcase::Message case_mes[testcase::N_TESTCASE_AGENT];
+        
 };
 
 }

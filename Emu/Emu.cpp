@@ -72,7 +72,7 @@ Emu::Emu(int argc, char **argv) {
   srand(this->seed);
   
   for (int i = 0; i < NR_CAGENTS; i++) {
-    l1[i].reset(new FakeL1_t(globalBoard, i, &Cycles, i / 2, i % 2));
+    l1[i].reset(new FakeL1_t(globalBoard, i, &Cycles, i / 2, i % 2));// core_id 0 0 1 1 bus_type 0 1 0 1 -> D0 I0 D1 I1
   }
   
   for(int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
@@ -88,6 +88,7 @@ Emu::Emu(int argc, char **argv) {
   if (random_mode == false)
   {
     sqr->init_testcase(); // Input file test.txt
+    sqr->init_testcase_with_states();
   }
   
 
@@ -114,7 +115,7 @@ Emu::Emu(int argc, char **argv) {
     mes_collect.reset(new Cover::Mes_Collect(selfDir, selfTag, clientDir, clientTag, mes_com));
     
     // DIR_Write
-    dir_write_0.reset(new dir_write::DIR_Write(0,DIR_WRITE_BUS_TYPE));
+    dir_write_0.reset(new dir_write::DIR_Write(DIR_WRITE_BUS_TYPE));
   }
 
   
@@ -142,8 +143,11 @@ Emu::~Emu() {
 
 //reset_sys
 void Emu::reset_sys(uint64_t n) {
+    // reset dut
     reset(n);
+    // reset board
     this->globalBoard->clear();
+    // reset cache model
     for(int i = 0; i < NR_CAGENTS; i++) {
       l1[i]->clear();
     }
@@ -153,16 +157,88 @@ void Emu::reset_sys(uint64_t n) {
     for(int i = 0; i < NR_DMAAGT; i++) {
       dma[i]->clear();
     }
+    // reset dir
+    for (int i = 0; i < 3; i++)
+    {
+      selfDir[i].clear();
+      selfTag[i].clear();
+      clientDir[i].clear();
+      clientTag[i].clear();
+    }
+    HLOG(P_SW_T,"[%ld] sys reset done!\n", Cycles);
 }
 
 void Emu::execute(uint64_t nr_cycle) {
   while (Cycles < nr_cycle) {
     if(this->en_monitor){
       //----------DIR_Write----------//
-      if(Cycles == 8500)
-        dir_write_0->test();
-      else
-        dir_write_0->close_test();
+      if(sqr->case_with_states.tc.count(Cycles+50) > 0){
+        if(sqr->case_with_states.tc[Cycles+50].opcode != testcase_with_states::reset_opcode){
+          dir_write_0->write(sqr->case_with_states.tc[Cycles+50].state, 0x80000000);
+          // update glovalboard
+          bool hasData = false;
+          bool init_no_zero = false;
+          for (uint8_t i = 0; i < 3; i++)
+          {
+            if(sqr->case_with_states.tc[Cycles+50].state.self[i] != INVALID
+                || sqr->case_with_states.tc[Cycles+50].state.client[i][0] != INVALID
+                || sqr->case_with_states.tc[Cycles+50].state.client[i][1] != INVALID)
+              hasData = true;
+          }
+          // some l1 = Tip -> init data no zero
+          for (uint8_t i = 0; i < 2; i++)
+          {
+            if(sqr->case_with_states.tc[Cycles+50].state.client[i][0] == TIP
+                || sqr->case_with_states.tc[Cycles+50].state.client[i][1] == TIP)
+              init_no_zero = true;
+          }  
+          // some cache != INVALID && acquire _toB -> init data no zero
+          // for (uint8_t i = 0; i < 3; i++)
+          // {
+          //   if((sqr->case_with_states.tc[Cycles+50].state.self[i] != INVALID
+          //       || sqr->case_with_states.tc[Cycles+50].state.client[i][0] != INVALID
+          //       || sqr->case_with_states.tc[Cycles+50].state.client[i][1] != INVALID)
+          //       && sqr->case_with_states.tc[Cycles+50].opcode == AcquireBlock 
+          //       && sqr->case_with_states.tc[Cycles+50].param == NtoB
+          //       && sqr->case_with_states.tc[Cycles+50].chnl == CHNLA)
+          //     init_no_zero = false;
+          // } 
+          if(hasData){
+            std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
+            if(init_no_zero){
+              global_SBEntry->data.reset(new uint8_t[DATASIZE]);
+            }else{
+              global_SBEntry->data.reset(new uint8_t[DATASIZE]);
+              for (int i = 0; i < DATASIZE; i++) {
+                global_SBEntry->data[i] = 0;
+              }
+            }
+            global_SBEntry->status = Global_SBEntry::SB_VALID;
+            global_SBEntry->mask = FULLMASK;
+            globalBoard->update(0x80000000, global_SBEntry);
+          }
+          // update cache info
+          for (uint8_t i = 0; i < 2; i++)// L2
+          {
+            uint64_t time_stamp = Cycles;
+            int status[4] = {S_VALID};
+            // DCACHE
+            if(sqr->case_with_states.tc[Cycles+50].state.client[i][0] != INVALID){
+              int privilege[4] = {sqr->case_with_states.tc[Cycles+50].state.client[i][0]};
+              std::shared_ptr<C_SBEntry> entry(new C_SBEntry(status, privilege, time_stamp));
+              l1[i*2+0]->update_cache_info(0x80000000, entry);
+            }
+            // ICACHE
+            if(sqr->case_with_states.tc[Cycles+50].state.client[i][1] != INVALID){
+              int privilege[4] = {sqr->case_with_states.tc[Cycles+50].state.client[i][1]};
+              std::shared_ptr<C_SBEntry> entry(new C_SBEntry(status, privilege, time_stamp));
+              l1[i*2+1]->update_cache_info(0x80000000, entry);
+            }
+          }
+        }
+      }else{
+        dir_write_0->close();
+      }        
 
 
       //-----------Monitor-----------//
@@ -200,6 +276,19 @@ void Emu::execute(uint64_t nr_cycle) {
     
 
     if(sqr->do_reset(Cycles)){
+      // send to check
+      Cover::cacheState State;
+      State = mes_collect->get_state_info(0x80000000);
+      uint8_t cs[7];
+      cs[0] = State.L1[0][0];
+      cs[1] = State.L1[0][1];
+      cs[2] = State.L1[1][0];
+      cs[3] = State.L1[1][1];
+      cs[4] = State.L2[0];
+      cs[5] = State.L2[1];
+      cs[6] = State.L3;
+      sqr->case_with_states.check(Cycles-testcase_with_states::cycle_done, cs);
+
       reset_sys(10);
     }
     
@@ -234,17 +323,23 @@ void Emu::execute(uint64_t nr_cycle) {
       //   dma[i]->transaction_input(tr);
       // }
     }else{
+      // for (int i = 0; i < NR_CAGENTS; i++) {
+      //   tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLC, i);
+      //   l1[i]->transaction_input(tr);
+      // }
+      // for (int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
+      //   tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLUL, i);
+      //   ptw[i-NR_CAGENTS]->transaction_input(tr);
+      // }
+      // for (int i = NR_CAGENTS + NR_PTWAGT; i < NR_CAGENTS + NR_PTWAGT + NR_DMAAGT; i++) {
+      //   tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLUL, i);
+      //   dma[i-NR_CAGENTS-NR_PTWAGT]->transaction_input(tr);
+      // }
+
+      // for test with states
       for (int i = 0; i < NR_CAGENTS; i++) {
-        tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLC, i);
+        tl_base_agent::TLCTransaction tr = sqr->case_test_with_states(sequencer::TLC, l1[i]->bus_type, l1[i]->core_id);
         l1[i]->transaction_input(tr);
-      }
-      for (int i = NR_CAGENTS; i < NR_CAGENTS + NR_PTWAGT; i++) {
-        tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLUL, i);
-        ptw[i-NR_CAGENTS]->transaction_input(tr);
-      }
-      for (int i = NR_CAGENTS + NR_PTWAGT; i < NR_CAGENTS + NR_PTWAGT + NR_DMAAGT; i++) {
-        tl_base_agent::TLCTransaction tr = sqr->case_test(sequencer::TLUL, i);
-        dma[i-NR_CAGENTS-NR_PTWAGT]->transaction_input(tr);
       }
     }
 
@@ -263,7 +358,8 @@ void Emu::execute(uint64_t nr_cycle) {
     this->step();
     this->update_cycles(1);
   }
-  // if(this->en_monitor){
-  //   report->print_report();
-  // }
+  if(this->en_monitor){
+    // report->print_report();
+    sqr->case_with_states.print_report();
+  }
 }

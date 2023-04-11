@@ -83,8 +83,8 @@ namespace Cover {
         source[bus_type][core_id][CHNLB].insert(std::make_pair(*tl_info->b_source,*tl_info->b_address));
 
         // Get State INFO Immediately
-        State = get_state_info(Mes.address);
-        send(true);
+        // State = get_state_info(Mes.address);
+        // send(true);
     }
 
     // source in: ReleaseData
@@ -112,7 +112,7 @@ namespace Cover {
         }
         // Probe is an intermediate message, no need to check state
         else if(Mes.opcode == ProbeAck || Mes.opcode == ProbeAckData){
-            send(false);
+            // send(false);
         }else{
             tlc_assert(false,"Illegal opcode!");
         }

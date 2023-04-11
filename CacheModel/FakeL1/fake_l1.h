@@ -53,6 +53,10 @@ class FakeL1: public base_cache_model::BaseCacheModel<tl_interface::TLInfo> {
         bool local_probe(paddr_t address);
 
         std::shared_ptr<tl_interface::TLInfo> get_info();
+
+        void update_cache_info(paddr_t addr, std::shared_ptr<C_SBEntry> entry){
+            cache_info->update(addr, entry);
+        }
         
     private: 
         // local cache model info
