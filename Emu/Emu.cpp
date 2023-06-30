@@ -3,9 +3,12 @@
 //
 
 #include "Emu.h"
-
+// #ifdef ENABLE_CHISEL_DB
+// #include "chisel_db.h"
+// #endif
 uint64_t Cycles;
 bool Verbose = false;
+bool dump_db = false;
 
 double sc_time_stamp() { return 0; }
 
@@ -17,19 +20,26 @@ void Emu::parse_args(int argc, char **argv) {
         { "cycles",     1, NULL, 'c' },
         { "wave-full",  0, NULL, 'f' },
         { "verbose",    0, NULL, 'v' },
+        { "dump-db",    0, NULL, 'd' },
         { 0,            0, NULL,  0  }
     };
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:fv", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:f:v:d:", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
             case 'e': this->wave_end = atoll(optarg);   break;
             case 'c': this->exe_cycles = atoll(optarg); break;
-            case 'f': this->wave_full = true;                break;
-            case 'v': Verbose = true;                        break;
+            case 'f': this->wave_full = true;           break;
+            case 'v': Verbose = true;                   break;
+            case 'd':
+#ifdef ENABLE_CHISEL_DB
+                dump_db = true;                         break;
+#else
+                printf("[WARN] chisel db is not enabled at compile time, ignore --dump-db\n"); break;
+#endif
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -81,6 +91,10 @@ Emu::Emu(int argc, char **argv) {
     }
 #endif
 
+#ifdef ENABLE_CHISEL_DB
+    init_db(dump_db);
+#endif
+
 }
 
 Emu::~Emu() {
@@ -90,6 +104,14 @@ Emu::~Emu() {
         this->tfp->close();
     }
 #endif
+
+#ifdef ENABLE_CHISEL_DB
+    if(dump_db){
+        time_t now = time(NULL);
+        save_db(logdb_filename(now));
+    }
+#endif
+
 }
 
 void Emu::execute(uint64_t nr_cycle) {
