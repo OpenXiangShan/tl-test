@@ -49,8 +49,10 @@ typedef uint16_t paddr_t;
         if (!(cond)) { \
             printf("\33[1;34m%s\n", info); \
             printf("Cycles: %ld\33[0m\n", Cycles); \
-            time_t now = time(NULL); \
-            save_db(logdb_filename(now)); \
+            if(dump_db) { \
+                time_t now = time(NULL); \
+                save_db(logdb_filename(now)); \
+            } \
             fflush(stdout); \
             fflush(stderr); \
             assert(cond); \
