@@ -114,6 +114,15 @@ Emu::~Emu() {
 
 }
 
+void abortHandler(int signal) {
+#ifdef ENABLE_CHISEL_DB
+    if(dump_db){
+        time_t now = time(NULL);
+        save_db(logdb_filename(now));
+    }
+#endif
+}
+
 void Emu::execute(uint64_t nr_cycle) {
     while (Cycles < nr_cycle) {
         for (int i = 0; i < NR_AGENTS; i++) {

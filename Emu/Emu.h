@@ -86,4 +86,6 @@ inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {
     return buf;
 }
 
+void abortHandler(int s);
+
 #endif //TLC_TEST_EMU_H
