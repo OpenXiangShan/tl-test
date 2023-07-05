@@ -9,7 +9,7 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
 }
 
 void CFuzzer::randomTest(bool do_alias) {
-    paddr_t addr = (rand() % 0x8) * (rand() % 0x80) * 0x40;  // Tag + Set + Offset
+    paddr_t addr = ((rand() % 0x8) << 13) + ((rand() % 0x80) << 6);  // Tag + Set + Offset
     int alias = (do_alias) ? (rand() % 4) : 0;
     if (rand() % 2) {
         if (rand() % 3) {
