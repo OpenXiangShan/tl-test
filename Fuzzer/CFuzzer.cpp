@@ -9,14 +9,14 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
 }
 
 void CFuzzer::randomTest(bool do_alias) {
-    paddr_t addr = (rand() % 0x8) * (rand() % 0x80) * 0x40;  // Tag + Set + Offset
+    paddr_t addr = ((rand() % 0x8) << 13) + ((rand() % 0x80) << 6);  // Tag + Set + Offset
     int alias = (do_alias) ? (rand() % 4) : 0;
     if (rand() % 2) {
         if (rand() % 3) {
             if (rand() % 2) {
                 cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoT
             } else {
-                cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoB
+                cAgent->do_acquireBlock(addr, tl_agent::NtoB, alias); // AcquireBlock NtoB
             }
         } else {
             cAgent->do_acquirePerm(addr, tl_agent::NtoT, alias); // AcquirePerm
