@@ -16,7 +16,7 @@ void CFuzzer::randomTest(bool do_alias) {
             if (rand() % 2) {
                 cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoT
             } else {
-                cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoB
+                cAgent->do_acquireBlock(addr, tl_agent::NtoB, alias); // AcquireBlock NtoB
             }
         } else {
             cAgent->do_acquirePerm(addr, tl_agent::NtoT, alias); // AcquirePerm
