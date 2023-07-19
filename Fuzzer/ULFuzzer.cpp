@@ -8,9 +8,9 @@ ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) {
     this->ulAgent = ulAgent;
 }
 
-void ULFuzzer::randomTest() {
-    paddr_t addr = (rand() % 10) * 0x100;
-    if (rand() % 2) {  // Get
+void ULFuzzer::randomTest(bool put) {
+    paddr_t addr = (rand() % 0x400) << 6;
+    if (!put || rand() % 2) {  // Get
         ulAgent->do_getAuto(addr);
     } else { // Put
         uint8_t* putdata = new uint8_t[DATASIZE];
@@ -54,6 +54,6 @@ void ULFuzzer::caseTest2() {
 }
 
 void ULFuzzer::tick() {
-    this->randomTest();
+    this->randomTest(false);
 //    this->caseTest();
 }

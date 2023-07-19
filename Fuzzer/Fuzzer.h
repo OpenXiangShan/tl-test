@@ -25,7 +25,7 @@ private:
     tl_agent::ULAgent *ulAgent;
 public:
     ULFuzzer(tl_agent::ULAgent *ulAgent);
-    void randomTest();
+    void randomTest(bool put);
     void caseTest();
     void caseTest2();
     void tick();

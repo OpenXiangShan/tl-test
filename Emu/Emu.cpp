@@ -115,6 +115,9 @@ Emu::~Emu() {
 }
 
 void abortHandler(int signal) {
+    printf("Cycles: %ld\33[0m\n", Cycles);
+    fflush(stdout);
+    fflush(stderr);
 #ifdef ENABLE_CHISEL_DB
     if(dump_db){
         time_t now = time(NULL);
