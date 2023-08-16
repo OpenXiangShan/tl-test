@@ -92,7 +92,7 @@ Emu::Emu(int argc, char **argv) {
 #endif
 
 #ifdef TLLOG
-    init_db(dump_db);
+    init_db(dump_db, false, NULL);
 #endif
 
 }
