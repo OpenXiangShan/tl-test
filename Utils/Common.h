@@ -13,7 +13,7 @@
 #include <unistd.h>
 
 #ifdef ENABLE_CHISEL_DB
-extern void init_db(bool en);
+extern void init_db(bool en, bool select_enable, const char *select_db);
 extern void save_db(const char * filename);
 #endif
 
