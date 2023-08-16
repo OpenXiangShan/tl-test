@@ -92,7 +92,7 @@ Emu::Emu(int argc, char **argv) {
 #endif
 
 #ifdef ENABLE_CHISEL_DB
-    init_db(dump_db);
+    init_db(dump_db, false, NULL);
 #endif
 
 }
