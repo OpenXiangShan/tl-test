@@ -53,7 +53,7 @@ Emu::Emu(int argc, char **argv) {
     this->parse_args(argc, argv);
     Verilated::commandArgs(argc, argv);
     Cycles = 0;
-    dut_ptr = new VTestTop();
+    dut_ptr = new VSimTop();
     globalBoard = new GlobalBoard<paddr_t>(); // address indexed
 
     printf("[INFO] use seed: %ld\n", this->seed);

@@ -6,7 +6,7 @@
 #define TLC_TEST_EMU_H
 
 #include "verilated.h"
-#include "VTestTop.h"
+#include "VSimTop.h"
 #include <getopt.h>
 #if VM_TRACE == 1
 #include "verilated_vcd_c.h"
@@ -24,7 +24,7 @@ private:
     typedef tl_agent::CAgent CAgent_t;
 
     const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
-    VTestTop *dut_ptr;
+    VSimTop *dut_ptr;
     VerilatedVcdC* tfp;
     GlobalBoard<paddr_t> *globalBoard;
     BaseAgent_t ** const agents = new BaseAgent_t*[NR_AGENTS];
