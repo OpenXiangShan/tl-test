@@ -243,6 +243,17 @@ namespace tl_agent {
                 }
                 break;
             }
+            case Release: {
+                std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*c->address, *c->alias));
+                idMap->update(*c->source, idmap_entry);
+
+                if (localBoard->haskey(*c->address)) {
+                    localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles, *c->alias);
+                } else {
+                    tlc_assert(false, "Localboard key not found!");
+                }
+                break;
+            }
             default:
                 tlc_assert(false, "Unknown opcode for channel C!");
         }
@@ -413,7 +424,9 @@ namespace tl_agent {
                             info->update_status(S_SENDING_C, *cycles, alias);
                         }
                         info->unpending_priviledge(*cycles, alias);
-                        this->globalBoard->unpending(addr);
+                        if(this->globalBoard->haskey(addr)) {
+                            this->globalBoard->unpending(addr);  // ReleaseData
+                        } 
                         break;
                     }
                     default:
@@ -615,40 +628,66 @@ namespace tl_agent {
         }
 
         std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
-        req_c->opcode = new uint8_t(ReleaseData);
-        req_c->address = new paddr_t(address);
-        req_c->param = new uint8_t(param);
-        req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
-        req_c->source = new uint8_t(this->idpool.getid());
-        req_c->dirty = new uint8_t(1);
-        req_c->alias = new uint8_t(alias);
-        if (param == BtoN) {
-            uint8_t* data = globalBoard->query(address)->data;
-            req_c->data = data;
-        } else {
-            tlc_assert(param == TtoN, "Wrong execution path!");
-            uint8_t* putdata = new uint8_t[DATASIZE];
-            for (int i = 0; i < DATASIZE; i++) {
-                putdata[i] = (uint8_t)rand();
+        // if there is no entry[address] in globalBoard, send Release instead of ReleaseData
+        if (!globalBoard->haskey(address) && param == BtoN) { 
+            // Release
+            req_c->opcode = new uint8_t(Release);
+            req_c->address = new paddr_t(address);
+            req_c->param = new uint8_t(param);
+            req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
+            req_c->source = new uint8_t(this->idpool.getid());
+            req_c->dirty = new uint8_t(0);
+            req_c->alias = new uint8_t(alias);
+            req_c->data = 0;
+            // printf("send Release, addr = %x, status = %d\n", address, status);
+            pendingC.init(req_c, 1);
+            switch (param) {
+            case BtoN:
+                Log("[%ld] [Release BtoN] addr: %x alias: %x data: ", *cycles, address, alias);
+                break;
+            case TtoN:
+                Log("[%ld] [Release TtoN] addr: %x alias: %x data: ", *cycles, address, alias);
+                break;
             }
+            for(int i = 0; i < DATASIZE; i++) {
+            Dump("%02hhx", 0);
+            }
+            Dump("\n");
+        } else { 
+            // ReleaseData
+            req_c->opcode = new uint8_t(ReleaseData);
+            req_c->address = new paddr_t(address);
+            req_c->param = new uint8_t(param);
+            req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
+            req_c->source = new uint8_t(this->idpool.getid());
+            req_c->dirty = new uint8_t(1);
+            req_c->alias = new uint8_t(alias);
+            if (param == BtoN) {
+                uint8_t* data = globalBoard->query(address)->data;
+                req_c->data = data;
+            } else {
+                tlc_assert(param == TtoN, "Wrong execution path!");
+                uint8_t* putdata = new uint8_t[DATASIZE];
+                for (int i = 0; i < DATASIZE; i++) {
+                    putdata[i] = (uint8_t)rand();
+                }
             req_c->data = putdata;
+            }
+            pendingC.init(req_c, DATASIZE / BEATSIZE);
+            switch (param) {
+            case BtoN:
+                Log("[%ld] [ReleaseData BtoN] addr: %x alias: %x data: ", *cycles, address, alias);
+                break;
+            case TtoN:
+                Log("[%ld] [ReleaseData TtoN] addr: %x alias: %x data: ", *cycles, address, alias);
+                break;
+            }
+            for(int i = 0; i < DATASIZE; i++) {
+                Dump("%02hhx", req_c->data[i]);
+            }
+            Dump("\n");
         }
 
-        // Log("== id == release %d\n", *req_c->source);
-        pendingC.init(req_c, DATASIZE / BEATSIZE);
-        switch (param) {
-        case BtoN:
-            Log("[%ld] [ReleaseData BtoN] addr: %x alias: %x data: ", *cycles, address, alias);
-            break;
-        case TtoN:
-            Log("[%ld] [ReleaseData TtoN] addr: %x alias: %x data: ", *cycles, address, alias);
-            break;
-        }
-
-        for(int i = 0; i < DATASIZE; i++) {
-          Dump("%02hhx", req_c->data[i]);
-        }
-        Dump("\n");
         return true;
     }
 
