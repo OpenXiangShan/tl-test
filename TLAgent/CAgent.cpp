@@ -151,7 +151,7 @@ namespace tl_agent {
                 }
                 req_c->data = all_zero;
             } else {
-                if (*req_c->opcode == ProbeAckData && *req_c->param != BtoN) {
+                if (*req_c->opcode == ProbeAckData && (*req_c->param == TtoN || *req_c->param == TtoB || *req_c->param == TtoT)) {
                     uint8_t *random = new uint8_t[DATASIZE];
                     for (int i = 0; i < DATASIZE; i++) {
                       random[i] = (uint8_t)rand();
