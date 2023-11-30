@@ -7,7 +7,7 @@
 
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
-
+#include "../Utils/Common.h"
 class Fuzzer {
 protected:
     uint64_t *cycles;
@@ -15,6 +15,7 @@ public:
     Fuzzer() = default;
     ~Fuzzer() = default;
     virtual void tick() = 0;
+    virtual bool transaction(int channel, int opcode, paddr_t address, int param) = 0;
     void set_cycles(uint64_t *cycles) {
         this->cycles = cycles;
     }
@@ -28,6 +29,7 @@ public:
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
+    bool transaction(int channel, int opcode, paddr_t address, int param);
     void tick();
 };
 
@@ -38,6 +40,7 @@ public:
     CFuzzer(tl_agent::CAgent *cAgent);
     void randomTest(bool do_alias);
     void caseTest();
+    bool transaction(int channel, int opcode, paddr_t address, int param);
     void tick();
 };
 

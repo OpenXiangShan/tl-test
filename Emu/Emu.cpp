@@ -126,15 +126,107 @@ void abortHandler(int signal) {
 #endif
 }
 
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <queue>
+
+paddr_t fullAddr(unsigned tag, unsigned set, unsigned offset = 0) {
+    tag = tag % 0x8;
+    set = set % 0x80;
+    return (paddr_t)((tag << 13) + (set << 6) + offset);
+}
+
+// TODO: alias
+struct Transaction
+{
+    uint64_t timestamp;
+    int sender;
+    int channel;
+    int opcode;
+    paddr_t address;
+    int param;
+
+    Transaction(){}
+    Transaction(uint64_t timestamp, int sender, int channel, int opcode, paddr_t address, int param):
+        timestamp(timestamp), sender(sender), channel(channel), opcode(opcode), address(address), param(param) {}
+
+    void parseManual(std::string line) {
+        std::stringstream ss(line);
+        std::string value;
+        std::vector<std::string> values;
+
+        while (std::getline(ss, value, ',')) {
+            values.push_back(value);
+        }
+        // timestamp, which L1, channel, opcode, tag, set, param
+        this->timestamp = std::stoull(values[0]);
+        this->sender = std::stoi(values[1]);
+        this->channel = std::stoi(values[2]);
+        this->opcode = std::stoi(values[3]);
+        unsigned tag = std::stoul(values[4]);
+        unsigned set = std::stoul(values[5]);
+        this->address = fullAddr(tag, set);
+        this->param = std::stoi(values[6]);
+    }
+    void parseDB(std::string path) {
+    }
+};
+
+
 void Emu::execute(uint64_t nr_cycle) {
-    while (Cycles < nr_cycle) {
+    auto max_cycles = nr_cycle;
+    // ====== read from trace file ======
+    std::ifstream file("../trace.txt");
+
+    if (!file.is_open()) {
+        printf("Unable to open trace file\n"); assert(0);
+    }
+
+    uint64_t nextTrans = 1000;   // for cache initialization
+    std::string line;
+    std::queue<std::string> transactions;
+
+    std::getline(file, line); // skip the first line
+    while (std::getline(file, line)) {
+        if (line[0] != '#' && line[0] != '\n') transactions.push(line);
+    }
+    file.close();
+
+    // ====== execute transactions ======
+    Transaction t = Transaction();
+    line = transactions.front(); transactions.pop();
+    t.parseManual(line);
+
+    while (Cycles < max_cycles) {
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
 
-        for (int i = 0; i < NR_AGENTS; i++) {
-            fuzzers[i]->tick();
+        if (Cycles == nextTrans) {
+            printf("======= %s\n", line.c_str());
+            printf("Cycles: %ld\n", Cycles + 1000);
+
+            if(!fuzzers[t.sender]->transaction(t.channel, t.opcode, t.address, t.param)) {
+                printf("L1_%d Failed to send transaction: %s\n", t.sender, line.c_str());
+                // TODO: should retry when failed
+                assert(0);
+            }
+
+            if (transactions.empty()) {
+                printf("Finish all transactions\n");
+                max_cycles = Cycles + 12000;
+            } else { // parse next
+                line = transactions.front(); transactions.pop();
+                t.parseManual(line);
+                nextTrans = t.timestamp + 1000;
+            }
         }
+
+        // for (int i = 0; i < NR_AGENTS; i++) {
+        //     fuzzers[i]->tick();
+        // }
 
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->update_signal();

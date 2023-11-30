@@ -49,6 +49,33 @@ void CFuzzer::caseTest() {
     }
 }
 
+bool CFuzzer::transaction(int channel, int opcode, paddr_t address, int param) {
+    switch (channel) {
+        case 1:
+            switch (opcode) {
+                case 6:
+                    // printf("CFuzzer: Acquire: 0x%x %d %d %d\n", address, channel, opcode, param);
+                    return this->cAgent->do_acquireBlock(address, param, 0);
+                case 7:
+                    return this->cAgent->do_acquirePerm(address, param, 0);
+                default:
+                    return false;
+            }
+        case 4:
+            switch (opcode) {
+                case 6:
+                case 7:
+                    return this->cAgent->do_releaseDataAuto(address, 0);
+                default:
+                    return false;
+            }
+        default:
+            return false;
+    }
+    return false;
+}
+
+
 void CFuzzer::tick() {
     this->randomTest(true);
 //    this->caseTest();
