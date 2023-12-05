@@ -35,6 +35,9 @@ private:
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
     void parse_args(int argc, char **argv);
 
+    bool enable_trace = false;
+    std::string tracefile;
+
 public:
     Emu(int argc, char **argv);
     ~Emu();

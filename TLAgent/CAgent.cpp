@@ -486,21 +486,21 @@ namespace tl_agent {
         probeIDpool.update();
     }
 
-    bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
+    int CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
         if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
-            return false;
+            return 10; // record failing condition
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(address);
             auto privilege = entry->privilege[alias];
             auto status = entry->status[alias];
             if (status != S_VALID && status != S_INVALID) {
-                return false;
+                return 20;
             }
             if (status == S_VALID) {
-                if (privilege == TIP) return false;
+                if (privilege == TIP) return 30;
                 // if (privilege == BRANCH && param != BtoT) { param = BtoT; }
-                if (privilege == BRANCH && param != BtoT) return false;
-                if (privilege == INVALID && param == BtoT) return false;
+                if (privilege == BRANCH && param != BtoT) return 40;
+                if (privilege == INVALID && param == BtoT) return 50;
             }
         }
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
@@ -522,23 +522,23 @@ namespace tl_agent {
             break;
         }
 
-        return true;
+        return 0;
     }
 
-    bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
+    int CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
         if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
-            return false;
+            return 10;
         if (localBoard->haskey(address)) {
             auto entry = localBoard->query(address);
             auto privilege = entry->privilege[alias];
             auto status = entry->status[alias];
             if (status != S_VALID && status != S_INVALID) {
-                return false;
+                return 20;
             }
             if (status == S_VALID) {
-                if (privilege == TIP) return false;
+                if (privilege == TIP) return 30;
                 if (privilege == BRANCH && param != BtoT) { param = BtoT; }
-                if (privilege == INVALID && param == BtoT) return false;
+                if (privilege == INVALID && param == BtoT) return 40;
             }
         }
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
@@ -552,23 +552,23 @@ namespace tl_agent {
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
         Log("[%ld] [AcquirePerm] addr: %x alias: %d\n", *cycles, address, alias);
-        return true;
+        return 0;
     }
 
-    bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[], int alias) {
+    int CAgent::do_releaseData(paddr_t address, int param, uint8_t data[], int alias) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
-            return false;
+            return 10;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
         auto privilege = entry->privilege[alias];
         auto status = entry->status[alias];
         if (status != S_VALID) {
-            return false;
+            return 20;
         }
-        if (privilege == INVALID) return false;
-        if (privilege == BRANCH && param != BtoN) return false;
-        if (privilege == TIP && param == BtoN) return false;
+        if (privilege == INVALID) return 30;
+        if (privilege == BRANCH && param != BtoN) return 40;
+        if (privilege == TIP && param == BtoN) return 50;
 
         std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
         req_c->opcode = new uint8_t(ReleaseData);
@@ -586,12 +586,12 @@ namespace tl_agent {
             Dump("%02hhx", data[i]);
         }
         Dump("\n");
-        return true;
+        return 0;
     }
 
-    bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
+    int CAgent::do_releaseDataAuto(paddr_t address, int alias) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
-            return false;
+            return 10;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
@@ -599,7 +599,7 @@ namespace tl_agent {
         int param;
         switch (privilege) {
         case INVALID:
-            return false;
+            return 20;
         case BRANCH:
             param = BtoN;
             break;
@@ -611,7 +611,7 @@ namespace tl_agent {
         }
         auto status = entry->status[alias];
         if (status != S_VALID) {
-            return false;
+            return 30;
         }
 
         std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
@@ -649,7 +649,7 @@ namespace tl_agent {
           Dump("%02hhx", req_c->data[i]);
         }
         Dump("\n");
-        return true;
+        return 0;
     }
 
     void CAgent::timeout_check() {

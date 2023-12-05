@@ -18,6 +18,7 @@ void Emu::parse_args(int argc, char **argv) {
         { "wave-begin", 1, NULL, 'b' },
         { "wave-end",   1, NULL, 'e' },
         { "cycles",     1, NULL, 'c' },
+        { "trace",      1, NULL, 't' },
         { "wave-full",  0, NULL, 'f' },
         { "verbose",    0, NULL, 'v' },
         { "dump-db",    0, NULL, 'd' },
@@ -26,7 +27,7 @@ void Emu::parse_args(int argc, char **argv) {
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:f:vd", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:t:f:vd", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
@@ -40,6 +41,9 @@ void Emu::parse_args(int argc, char **argv) {
 #else
                 printf("[WARN] chisel db is not enabled at compile time, ignore --dump-db\n"); break;
 #endif
+            case 't':
+                this->enable_trace = true;
+                this->tracefile = optarg;               break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -177,56 +181,62 @@ struct Transaction
 
 void Emu::execute(uint64_t nr_cycle) {
     auto max_cycles = nr_cycle;
-    // ====== read from trace file ======
-    std::ifstream file("../trace.txt");
-
-    if (!file.is_open()) {
-        printf("Unable to open trace file\n"); assert(0);
-    }
 
     uint64_t nextTrans = 1000;   // for cache initialization
     std::string line;
     std::queue<std::string> transactions;
-
-    std::getline(file, line); // skip the first line
-    while (std::getline(file, line)) {
-        if (line[0] != '#' && line[0] != '\n') transactions.push(line);
-    }
-    file.close();
-
-    // ====== execute transactions ======
     Transaction t = Transaction();
-    line = transactions.front(); transactions.pop();
-    t.parseManual(line);
+
+    // ====== read from trace file ======
+    if (enable_trace) {
+        std::ifstream file(tracefile);
+
+        if (!file.is_open()) {
+            printf("Unable to open trace file\n"); assert(0);
+        }
+
+        std::getline(file, line); // skip the first line
+        while (std::getline(file, line)) {
+            if (line[0] != '#' && line[0] != '\n') transactions.push(line);
+        }
+        file.close();
+
+        // ====== execute transactions ======
+        line = transactions.front(); transactions.pop();
+        t.parseManual(line);
+    }
 
     while (Cycles < max_cycles) {
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
 
-        if (Cycles == nextTrans) {
-            printf("======= %s\n", line.c_str());
-            printf("Cycles: %ld\n", Cycles + 1000);
+        if (enable_trace) {
+            if (Cycles == nextTrans) {
+                printf("======= %s\n", line.c_str());
+                printf("Cycles: %ld\n", Cycles + 1000);
 
-            if(!fuzzers[t.sender]->transaction(t.channel, t.opcode, t.address, t.param)) {
-                printf("L1_%d Failed to send transaction: %s\n", t.sender, line.c_str());
-                // TODO: should retry when failed
-                assert(0);
+                int code = fuzzers[t.sender]->transaction(t.channel, t.opcode, t.address, t.param);
+                if(code) {
+                    printf("L1_%d Failed to send transaction: %s, by %d\n", t.sender, line.c_str(), code);
+                    // TODO: should retry when failed
+                    assert(0);
+                }
+
+                if (transactions.empty()) {
+                    printf("Finish all transactions\n");
+                    max_cycles = Cycles + 12000;
+                } else { // parse next
+                    line = transactions.front(); transactions.pop();
+                    t.parseManual(line);
+                    nextTrans = t.timestamp + 1000;
+                }
             }
-
-            if (transactions.empty()) {
-                printf("Finish all transactions\n");
-                max_cycles = Cycles + 12000;
-            } else { // parse next
-                line = transactions.front(); transactions.pop();
-                t.parseManual(line);
-                nextTrans = t.timestamp + 1000;
+        } else { // use Fuzzer
+            for (int i = 0; i < NR_AGENTS; i++) {
+                fuzzers[i]->tick();
             }
         }
-
-        // for (int i = 0; i < NR_AGENTS; i++) {
-        //     fuzzers[i]->tick();
-        // }
 
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->update_signal();
