@@ -87,7 +87,7 @@ e.g.
 > sqlite3 <database.db> "SELECT * FROM TLLOG WHERE CHANNEL='0'"
 ```
 
-There is a script in tl-test/script, which help you get better experience on reading the database file:
+** There is a script in tl-test/script, which help you get better experience on reading the database file: **
 ```
-> sqlite3 <database.db> "SELECT * FROM TLLOG" | sh script/convert.sh
+> sqlite3 <database.db> "SELECT * FROM TLLOG" | sh script/convert_tllog.sh
 ```
