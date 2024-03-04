@@ -36,12 +36,12 @@ enum {
     DATASIZE = 64, // Cache line is 64B
     BEATSIZE = 32,
     NR_ULAGENTS = 0,
-    NR_CAGENTS = 2,
+    NR_CAGENTS = 1,
     NR_SOURCEID = 16,
     TIMEOUT_INTERVAL = 5000
 };
 
-typedef uint16_t paddr_t;
+typedef uint64_t paddr_t;
 
 #ifdef ENABLE_CHISEL_DB
 #define tlc_assert(cond, info) \

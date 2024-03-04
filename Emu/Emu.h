@@ -74,7 +74,7 @@ inline void Emu::pos_edge() {
 
 inline void Emu::update_cycles(uint64_t inc) {
     Cycles += inc;
-    if (Cycles % 1000000 == 0) { printf("*\n"); }
+    if (Cycles % 100000000 == 0) { printf("*\n"); }
 }
 
 inline char* Emu::cycle_wavefile(uint64_t cycles, time_t t) {

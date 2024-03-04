@@ -424,7 +424,7 @@ namespace tl_agent {
                 if (grant) {
                     tlc_assert(exact_status != S_A_WAITING_D_INTR, "TODO: check this Ridiculous probe!");
                     std::shared_ptr<ChnE> req_e(new ChnE());
-                    req_e->sink = new uint8_t(*chnD.sink);
+                    req_e->sink = new uint16_t(*chnD.sink);
                     req_e->addr = new paddr_t(addr);
                     req_e->alias = new uint8_t(alias);
                     if (pendingE.is_pending()) {
@@ -590,6 +590,74 @@ namespace tl_agent {
     }
 
     int CAgent::do_releaseDataAuto(paddr_t address, int alias) {
+        if (pendingC.is_pending() || pendingB.is_pending())
+            return 60;
+        if(idpool.full())
+            return 70;
+        if(!localBoard->haskey(address))
+            return 80;
+        // TODO: checkout pendingA
+        // TODO: checkout pendingB - give way?
+        auto entry = localBoard->query(address);
+        auto privilege = entry->privilege[alias];
+        int param;
+        switch (privilege) {
+        case INVALID:
+            return 0; //跳过因为被L3 probe所以失效的L1 releaseData
+        case BRANCH:
+            param = BtoN;
+            break;
+        case TIP:
+            param = TtoN;
+            break;
+        default:
+            tlc_assert(false, "Invalid priviledge detected!");
+        }
+        auto status = entry->status[alias];
+        if (status != S_VALID) {
+            return 30;
+        }
+
+        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
+        req_c->opcode = new uint8_t(ReleaseData);
+        req_c->address = new paddr_t(address);
+        req_c->param = new uint8_t(param);
+        req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
+        req_c->source = new uint8_t(this->idpool.getid());
+        req_c->dirty = new uint8_t(1);
+        req_c->alias = new uint8_t(alias);
+        if (param == BtoN) {
+            uint8_t* data = globalBoard->query(address)->data;
+            req_c->data = data;
+        } else {
+            tlc_assert(param == TtoN, "Wrong execution path!");
+            uint8_t* putdata = new uint8_t[DATASIZE];
+            for (int i = 0; i < DATASIZE; i++) {
+                putdata[i] = (uint8_t)rand();
+            }
+            req_c->data = putdata;
+        }
+
+        // Log("== id == release %d\n", *req_c->source);
+        pendingC.init(req_c, DATASIZE / BEATSIZE);
+        switch (param) {
+        case BtoN:
+            Log("[%ld] [ReleaseData BtoN] addr: %x alias: %x data: ", *cycles, address, alias);
+            break;
+        case TtoN:
+            Log("[%ld] [ReleaseData TtoN] addr: %x alias: %x data: ", *cycles, address, alias);
+            break;
+        }
+
+        for(int i = 0; i < DATASIZE; i++) {
+          Dump("%02hhx", req_c->data[i]);
+        }
+        Dump("\n");
+        return 0;
+    }
+/*
+    // only for trace test, which provides param
+    int CAgent::do_releaseDataAuto_param(paddr_t address, int alias) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return 10;
         // TODO: checkout pendingA
@@ -651,6 +719,9 @@ namespace tl_agent {
         Dump("\n");
         return 0;
     }
+*/
+
+
 
     void CAgent::timeout_check() {
         if (localBoard->get().empty()) {

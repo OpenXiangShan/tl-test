@@ -136,10 +136,21 @@ void abortHandler(int signal) {
 #include <sstream>
 #include <queue>
 
+/*
+// for 16-bit address
 paddr_t fullAddr(unsigned tag, unsigned set, unsigned offset = 0) {
     tag = tag % 0x8;
     set = set % 0x80;
     return (paddr_t)((tag << 13) + (set << 6) + offset);
+}
+*/
+
+// for 36-bit address(same as xiangshan)
+paddr_t fullAddr(unsigned tag, unsigned set, unsigned bank, unsigned offset = 0) {
+    tag = tag % 0x10000;
+    set = set % 0x1000;
+    bank = bank % 0x4;
+    return (paddr_t)((tag << 20) + (set << 8) + (bank << 6) + offset);
 }
 
 // TODO: alias
@@ -169,10 +180,12 @@ struct Transaction
         this->sender = std::stoi(values[1]);
         this->channel = std::stoi(values[2]);
         this->opcode = std::stoi(values[3]);
-        unsigned tag = std::stoul(values[4]);
-        unsigned set = std::stoul(values[5]);
-        this->address = fullAddr(tag, set);
-        this->param = std::stoi(values[6]);
+        this->param = std::stoi(values[4]);
+        unsigned tag = std::stoul(values[5]);
+        unsigned set = std::stoul(values[6]);
+        unsigned bank = std::stoul(values[7]);
+        this->address = fullAddr(tag, set, bank);
+
     }
     void parseDB(std::string path) {
     }
@@ -181,7 +194,7 @@ struct Transaction
 
 void Emu::execute(uint64_t nr_cycle) {
     auto max_cycles = nr_cycle;
-
+    // 缓存初始化时需要给1000拍
     uint64_t nextTrans = 1000;   // for cache initialization
     std::string line;
     std::queue<std::string> transactions;
@@ -200,43 +213,51 @@ void Emu::execute(uint64_t nr_cycle) {
             if (line[0] != '#' && line[0] != '\n') transactions.push(line);
         }
         file.close();
-
+       
         // ====== execute transactions ======
         line = transactions.front(); transactions.pop();
         t.parseManual(line);
     }
 
+    // 当Cycles小于max_cycles时，以下的函数都执行一遍（这个Cycles是有更新逻辑的，在update_cycles()函数中）
     while (Cycles < max_cycles) {
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
 
-        if (enable_trace) {
+        if(enable_trace){   // traceTest
             if (Cycles == nextTrans) {
                 printf("======= %s\n", line.c_str());
-                printf("Cycles: %ld\n", Cycles + 1000);
+                printf("Cycles: %ld\n", Cycles + 1000); //加1000是因为实际的cycle要加上初始化的1000
 
                 int code = fuzzers[t.sender]->transaction(t.channel, t.opcode, t.address, t.param);
-                if(code) {
+
+                if(code == 0 || code == 30 || code == 80) {
+                    if (transactions.empty()) {
+                        printf("Finish all transactions\n");
+                        // 最后所有请求处理完之后，再过12000拍才停止运行，为了避免最后一个请求还没执行完，运行就结束了
+                        max_cycles = Cycles + 12000;
+                    } else { // parse next
+                        line = transactions.front(); transactions.pop();
+                        t.parseManual(line);
+                        nextTrans = nextTrans + 2; //加1000是因为实际的cycle要加上初始化的1000
+                    }
+                }
+                else if(code == 10 || code == 20 || code == 60 || code == 70) {
+                    // retry
+                    nextTrans = nextTrans + 2; //加1000是因为实际的cycle要加上初始化的1000
+                }
+                else {
                     printf("L1_%d Failed to send transaction: %s, by %d\n", t.sender, line.c_str(), code);
                     // TODO: should retry when failed
                     assert(0);
                 }
-
-                if (transactions.empty()) {
-                    printf("Finish all transactions\n");
-                    max_cycles = Cycles + 12000;
-                } else { // parse next
-                    line = transactions.front(); transactions.pop();
-                    t.parseManual(line);
-                    nextTrans = t.timestamp + 1000;
-                }
             }
-        } else { // use Fuzzer
+        } else {    // randomTest
             for (int i = 0; i < NR_AGENTS; i++) {
-                fuzzers[i]->tick();
-            }
-        }
+            fuzzers[i]->tick();
+            } 
+        }   
 
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->update_signal();
