@@ -151,7 +151,7 @@ namespace tl_agent {
                 }
                 req_c->data = all_zero;
             } else {
-                if (*req_c->opcode == ProbeAckData && *req_c->param != BtoN) {
+                if (*req_c->opcode == ProbeAckData && (*req_c->param == TtoN || *req_c->param == TtoB || *req_c->param == TtoT)) {
                     uint8_t *random = new uint8_t[DATASIZE];
                     for (int i = 0; i < DATASIZE; i++) {
                       random[i] = (uint8_t)rand();
@@ -238,6 +238,17 @@ namespace tl_agent {
                     } else {
                         item->update_status(S_SENDING_C, *cycles, *c->alias);
                     }
+                } else {
+                    tlc_assert(false, "Localboard key not found!");
+                }
+                break;
+            }
+            case Release: {
+                std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*c->address, *c->alias));
+                idMap->update(*c->source, idmap_entry);
+
+                if (localBoard->haskey(*c->address)) {
+                    localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles, *c->alias);
                 } else {
                     tlc_assert(false, "Localboard key not found!");
                 }
@@ -413,7 +424,9 @@ namespace tl_agent {
                             info->update_status(S_SENDING_C, *cycles, alias);
                         }
                         info->unpending_priviledge(*cycles, alias);
-                        this->globalBoard->unpending(addr);
+                        if(this->globalBoard->haskey(addr)) {
+                            this->globalBoard->unpending(addr);  // ReleaseData
+                        } 
                         break;
                     }
                     default:
@@ -603,7 +616,7 @@ namespace tl_agent {
         int param;
         switch (privilege) {
         case INVALID:
-            return 0; //跳过因为被L3 probe所以失效的L1 releaseData
+            return false;
         case BRANCH:
             param = BtoN;
             break;
@@ -655,71 +668,7 @@ namespace tl_agent {
         Dump("\n");
         return 0;
     }
-/*
-    // only for trace test, which provides param
-    int CAgent::do_releaseDataAuto_param(paddr_t address, int alias) {
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
-            return 10;
-        // TODO: checkout pendingA
-        // TODO: checkout pendingB - give way?
-        auto entry = localBoard->query(address);
-        auto privilege = entry->privilege[alias];
-        int param;
-        switch (privilege) {
-        case INVALID:
-            return 20;
-        case BRANCH:
-            param = BtoN;
-            break;
-        case TIP:
-            param = TtoN;
-            break;
-        default:
-            tlc_assert(false, "Invalid priviledge detected!");
-        }
-        auto status = entry->status[alias];
-        if (status != S_VALID) {
-            return 30;
-        }
 
-        std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
-        req_c->opcode = new uint8_t(ReleaseData);
-        req_c->address = new paddr_t(address);
-        req_c->param = new uint8_t(param);
-        req_c->size = new uint8_t(ceil(log2((double)DATASIZE)));
-        req_c->source = new uint8_t(this->idpool.getid());
-        req_c->dirty = new uint8_t(1);
-        req_c->alias = new uint8_t(alias);
-        if (param == BtoN) {
-            uint8_t* data = globalBoard->query(address)->data;
-            req_c->data = data;
-        } else {
-            tlc_assert(param == TtoN, "Wrong execution path!");
-            uint8_t* putdata = new uint8_t[DATASIZE];
-            for (int i = 0; i < DATASIZE; i++) {
-                putdata[i] = (uint8_t)rand();
-            }
-            req_c->data = putdata;
-        }
-
-        // Log("== id == release %d\n", *req_c->source);
-        pendingC.init(req_c, DATASIZE / BEATSIZE);
-        switch (param) {
-        case BtoN:
-            Log("[%ld] [ReleaseData BtoN] addr: %x alias: %x data: ", *cycles, address, alias);
-            break;
-        case TtoN:
-            Log("[%ld] [ReleaseData TtoN] addr: %x alias: %x data: ", *cycles, address, alias);
-            break;
-        }
-
-        for(int i = 0; i < DATASIZE; i++) {
-          Dump("%02hhx", req_c->data[i]);
-        }
-        Dump("\n");
-        return 0;
-    }
-*/
 
 
 
