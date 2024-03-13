@@ -60,16 +60,19 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
 }
 
 void CFuzzer::randomTest(bool do_alias) {
-    paddr_t addr = ((rand() % 0x8) << 13) + ((rand() % 0x80) << 6);  // Tag + Set + Offset
+    paddr_t addr = ((rand() % 0x2000) << 20) + ((rand() % 0x4000) << 6);
     int alias = (do_alias) ? (rand() % 4) : 0;
     if (rand() % 2) {
         if (rand() % 3) {
             if (rand() % 2) {
+                // printf("AcquireBlock NtoT, addr = %016x\n", addr);  
                 cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoT
             } else {
+                // printf("AcquireBlock NtoB, addr = %016x\n", addr);  
                 cAgent->do_acquireBlock(addr, tl_agent::NtoB, alias); // AcquireBlock NtoB
             }
         } else {
+            // printf("AcquirePerm NtoT, addr = %016x\n", addr);  
             cAgent->do_acquirePerm(addr, tl_agent::NtoT, alias); // AcquirePerm
         }
     } else {
@@ -80,6 +83,7 @@ void CFuzzer::randomTest(bool do_alias) {
         }
         cAgent->do_releaseData(addr, tl_agent::TtoN, putdata); // ReleaseData
         */
+        // printf("ReleaseData, addr = %016x\n", addr);  
         cAgent->do_releaseDataAuto(addr, alias); // feel free to releaseData according to its priv
     }
 }

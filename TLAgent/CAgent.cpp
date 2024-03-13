@@ -101,7 +101,7 @@ namespace tl_agent {
             Log("[info] id pool full\n");
             return;
         }
-
+        // printf("addr = %016x\n", *b->address);
         tlc_assert(localBoard->haskey(*b->address), "Probe an non-exist block!");
 
         auto info = localBoard->query(*b->address);
@@ -300,6 +300,7 @@ namespace tl_agent {
             req_b->needdata = new uint8_t((*chnB.alias) & 0x1);
             pendingB.init(req_b, 1);
             Log("[%ld] [Probe] addr: %hx alias: %d\n", *cycles, *chnB.address, (*chnB.alias) >> 1);
+            // printf("Probe, addr = ", req_b->address); 
         }
     }
 
@@ -404,6 +405,7 @@ namespace tl_agent {
                             Dump("%02hhx", pendingD.info->data[i]);
                         }
                         Dump("\n");
+                        // printf("GrantData, addr = %016x\n", addr); 
                         this->globalBoard->verify(addr, pendingD.info->data);
                         // info->update_dirty(*chnD.dirty, alias);
                         break;

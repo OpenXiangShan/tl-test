@@ -189,7 +189,7 @@ namespace tl_agent {
         return true;
     }
     
-    bool ULAgent::do_putfulldata(uint64_t address, uint8_t data[]) {
+    bool ULAgent::do_putfulldata(uint32_t address, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
