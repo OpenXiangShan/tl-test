@@ -19,6 +19,7 @@ void Emu::parse_args(int argc, char **argv) {
         { "wave-end",   1, NULL, 'e' },
         { "cycles",     1, NULL, 'c' },
         { "trace",      1, NULL, 't' },
+        { "trace-size", 1, NULL, 'q' },
         { "wave-full",  0, NULL, 'f' },
         { "verbose",    0, NULL, 'v' },
         { "dump-db",    0, NULL, 'd' },
@@ -27,7 +28,7 @@ void Emu::parse_args(int argc, char **argv) {
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:t:f:vd", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:t:q:f:vd", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
@@ -44,6 +45,8 @@ void Emu::parse_args(int argc, char **argv) {
             case 't':
                 this->enable_trace = true;
                 this->tracefile = optarg;               break;
+            case 'q':
+                this->queueSize = atoll(optarg);        break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -136,14 +139,6 @@ void abortHandler(int signal) {
 #include <sstream>
 #include <queue>
 
-/*
-// for 16-bit address
-paddr_t fullAddr(unsigned tag, unsigned set, unsigned offset = 0) {
-    tag = tag % 0x8;
-    set = set % 0x80;
-    return (paddr_t)((tag << 13) + (set << 6) + offset);
-}
-*/
 
 // for 36-bit address(same as xiangshan)
 paddr_t fullAddr(unsigned tag, unsigned set, unsigned bank, unsigned offset = 0) {
@@ -176,14 +171,14 @@ struct Transaction
             values.push_back(value);
         }
         // timestamp, which L1, channel, opcode, tag, set, param
-        this->timestamp = std::stoull(values[0]);
-        this->sender = std::stoi(values[1]);
-        this->channel = std::stoi(values[2]);
-        this->opcode = std::stoi(values[3]);
-        this->param = std::stoi(values[4]);
-        unsigned tag = std::stoul(values[5]);
-        unsigned set = std::stoul(values[6]);
-        unsigned bank = std::stoul(values[7]);
+        this->timestamp = std::stoull(values[1]);
+        this->sender = std::stoi(values[2]);
+        this->channel = std::stoi(values[3]);
+        this->opcode = std::stoi(values[4]);
+        this->param = std::stoi(values[5]);
+        unsigned tag = std::stoul(values[6]);
+        unsigned set = std::stoul(values[7]);
+        unsigned bank = std::stoul(values[8]);
         this->address = fullAddr(tag, set, bank);
 
     }
@@ -194,247 +189,67 @@ struct Transaction
 
 void Emu::execute(uint64_t nr_cycle) {
     auto max_cycles = nr_cycle;
-    // 缓存初始化时需要给1000拍
     uint64_t nextTrans = 1000;   // for cache initialization
     uint8_t trans_i;
     std::string line;
-    std::string line0;
-    std::string line1;
-    std::string line2;
-    std::string line3;
-    std::string line4;
-    std::string line5;
-    std::string line6;
-    std::string line7;
-    std::string line8;
-    std::string line9;
     std::queue<std::string> transactions;
-    std::queue<std::string> transactions0;
-    std::queue<std::string> transactions1;
-    std::queue<std::string> transactions2;
-    std::queue<std::string> transactions3;
-    std::queue<std::string> transactions4;
-    std::queue<std::string> transactions5;
-    std::queue<std::string> transactions6;
-    std::queue<std::string> transactions7;
-    std::queue<std::string> transactions8;
-    std::queue<std::string> transactions9;
     Transaction t = Transaction();
+    int count = 0;
+    // tl-test may jump several requests because L2 replacement may be different from xs_trace
+    int count_exe = 0; 
+    int count_jump_Acquire = 0;
+    int count_jump_Release = 0;
 
     // ====== read from trace file ======
     if (enable_trace) {
-        // file0
-        std::ifstream file0("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_array_1core_all.txt");
-        if (!file0.is_open()) {
-            printf("Unable to open trace file 0\n"); assert(0);
+        std::ifstream file(tracefile);
+        if (!file.is_open()) {
+            printf("Unable to open trace file\n"); assert(0);
         }
-        std::getline(file0, line0); // skip the first line
-        while (std::getline(file0, line0)) {
-            if (line0[0] != '#' && line0[0] != '\n') transactions0.push(line0);
+        while (std::getline(file, line) && count < queueSize) {
+            if(line[0] != '\n') transactions.push(line);
+            count++;
         }
-        file0.close();
-        // file0
-        // std::ifstream file("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_array_1core_all.txt");
-        // if (!file.is_open()) {
-        //     printf("Unable to open trace file 0\n"); assert(0);
-        // }
-        // std::getline(file, line); // skip the first line
-        // while (std::getline(file, line)) {
-        //     if (line[0] != '#' && line[0] != '\n') transactions.push(line);
-        // }
-        // file.close();
+        file.close();
         
         // ====== execute transactions ======
-        transactions = transactions0;
         line = transactions.front(); transactions.pop();
         t.parseManual(line);
-        trans_i = 0;
-        printf("trace file 0\n"); 
     }
 
-    // 当Cycles小于max_cycles时，以下的函数都执行一遍（这个Cycles是有更新逻辑的，在update_cycles()函数中）
+    // When Cycles < max_cycles, the following functions are performed once per cycle
+    // Cycles will update in update_cycles()
     while (Cycles < max_cycles) {
+        
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
 
         if(enable_trace){   // traceTest
             if (Cycles == nextTrans) {
-                // printf("======= %s\n", line.c_str());
-                // printf("Cycles: %ld\n", Cycles + 1000); //加1000是因为实际的cycle要加上初始化的1000
+                printf("======= %s\n", line.c_str());
+                printf("Cycles: %ld\n", Cycles + 1000); //consider time spent on initialization
                 int code = fuzzers[t.sender]->transaction(t.channel, t.opcode, t.address, t.param);
                 if(code == 0 || code == 30 || code == 80) {
-                    if(transactions.empty() && trans_i == 0) {
-                        // file1
-                        std::ifstream file1("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_1.txt");
-                        if (!file1.is_open()) {
-                            printf("Unable to open trace file 1\n"); assert(0);
-                        }
-                        std::getline(file1, line1); 
-                        while (std::getline(file1, line1)) {
-                            if (line1[0] != '#' && line1[0] != '\n') transactions1.push(line1);
-                        }
-                        file1.close();
-                        transactions = transactions1;
-                        line = transactions.front(); transactions.pop();
-                        t.parseManual(line);
-                        trans_i = 1;
-                        printf("trace file 1\n"); 
+                    if(code == 0) count_exe++;
+                    if(code == 30 || code == 80) {
+                        if(t.channel == 4 && t.opcode == 7) count_jump_Release++;
+                        else if(t.channel == 1 && t.opcode == 6) count_jump_Acquire++;
                     }
-                        else if(transactions.empty() && trans_i == 1) {
-                            // file2
-                            std::ifstream file2("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_2.txt");
-                            if (!file2.is_open()) {
-                                printf("Unable to open trace file 2\n"); assert(0);
-                            }
-                            std::getline(file2, line2); 
-                            while (std::getline(file2, line2)) {
-                                if (line1[0] != '#' && line2[0] != '\n') transactions2.push(line2);
-                            }
-                            file2.close();
-                            transactions = transactions2;
-                            line = transactions.front(); transactions.pop();
-                            t.parseManual(line);
-                            trans_i = 2;
-                            printf("trace file 2\n"); 
-                        }
-                        else if(transactions.empty() && trans_i == 2) {
-                            // file3
-                            std::ifstream file3("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_3.txt");
-                            if (!file3.is_open()) {
-                                printf("Unable to open trace file 3\n"); assert(0);
-                        }
-                        std::getline(file3, line3); 
-                        while (std::getline(file3, line3)) {
-                            if (line3[0] != '#' && line3[0] != '\n') transactions3.push(line3);
-                        }
-                        file3.close();
-                        transactions = transactions3;
-                        line = transactions.front(); transactions.pop();
-                        t.parseManual(line);
-                        trans_i = 3;
-                        printf("trace file 3\n"); 
-                    }
-                    else if(transactions.empty() && trans_i == 3) {
-                        // file4
-                        std::ifstream file4("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_4.txt");
-                        if (!file4.is_open()) {
-                            printf("Unable to open trace file 4\n"); assert(0);
-                        }
-                        std::getline(file4, line4); 
-                        while (std::getline(file4, line4)) {
-                            if (line4[0] != '#' && line4[0] != '\n') transactions4.push(line4);
-                        }
-                        file4.close();
-                        transactions = transactions4;
-                        line = transactions.front(); transactions.pop();
-                        t.parseManual(line);
-                        trans_i = 4;
-                        printf("trace file 4\n"); 
-                    }
-                    else if(transactions.empty() && trans_i == 4) {
-                        // file5
-                        std::ifstream file5("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_5.txt");
-                        if (!file5.is_open()) {
-                            printf("Unable to open trace file 5\n"); assert(0);
-                        }
-                        std::getline(file5, line5); 
-                        while (std::getline(file5, line5)) {
-                            if (line5[0] != '#' && line5[0] != '\n') transactions5.push(line5);
-                        }
-                        file5.close();
-                        transactions = transactions5;
-                        line = transactions.front(); transactions.pop();
-                        t.parseManual(line);
-                        trans_i = 5;
-                        printf("trace file 5\n"); 
-                    }
-                    else if(transactions.empty() && trans_i == 5) {
-                        // file6
-                        std::ifstream file6("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_6.txt");
-                        if (!file6.is_open()) {
-                            printf("Unable to open trace file 6\n"); assert(0);
-                        }
-                        std::getline(file6, line6); 
-                        while (std::getline(file6, line6)) {
-                            if (line6[0] != '#' && line6[0] != '\n') transactions6.push(line6);
-                        }
-                        file6.close();
-                        transactions = transactions6;
-                        line = transactions.front(); transactions.pop();
-                        t.parseManual(line);
-                        trans_i = 6;
-                        printf("trace file 6\n"); 
-                    }
-                    else if(transactions.empty() && trans_i == 6) {
-                        // file7
-                        std::ifstream file7("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_7.txt");
-                        if (!file7.is_open()) {
-                            printf("Unable to open trace file 7\n"); assert(0);
-                        }
-                        std::getline(file7, line7); 
-                        while (std::getline(file7, line7)) {
-                            if (line7[0] != '#' && line7[0] != '\n') transactions7.push(line7);
-                        }
-                        file7.close();
-                        transactions = transactions7;
-                        line = transactions.front(); transactions.pop();
-                        t.parseManual(line);
-                        trans_i = 7;
-                        printf("trace file 7\n"); 
-                    }
-                    else if(transactions.empty() && trans_i == 7) {
-                        // file8
-                        std::ifstream file8("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_8.txt");
-                        if (!file8.is_open()) {
-                            printf("Unable to open trace file 8\n"); assert(0);
-                        }
-                        std::getline(file8, line8); 
-                        while (std::getline(file8, line8)) {
-                            if (line8[0] != '#' && line8[0] != '\n') transactions8.push(line8);
-                        }
-                        file8.close();
-                        transactions = transactions8;
-                        line = transactions.front(); transactions.pop();
-                        t.parseManual(line);
-                        trans_i = 8;
-                        printf("trace file 8\n"); 
-                    }
-                    else if(transactions.empty() && trans_i == 8) {
-                        // file9
-                        std::ifstream file9("/nfs/home/zhangruisi/Downloads/xs-env/buildfile/trace_1core_all_9.txt");
-                        if (!file9.is_open()) {
-                            printf("Unable to open trace file 9\n"); assert(0);
-                        }
-                        std::getline(file9, line9); 
-                        while (std::getline(file9, line9)) {
-                            if (line9[0] != '#' && line9[0] != '\n') transactions9.push(line9);
-                        }
-                        file9.close();
-                        transactions = transactions9;
-                        line = transactions.front(); transactions.pop();
-                        t.parseManual(line);
-                        trans_i = 9;
-                        printf("trace file 9\n"); 
-                    }
-                    else if(transactions.empty() && trans_i == 9) {
+                    if(transactions.empty()){
                         printf("Finish all transactions\n");
-                        // 最后所有请求处理完之后，再过12000拍才停止运行，为了避免最后一个请求还没执行完，运行就结束了
-                        max_cycles = Cycles + 12000;
-                    }
+                        max_cycles = Cycles + 2000;
+                    }  
                     else {
                         // parse next
-                        if(t.channel == 4 && t.opcode == 7) {   // 如果是ReleaseData则跳过下一条
-                        line = transactions.front(); transactions.pop();
-                        } 
                         line = transactions.front(); transactions.pop();
                         t.parseManual(line);
-                        nextTrans = nextTrans + 2; //加1000是因为实际的cycle要加上初始化的1000
+                        nextTrans = nextTrans + 2; // send a request every two cycles
                     }  
                 }
                 else if(code == 10 || code == 20 || code == 60 || code == 70) {
                     // retry
-                    nextTrans = nextTrans + 2; //加1000是因为实际的cycle要加上初始化的1000
+                    nextTrans = nextTrans + 2; 
                 }
                 else {
                     printf("L1_%d Failed to send transaction: %s, by %d\n", t.sender, line.c_str(), code);
@@ -468,6 +283,9 @@ void Emu::execute(uint64_t nr_cycle) {
         }
 #endif
     }
+    printf("count_exe = %d\n", count_exe);
+    printf("count_jump_Acquire = %d\n", count_jump_Acquire);
+    printf("count_jump_Release = %d\n", count_jump_Release);
 }
 
 // the following code is to be replaced soon, only for test

@@ -512,7 +512,7 @@ namespace tl_agent {
                 return 20;
             }
             if (status == S_VALID) {
-                if (privilege == TIP) return 30;
+                // if (privilege == TIP) return 30;
                 // if (privilege == BRANCH && param != BtoT) { param = BtoT; }
                 if (privilege == BRANCH && param != BtoT) return 40;
                 if (privilege == INVALID && param == BtoT) return 50;
