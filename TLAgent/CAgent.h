@@ -8,6 +8,7 @@
 #include "BaseAgent.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
+#include "Bundle.h"
 
 namespace tl_agent {
 
@@ -61,11 +62,11 @@ namespace tl_agent {
     class CAgent : public BaseAgent {
     private:
         uint64_t *cycles;
-        PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA;
-        PendingTrans<ChnB> pendingB;
-        PendingTrans<ChnC<ReqField, EchoField, DATASIZE>> pendingC;
-        PendingTrans<ChnD<RespField, EchoField, DATASIZE>> pendingD;
-        PendingTrans<ChnE> pendingE;
+        PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
+        PendingTrans<BundleChannelB> pendingB;
+        PendingTrans<BundleChannelC<ReqField, EchoField, DATASIZE>> pendingC;
+        PendingTrans<BundleChannelD<RespField, EchoField, DATASIZE>> pendingD;
+        PendingTrans<BundleChannelE> pendingE;
         /* Here we need a scoreboard called localBoard maintaining address->info
          * For convenience, an idMap(id->addr) is also maintained
          */
@@ -75,12 +76,12 @@ namespace tl_agent {
         void timeout_check();
 
     public:
-        CAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles);
-        ~CAgent() = default;
-        Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
-        void handle_b(std::shared_ptr<ChnB> &b);
-        Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c);
-        Resp send_e(std::shared_ptr<ChnE> &e);
+        CAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles) noexcept;
+        virtual ~CAgent() noexcept;
+        Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a);
+        void handle_b   (std::shared_ptr<BundleChannelB>&                                   b);
+        Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c);
+        Resp send_e     (std::shared_ptr<BundleChannelE>&                                   e);
         void fire_a();
         void fire_b();
         void fire_c();
@@ -91,7 +92,7 @@ namespace tl_agent {
 
         bool do_acquireBlock(paddr_t address, int param, int alias);
         bool do_acquirePerm(paddr_t address, int param, int alias);
-        bool do_releaseData(paddr_t address, int param, uint8_t data[], int alias);
+        bool do_releaseData(paddr_t address, int param, shared_tldata_t data, int alias);
         bool do_releaseDataAuto(paddr_t address, int alias);
     };
 

@@ -41,6 +41,35 @@ enum {
     TIMEOUT_INTERVAL = 5000
 };
 
+//
+using tldata_t          = uint8_t[DATASIZE];
+
+class wrapped_tldata_t {
+    /* NOTICE: It's disappointing that GCC-11 still doen't obtain full C++20 library support.
+    *          And C++20 support is still not that general on today's machine. :(
+    *          So we need this wrapper to pseudoly implement C++20 shared_ptr feature.
+    */
+public:
+    uint8_t     data[DATASIZE];
+
+public:
+    operator uint8_t*() noexcept { return data; }
+    operator const uint8_t*() const noexcept { return data; };
+    operator tldata_t&() noexcept { return data; }
+    operator const tldata_t&() const noexcept { return data; }
+    uint8_t& operator[](size_t index) noexcept { return data[index]; };
+    uint8_t  operator[](size_t index) const noexcept { return data[index]; };
+};
+
+using shared_tldata_t   = std::shared_ptr<wrapped_tldata_t>;
+
+inline shared_tldata_t make_shared_tldata() noexcept
+{
+    return std::make_shared<wrapped_tldata_t>();
+}
+
+//
+
 typedef uint16_t paddr_t;
 
 #ifdef ENABLE_CHISEL_DB
