@@ -12,8 +12,8 @@ class Fuzzer {
 protected:
     uint64_t *cycles;
 public:
-    Fuzzer() = default;
-    ~Fuzzer() = default;
+    Fuzzer() noexcept = default;
+    virtual ~Fuzzer() noexcept = default;
     virtual void tick() = 0;
     void set_cycles(uint64_t *cycles) {
         this->cycles = cycles;
@@ -24,7 +24,8 @@ class ULFuzzer: public Fuzzer {
 private:
     tl_agent::ULAgent *ulAgent;
 public:
-    ULFuzzer(tl_agent::ULAgent *ulAgent);
+    ULFuzzer(tl_agent::ULAgent *ulAgent) noexcept;
+    virtual ~ULFuzzer() noexcept = default;
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
@@ -35,7 +36,8 @@ class CFuzzer: public Fuzzer {
 private:
     tl_agent::CAgent *cAgent;
 public:
-    CFuzzer(tl_agent::CAgent *cAgent);
+    CFuzzer(tl_agent::CAgent *cAgent) noexcept;
+    virtual ~CFuzzer() noexcept = default;
     void randomTest(bool do_alias);
     void caseTest();
     void tick();

@@ -2,9 +2,10 @@
 // Created by wkf on 2021/10/29.
 //
 
+#include "../TLAgent/TLEnum.h"
 #include "Fuzzer.h"
 
-CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
+CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->cAgent = cAgent;
 }
 
@@ -38,9 +39,9 @@ void CFuzzer::caseTest() {
         this->cAgent->do_acquireBlock(0x1040, tl_agent::NtoT, 0);
     }
     if (*cycles == 300) {
-        uint8_t* putdata = new uint8_t[DATASIZE];
+        auto putdata = make_shared_tldata();
         for (int i = 0; i < DATASIZE; i++) {
-            putdata[i] = (uint8_t)rand();
+            putdata->data[i] = (uint8_t)rand();
         }
         this->cAgent->do_releaseData(0x1040, tl_agent::TtoN, putdata, 0);
     }

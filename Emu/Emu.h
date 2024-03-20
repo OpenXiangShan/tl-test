@@ -27,8 +27,11 @@ private:
     VTestTop *dut_ptr;
     VerilatedVcdC* tfp;
     GlobalBoard<paddr_t> *globalBoard;
-    BaseAgent_t ** const agents = new BaseAgent_t*[NR_AGENTS];
-    Fuzzer ** const fuzzers = new Fuzzer*[NR_AGENTS];
+    //
+    BaseAgent_t**           const agents    = new BaseAgent_t*[NR_AGENTS];
+    Fuzzer**                const fuzzers   = new Fuzzer*[NR_AGENTS];
+    BaseAgent_t::tlport_t** const ports     = new BaseAgent_t::tlport_t*[NR_AGENTS];
+    //
     uint64_t seed = 0, wave_begin = 0, wave_end = 0;
     bool enable_wave = true;
     bool wave_full = false;
@@ -44,8 +47,8 @@ public:
     inline void pos_edge();
     inline void update_cycles(uint64_t inc);
     void execute(uint64_t nr_cycle);
-    tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEATSIZE>* naive_gen_port();
-    tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEATSIZE>* naive_gen_port2();
+    BaseAgent_t::tlport_t* naive_gen_port();
+    BaseAgent_t::tlport_t* naive_gen_port2();
 };
 
 inline void Emu::reset(uint64_t n) {

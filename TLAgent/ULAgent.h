@@ -8,6 +8,7 @@
 #include "BaseAgent.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
+#include "Bundle.h"
 
 namespace tl_agent {
 
@@ -40,8 +41,8 @@ namespace tl_agent {
     class ULAgent : public BaseAgent {
     private:
         uint64_t* cycles;
-        PendingTrans<ChnA<ReqField, EchoField, DATASIZE>> pendingA;
-        PendingTrans<ChnD<RespField, EchoField, DATASIZE>> pendingD;
+        PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
+        PendingTrans<BundleChannelD<RespField, EchoField, DATASIZE>> pendingD;
         /* We only need a localBoard recording SourceID -> UL_SBEntry
          * because UL agent needn't store data.
          */
@@ -49,11 +50,11 @@ namespace tl_agent {
         void timeout_check();
 
     public:
-        ULAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles);
-        ~ULAgent() = default;
-        Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a);
-        void handle_b(std::shared_ptr<ChnB> &b);
-        Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c);
+        ULAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles) noexcept;
+        virtual ~ULAgent() noexcept;
+        Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a);
+        void handle_b   (std::shared_ptr<BundleChannelB>&                                   b);
+        Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c);
         void fire_a();
         void fire_b();
         void fire_c();
@@ -61,10 +62,10 @@ namespace tl_agent {
         void fire_e();
         void handle_channel();
         void update_signal();
-        bool do_getAuto(paddr_t address);
-        bool do_get(paddr_t address, uint8_t size, uint32_t mask);
-        bool do_putfulldata(paddr_t address, uint8_t data[]);
-        bool do_putpartialdata(uint16_t address, uint8_t size, uint32_t mask, uint8_t data[]);
+        bool do_getAuto         (paddr_t address);
+        bool do_get             (paddr_t address, uint8_t size, uint32_t mask);
+        bool do_putfulldata     (paddr_t address, shared_tldata_t data);
+        bool do_putpartialdata  (uint16_t address, uint8_t size, uint32_t mask, shared_tldata_t data);
     };
 
 }

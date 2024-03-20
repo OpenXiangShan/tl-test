@@ -7,6 +7,7 @@
 
 #include <set>
 #include "Port.h"
+#include "Bundle.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
 
@@ -112,17 +113,20 @@ namespace tl_agent {
     };
 
     class BaseAgent {
+    public:
+        using tlport_t = Port<ReqField, RespField, EchoField, BEATSIZE>;
+
     protected:
-        Port<ReqField, RespField, EchoField, BEATSIZE> *port;
-        GlobalBoard<paddr_t> *globalBoard;
-        IDPool idpool;
+        tlport_t                *port;
+        GlobalBoard<paddr_t>    *globalBoard;
+        IDPool                  idpool;
         virtual void timeout_check() = 0;
         int id;
 
     public:
-        virtual Resp send_a(std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> &a) = 0;
-        virtual void handle_b(std::shared_ptr<ChnB> &b) = 0;
-        virtual Resp send_c(std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> &c) = 0;
+        virtual Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a) = 0;
+        virtual void handle_b   (std::shared_ptr<BundleChannelB>&                                   b) = 0;
+        virtual Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c) = 0;
         virtual void fire_a() = 0;
         virtual void fire_b() = 0;
         virtual void fire_c() = 0;
@@ -133,7 +137,7 @@ namespace tl_agent {
         BaseAgent(): idpool(0, NR_SOURCEID) {};
         virtual ~BaseAgent() = default;
 
-        void connect(Port<ReqField, RespField, EchoField, BEATSIZE> *p){ this->port = p; }
+        void connect(tlport_t* p){ this->port = p; }
     };
 
 }

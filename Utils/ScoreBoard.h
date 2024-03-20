@@ -4,6 +4,7 @@
 
 #include <map>
 #include <array>
+#include <memory>
 #include "Common.h"
 
 #ifndef TLC_TEST_SCOREBOARD_H
@@ -35,8 +36,8 @@ public:
         SB_PENDING
     };
     int status;
-    uint8_t* data;
-    uint8_t* pending_data; // used for put&release
+    shared_tldata_t data;
+    shared_tldata_t pending_data; // used for put&release
 };
 
 template<typename T>
@@ -45,7 +46,7 @@ private:
     int data_check(const uint8_t* dut, const uint8_t* ref, std::string assert_info);
     uint8_t init_zeros[DATASIZE];
 public:
-    int verify(const T& key, const uint8_t* data);
+    int verify(const T& key, shared_tldata_t data);
     void unpending(const T& key);
 };
 
@@ -126,21 +127,21 @@ int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref, std::stri
 }
 
 template<typename T>
-int GlobalBoard<T>::verify(const T& key, const uint8_t* data) {
+int GlobalBoard<T>::verify(const T& key, shared_tldata_t data) {
     if (this->mapping.count(key) == 0) { // we assume data is all zero initially
-        return this->data_check(data, init_zeros, "Init data is non-zero!");
+        return this->data_check(data->data, init_zeros, "Init data is non-zero!");
     }
     tlc_assert(this->mapping.count(key) == 1, "Duplicate records found in GlobalBoard!");
 
     Global_SBEntry value = *this->mapping.at(key).get();
     if (value.status == Global_SBEntry::SB_VALID) {
         tlc_assert(value.data != nullptr, "NULL occured in valid entry of GlobalBoard!");
-        return this->data_check(data, value.data, "Data mismatch!");
+        return this->data_check(data->data, value.data->data, "Data mismatch!");
     } else if (value.status == Global_SBEntry::SB_PENDING) {
         bool flag = true;
         if (value.data != nullptr) {
             for (int i = 0; i < DATASIZE; i++) {
-                if (data[i] != value.data[i]) {
+                if (data->data[i] != value.data->data[i]) {
                     flag = false;
                     break;
                 }
@@ -148,7 +149,7 @@ int GlobalBoard<T>::verify(const T& key, const uint8_t* data) {
             if (flag) return 0;
         } else {
             for (int i = 0; i < DATASIZE; i++) {
-                if (data[i] != init_zeros[i]) {
+                if (data->data[i] != init_zeros[i]) {
                     flag = false;
                     break;
                 }
@@ -156,7 +157,7 @@ int GlobalBoard<T>::verify(const T& key, const uint8_t* data) {
             if (flag) return 0;
         }
         tlc_assert(value.pending_data != nullptr, "NULL occured in pending entry of GlobalBoard!");
-        this->data_check(data, value.pending_data, "Data mismatch!");
+        this->data_check(data->data, value.pending_data->data, "Data mismatch!");
         return 0;
     } else {
         // TODO: handle other status
