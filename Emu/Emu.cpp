@@ -29,7 +29,7 @@ void Emu::parse_args(int argc, char **argv) {
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:fv", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:f:vd", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
