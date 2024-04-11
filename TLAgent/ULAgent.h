@@ -47,25 +47,28 @@ namespace tl_agent {
          * because UL agent needn't store data.
          */
         ScoreBoard<int, UL_SBEntry> *localBoard; // SourceID -> UL_SBEntry
-        void timeout_check();
+        void timeout_check() override;
 
     public:
         ULAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles) noexcept;
         virtual ~ULAgent() noexcept;
-        Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a);
-        void handle_b   (std::shared_ptr<BundleChannelB>&                                   b);
-        Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c);
-        void fire_a();
-        void fire_b();
-        void fire_c();
-        void fire_d();
-        void fire_e();
-        void handle_channel();
-        void update_signal();
+
+        uint64_t    cycle() const noexcept override;
+
+        Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a) override;
+        void handle_b   (std::shared_ptr<BundleChannelB>&                                   b) override;
+        Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c) override;
+        void fire_a() override;
+        void fire_b() override;
+        void fire_c() override;
+        void fire_d() override;
+        void fire_e() override;
+        void handle_channel() override;
+        void update_signal() override;
         bool do_getAuto         (paddr_t address);
         bool do_get             (paddr_t address, uint8_t size, uint32_t mask);
-        bool do_putfulldata     (paddr_t address, shared_tldata_t data);
-        bool do_putpartialdata  (uint16_t address, uint8_t size, uint32_t mask, shared_tldata_t data);
+        bool do_putfulldata     (paddr_t address, shared_tldata_t<DATASIZE> data);
+        bool do_putpartialdata  (paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data);
     };
 
 }

@@ -39,7 +39,7 @@ void CFuzzer::caseTest() {
         this->cAgent->do_acquireBlock(0x1040, tl_agent::NtoT, 0);
     }
     if (*cycles == 300) {
-        auto putdata = make_shared_tldata();
+        auto putdata = make_shared_tldata<DATASIZE>();
         for (int i = 0; i < DATASIZE; i++) {
             putdata->data[i] = (uint8_t)rand();
         }

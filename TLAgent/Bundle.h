@@ -33,7 +33,7 @@ namespace tl_agent {
         uint8_t             source;
         uint32_t            mask;
         paddr_t             address;
-        shared_tldata_t     data;
+        shared_tldata_t<N>  data;
         Usr                 usr;
         Echo                echo;
         uint8_t             corrupt;
@@ -63,7 +63,7 @@ namespace tl_agent {
         Usr                 usr;
         Echo                echo;
         uint8_t             dirty;
-        shared_tldata_t     data;
+        shared_tldata_t<N>  data;
         uint8_t             corrupt;
         uint8_t             alias;
     };
@@ -80,7 +80,7 @@ namespace tl_agent {
         Usr                 usr;
         Echo                echo;
         uint8_t             dirty;
-        shared_tldata_t     data;
+        shared_tldata_t<N>  data;
         uint8_t             corrupt;
     };
 
@@ -89,6 +89,16 @@ namespace tl_agent {
         uint8_t             sink;
         paddr_t             addr;  // used for index scoreboard
         uint8_t             alias;
+    };
+
+    template<class ReqField, class RespField, class EchoField, std::size_t N>
+    class Bundle {
+    public:
+        BundleChannelA<ReqField, EchoField, N>  a;
+        BundleChannelB                          b;
+        BundleChannelC<ReqField, EchoField, N>  c;
+        BundleChannelD<RespField, EchoField, N> d;
+        BundleChannelE                          e;
     };
 }
 

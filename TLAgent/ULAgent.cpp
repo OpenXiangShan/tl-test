@@ -9,11 +9,10 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int id, uint64_t* cycles) noexcept :
-            BaseAgent(), pendingA(), pendingD()
+    ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int sysId, uint64_t* cycles) noexcept :
+            BaseAgent(sysId), pendingA(), pendingD()
     {
         this->globalBoard = gb;
-        this->id = id;
         this->cycles = cycles;
         this->localBoard = new ScoreBoard<int, UL_SBEntry>();
     }
@@ -21,6 +20,11 @@ namespace tl_agent {
     ULAgent::~ULAgent() noexcept
     {
         delete this->localBoard;
+    }
+
+    uint64_t ULAgent::cycle() const noexcept 
+    {
+        return *this->cycles;
     }
 
     Resp ULAgent::send_a(std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>> &a) {
@@ -41,7 +45,7 @@ namespace tl_agent {
                     this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
                 }
                 */
-                std::memcpy(this->port->a.data, a->data->data + BEATSIZE * beat_num, BEATSIZE);
+                std::memcpy(this->port->a.data->data, a->data->data + BEATSIZE * beat_num, BEATSIZE);
                 break;
             }
             case PutPartialData: {
@@ -54,18 +58,18 @@ namespace tl_agent {
                     this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
                 }
                 */
-                std::memcpy(this->port->a.data, a->data->data + BEATSIZE * beat_num, BEATSIZE);
+                std::memcpy(this->port->a.data->data, a->data->data + BEATSIZE * beat_num, BEATSIZE);
                 break;
             }
             default:
-                tlc_assert(false, "Unknown opcode for channel A!");
+                tlc_assert(false, this, "Unknown opcode for channel A!");
         }
-        *this->port->a.opcode   = a->opcode;
-        *this->port->a.address  = a->address;
-        *this->port->a.size     = a->size;
-        *this->port->a.mask     = a->mask;
-        *this->port->a.source   = a->source;
-        *this->port->a.valid    = true;
+        this->port->a.opcode   = a->opcode;
+        this->port->a.address  = a->address;
+        this->port->a.size     = a->size;
+        this->port->a.mask     = a->mask;
+        this->port->a.source   = a->source;
+        this->port->a.valid    = true;
         return OK;
     }
 
@@ -75,13 +79,13 @@ namespace tl_agent {
 
     void ULAgent::fire_a() {
         if (this->port->a.fire()) {
-            auto chnA = this->port->a;
-            bool hasData = *chnA.opcode == PutFullData || *chnA.opcode == PutPartialData;
-            *chnA.valid = false;
-            tlc_assert(pendingA.is_pending(), "No pending A but A fired!");
-            pendingA.update();
+            auto& chnA = this->port->a;
+            bool hasData = chnA.opcode == PutFullData || chnA.opcode == PutPartialData;
+            chnA.valid = false;
+            tlc_assert(pendingA.is_pending(), this, "No pending A but A fired!");
+            pendingA.update(this);
             if (!pendingA.is_pending()) { // req A finished
-                this->localBoard->query(pendingA.info->source)->update_status(S_A_WAITING_D, *cycles);
+                this->localBoard->query(this, pendingA.info->source)->update_status(S_A_WAITING_D, *cycles);
                 if (hasData) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
                     global_SBEntry->pending_data = pendingA.info->data;
@@ -107,23 +111,23 @@ namespace tl_agent {
 
     void ULAgent::fire_d() {
         if (this->port->d.fire()) {
-            auto chnD = this->port->d;
-            auto info = localBoard->query(*chnD.source);
-            bool hasData = *chnD.opcode == GrantData || *chnD.opcode == AccessAckData;
-            tlc_assert(info->status == S_A_WAITING_D, "Status error!");
+            auto& chnD = this->port->d;
+            auto info = localBoard->query(this, chnD.source);
+            bool hasData = chnD.opcode == GrantData || chnD.opcode == AccessAckData;
+            tlc_assert(info->status == S_A_WAITING_D, this, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 // TODO: wrap the following assertions into a function
-                tlc_assert(*chnD.opcode == pendingD.info->opcode, "Opcode mismatch among beats!");
-                tlc_assert(*chnD.param  == pendingD.info->param,  "Param mismatch among beats!");
-                tlc_assert(*chnD.source == pendingD.info->source, "Source mismatch among beats!");
-                pendingD.update();
+                tlc_assert(chnD.opcode == pendingD.info->opcode, this, "Opcode mismatch among beats!");
+                tlc_assert(chnD.param  == pendingD.info->param,  this, "Param mismatch among beats!");
+                tlc_assert(chnD.source == pendingD.info->source, this, "Source mismatch among beats!");
+                pendingD.update(this);
             } else { // new D resp
                 auto resp_d = std::make_shared<BundleChannelD<RespField, EchoField, DATASIZE>>();
-                resp_d->opcode  = *chnD.opcode;
-                resp_d->param   = *chnD.param;
-                resp_d->source  = *chnD.source;
-                resp_d->data    = hasData ? make_shared_tldata() : nullptr;
-                int nr_beat     = (*chnD.opcode == Grant || *chnD.opcode == AccessAck || *chnD.size <= 5) ? 0 : 1; // TODO: parameterize it
+                resp_d->opcode  = chnD.opcode;
+                resp_d->param   = chnD.param;
+                resp_d->source  = chnD.source;
+                resp_d->data    = hasData ? make_shared_tldata<DATASIZE>() : nullptr;
+                int nr_beat     = (chnD.opcode == Grant || chnD.opcode == AccessAck || chnD.size <= 5) ? 0 : 1; // TODO: parameterize it
                 pendingD.init(resp_d, nr_beat);
             }
             // Store data to pendingD
@@ -134,23 +138,25 @@ namespace tl_agent {
                     pendingD.info->data[i] = chnD.data[i - BEATSIZE * beat_num];
                 }
                 */
-                std::memcpy(pendingD.info->data->data + BEATSIZE * beat_num, chnD.data, BEATSIZE);
+                std::memcpy(pendingD.info->data->data + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
             }
             if (!pendingD.is_pending()) {
                 // ULAgent needn't care about endurance
                 if (hasData) {
-                    Log("[%ld] [AccessAckData] addr: %hx data: ", *cycles, info->address);
+                    Log(this, Append("[", *cycles, "] [AccessAckData] ")
+                        .Hex().ShowBase().Append("addr: ", info->address, ", data: "));
                     for(int i = 0; i < DATASIZE; i++) {
-                        Dump("%02hhx", pendingD.info->data->data[i]);
+                        Dump(Hex().NextWidth(2).Fill('0').Append(pendingD.info->data->data[i]));
                     }
-                    Dump("\n");
-                    this->globalBoard->verify(info->address, pendingD.info->data);
-                } else if (*chnD.opcode == AccessAck) { // finish pending status in GlobalBoard
-                    Log("[%ld] [AccessAck] addr: %hx\n", *cycles, info->address);
-                    this->globalBoard->unpending(info->address);
+                    Dump(EndLine());
+                    this->globalBoard->verify(this, info->address, pendingD.info->data);
+                } else if (chnD.opcode == AccessAck) { // finish pending status in GlobalBoard
+                    Log(this, Append("[", *cycles, "] [AccessAck] ")
+                        .Hex().ShowBase().Append("addr: ", info->address).EndLine());
+                    this->globalBoard->unpending(this, info->address);
                 }
-                localBoard->erase(*chnD.source);
-                this->idpool.freeid(*chnD.source);
+                localBoard->erase(this, chnD.source);
+                this->idpool.freeid(chnD.source);
             }
         }
     }
@@ -167,18 +173,18 @@ namespace tl_agent {
     }
 
     void ULAgent::update_signal() {
-        *this->port->d.ready = true; // TODO: do random here
+        this->port->d.ready = true; // TODO: do random here
         if (pendingA.is_pending()) {
             // TODO: do delay here
             send_a(pendingA.info);
         } else {
-            *this->port->a.valid = false;
+            this->port->a.valid = false;
         }
         // do timeout check lazily
         if (*this->cycles % TIMEOUT_INTERVAL == 0) {
             this->timeout_check();
         }
-        idpool.update();
+        idpool.update(this);
     }
     
     bool ULAgent::do_getAuto(paddr_t address) {
@@ -191,7 +197,8 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         pendingA.init(req_a, 1);
-        Log("[%ld] [Get] addr: %x\n", *cycles, address);
+        Log(this, Append("[", *cycles, "] [Get] ")
+            .Hex().ShowBase().Append("addr: ", address).EndLine());
         return true;
     }
 
@@ -205,14 +212,15 @@ namespace tl_agent {
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
         pendingA.init(req_a, 1);
-        Log("[%ld] [Get] addr: %x size: %x\n", *cycles, address, size);
+        Log(this, Append("[", *cycles, "] [Get] ")
+            .Hex().ShowBase().Append("addr: ", address, ", size: ", size).EndLine());
         return true;
     }
     
-    bool ULAgent::do_putfulldata(uint16_t address, shared_tldata_t data) {
+    bool ULAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data) {
         if (pendingA.is_pending() || idpool.full())
             return false;
-        if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
+        if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING) {
             return false;
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
@@ -223,18 +231,19 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
         pendingA.init(req_a, DATASIZE / BEATSIZE);
-        Log("[%ld] [PutFullData] addr: %x data: ", *cycles, address);
+        Log(this, Append("[", *cycles, "] [PutFullData] ")
+            .Hex().ShowBase().Append("addr: ", address, ", data: "));
         for(int i = 0; i < DATASIZE; i++) {
-            Dump("%02hhx", data->data[i]);
+            Dump(Hex().NextWidth(2).Fill('0').Append(data->data[i]));
         }
-        Dump("\n");
+        Dump(EndLine());
         return true;
     }
 
-    bool ULAgent::do_putpartialdata(uint16_t address, uint8_t size, uint32_t mask, shared_tldata_t data) {
+    bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data) {
         if (pendingA.is_pending() || idpool.full())
             return false;
-        if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
+        if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING)
             return false;
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
         req_a->opcode   = PutPartialData;
@@ -245,11 +254,12 @@ namespace tl_agent {
         req_a->data     = data;
         int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
         pendingA.init(req_a, nrBeat);
-        Log("[%ld] [PutPartialData] addr: %x data: ", *cycles, address);
+        Log(this, Append("[", *cycles, "] [PutPartialData] ")
+            .Hex().ShowBase().Append("addr: ", address, ", data: "));
         for(int i = 0; i < DATASIZE; i++) {
-            Dump("%02hhx", data->data[i]);
+            Dump(Hex().NextWidth(2).Fill('0').Append(data->data[i]));
         }
-        Dump("\n");
+        Dump(EndLine());
         return true;
     }
     
@@ -261,10 +271,14 @@ namespace tl_agent {
             auto value = it->second;
             if (value->status != S_INVALID && value->status != S_VALID) {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
-                    printf("Now time:   %lu\n", *this->cycles);
-                    printf("Last stamp: %lu\n", value->time_stamp);
-                    printf("Status:     %d\n", value->status);
-                    tlc_assert(false,  "Transaction time out");
+
+                    std::cout << Gravity::StringAppender()
+                        .Append("Now time:   ", *this->cycles).EndLine()
+                        .Append("Last stamp: ", value->time_stamp).EndLine()
+                        .Append("Status:     ", value->status).EndLine()
+                    .ToString();
+
+                    tlc_assert(false, this, "Transaction time out");
                 }
             }
         }

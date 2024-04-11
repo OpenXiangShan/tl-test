@@ -10,6 +10,7 @@
 #include "Bundle.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
+#include "../Base/TLLocal.hpp"
 
 namespace tl_agent {
 
@@ -27,6 +28,42 @@ namespace tl_agent {
         S_A_WAITING_D_INTR, // A wait for D response while probe interrupted
         S_SENDING_E,        // ready to send E request actively
     };
+
+    inline std::string StatusToString(int status) noexcept
+    {
+        switch (status)
+        {
+            case S_INVALID:             return "S_INVALID";
+            case S_VALID:               return "S_VALID";
+            case S_SENDING_A:           return "S_SENDING_A";
+            case S_REACTING_B:          return "S_REACTING_B";
+            case S_SENDING_C:           return "S_SENDING_C";
+            case S_C_WAITING_D:         return "S_C_WAITING_D";
+            case S_A_WAITING_D:         return "S_A_WAITING_D";
+            case S_C_WAITING_D_INTR:    return "S_C_WAITING_D_INTR";
+            case S_A_WAITING_D_INTR:    return "S_A_WAITING_D_INTR";
+            case S_SENDING_E:           return "S_SENDING_E";
+            default:                    return Gravity::StringAppender("<unknown_status:", status, ">").ToString();
+        }
+    }
+
+    inline std::string StatusToDescription(int status) noexcept
+    {
+        switch(status)
+        {
+            case S_INVALID:             return "";
+            case S_VALID:               return "";
+            case S_SENDING_A:           return "ready to send A request actively";
+            case S_REACTING_B:          return "ready to react B request actively";
+            case S_SENDING_C:           return "ready to send C request actively";
+            case S_C_WAITING_D:         return "C wait for D response";
+            case S_A_WAITING_D:         return "A wait for D response";
+            case S_C_WAITING_D_INTR:    return "C wait for D response while probe interrupted";
+            case S_A_WAITING_D_INTR:    return "A wait for D response while probe interrupted";
+            case S_SENDING_E:           return "ready to send E request actively";
+            default:                    return "";
+        }
+    }
 
     class ReqField {
     public:
@@ -63,9 +100,9 @@ namespace tl_agent {
             this->nr_beat = nr_beat;
             beat_cnt = nr_beat;
         }
-        void update() {
+        void update(TLLocalContext* ctx) {
             beat_cnt--;
-            tlc_assert(beat_cnt >= 0, "More beats received than expected!");
+            tlc_assert(beat_cnt >= 0, ctx, "More beats received than expected!");
         }
     };
 
@@ -99,9 +136,9 @@ namespace tl_agent {
         void freeid(int id) {
             this->pending_freeid = id;
         }
-        void update() {
+        void update(TLLocalContext* ctx) {
             if (pending_freeid != -1) {
-                tlc_assert(used_ids->count(pending_freeid) > 0, "Try to free unused SourceID!");
+                tlc_assert(used_ids->count(pending_freeid) > 0, ctx, "Try to free unused SourceID!");
                 used_ids->erase(pending_freeid);
                 idle_ids->insert(pending_freeid);
                 pending_freeid = -1;
@@ -112,18 +149,20 @@ namespace tl_agent {
         }
     };
 
-    class BaseAgent {
+    class BaseAgent : public TLLocalContext {
     public:
-        using tlport_t = Port<ReqField, RespField, EchoField, BEATSIZE>;
+        using tlport_t = Bundle<ReqField, RespField, EchoField, BEATSIZE>;
 
     protected:
+        const int id;
         tlport_t                *port;
         GlobalBoard<paddr_t>    *globalBoard;
         IDPool                  idpool;
         virtual void timeout_check() = 0;
-        int id;
 
     public:
+        inline int   sysId() const noexcept override { return id; }
+
         virtual Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a) = 0;
         virtual void handle_b   (std::shared_ptr<BundleChannelB>&                                   b) = 0;
         virtual Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c) = 0;
@@ -134,10 +173,10 @@ namespace tl_agent {
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
-        BaseAgent(): idpool(0, NR_SOURCEID) {};
+        BaseAgent(int sysId): id(sysId), idpool(0, NR_SOURCEID) {};
         virtual ~BaseAgent() = default;
 
-        void connect(tlport_t* p){ this->port = p; }
+        inline void  connect(tlport_t* p){ this->port = p; }
     };
 
 }

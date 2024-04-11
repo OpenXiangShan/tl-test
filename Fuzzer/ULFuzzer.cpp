@@ -13,7 +13,7 @@ void ULFuzzer::randomTest(bool put) {
     if (!put || rand() % 2) {  // Get
         ulAgent->do_getAuto(addr);
     } else { // Put
-        auto putdata = make_shared_tldata();
+        auto putdata = make_shared_tldata<DATASIZE>();
         for (int i = 0; i < DATASIZE; i++) {
             putdata->data[i] = (uint8_t)rand();
         }
@@ -23,7 +23,7 @@ void ULFuzzer::randomTest(bool put) {
 
 void ULFuzzer::caseTest() {
     if (*cycles == 500) {
-        auto putdata = make_shared_tldata();
+        auto putdata = make_shared_tldata<DATASIZE>();
         for (int i = 0; i < DATASIZE/2; i++) {
             putdata->data[i] = (uint8_t)rand();
         }
@@ -39,7 +39,7 @@ void ULFuzzer::caseTest() {
 
 void ULFuzzer::caseTest2() {
   if (*cycles == 100) {
-    auto putdata = make_shared_tldata();
+    auto putdata = make_shared_tldata<DATASIZE>();
     for (int i = 0; i < DATASIZE/2; i++) {
       putdata->data[i] = (uint8_t)rand();
     }

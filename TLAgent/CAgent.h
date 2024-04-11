@@ -73,26 +73,29 @@ namespace tl_agent {
         ScoreBoard<paddr_t , C_SBEntry> *localBoard;
         ScoreBoard<int, C_IDEntry> *idMap;
         IDPool probeIDpool;
-        void timeout_check();
+        void timeout_check() override;
 
     public:
         CAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles) noexcept;
         virtual ~CAgent() noexcept;
-        Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a);
-        void handle_b   (std::shared_ptr<BundleChannelB>&                                   b);
-        Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c);
+
+        uint64_t    cycle() const noexcept override;
+
+        Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a) override;
+        void handle_b   (std::shared_ptr<BundleChannelB>&                                   b) override;
+        Resp send_c     (std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>>&    c) override;
         Resp send_e     (std::shared_ptr<BundleChannelE>&                                   e);
-        void fire_a();
-        void fire_b();
-        void fire_c();
-        void fire_d();
-        void fire_e();
-        void handle_channel();
-        void update_signal();
+        void fire_a() override;
+        void fire_b() override;
+        void fire_c() override;
+        void fire_d() override;
+        void fire_e() override;
+        void handle_channel() override;
+        void update_signal() override;
 
         bool do_acquireBlock(paddr_t address, int param, int alias);
         bool do_acquirePerm(paddr_t address, int param, int alias);
-        bool do_releaseData(paddr_t address, int param, shared_tldata_t data, int alias);
+        bool do_releaseData(paddr_t address, int param, shared_tldata_t<DATASIZE> data, int alias);
         bool do_releaseDataAuto(paddr_t address, int alias);
     };
 

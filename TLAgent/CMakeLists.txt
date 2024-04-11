@@ -1,7 +1,3 @@
-add_library(TLAgent
-        BaseAgent.h
-        ULAgent.cpp
-        ULAgent.h
-        CAgent.cpp
-        CAgent.h
-        Port.h)
+FILE(GLOB_RECURSE sources *.cpp *h *.hpp)
+
+ADD_LIBRARY(TLAgent ${sources})

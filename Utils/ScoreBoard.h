@@ -2,10 +2,16 @@
 // Created by Kaifan Wang on 2021/10/25.
 //
 
+#include <cstddef>
+#include <iterator>
 #include <map>
 #include <array>
 #include <memory>
+
+#include "../Base/TLLocal.hpp"
+
 #include "Common.h"
+#include "gravity_utility.hpp"
 
 #ifndef TLC_TEST_SCOREBOARD_H
 #define TLC_TEST_SCOREBOARD_H
@@ -22,8 +28,8 @@ public:
     ~ScoreBoard();
     std::map<Tk, std::shared_ptr<Tv>>& get();
     void update(const Tk& key, std::shared_ptr<Tv>& data);
-    std::shared_ptr<Tv> query(const Tk& key);
-    void erase(const Tk& key);
+    std::shared_ptr<Tv> query(TLLocalContext* ctx, const Tk& key);
+    void erase(TLLocalContext* ctx, const Tk& key);
     int verify(const Tk& key, const Tv& data) const;
     bool haskey(const Tk& key);
 };
@@ -36,18 +42,19 @@ public:
         SB_PENDING
     };
     int status;
-    shared_tldata_t data;
-    shared_tldata_t pending_data; // used for put&release
+    shared_tldata_t<DATASIZE>   data;
+    shared_tldata_t<DATASIZE>   pending_data; // used for put&release
 };
 
 template<typename T>
 class GlobalBoard : public ScoreBoard<T, Global_SBEntry> {
 private:
-    int data_check(const uint8_t* dut, const uint8_t* ref, std::string assert_info);
+    int data_check(TLLocalContext* ctx, const uint8_t* dut, const uint8_t* ref, std::string assert_info);
     uint8_t init_zeros[DATASIZE];
 public:
-    int verify(const T& key, shared_tldata_t data);
-    void unpending(const T& key);
+    GlobalBoard() noexcept;
+    int verify(TLLocalContext* ctx, const T& key, shared_tldata_t<DATASIZE> data);
+    void unpending(TLLocalContext* ctx, const T& key);
 };
 
 /************************** Implementation **************************/
@@ -76,18 +83,18 @@ void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
 }
 
 template<typename Tk, typename Tv>
-std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::query(const Tk& key) {
+std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::query(TLLocalContext* ctx, const Tk& key) {
     if (mapping.count(key) > 0) {
         return mapping[key];
     } else {
-        tlc_assert(false, "Key no found!");
+        tlc_assert(false, ctx, "Key no found!");
     }
 }
 
 template<typename Tk, typename Tv>
-void ScoreBoard<Tk, Tv>::erase(const Tk& key) {
+void ScoreBoard<Tk, Tv>::erase(TLLocalContext* ctx, const Tk& key) {
     int num = mapping.erase(key);
-    tlc_assert(num == 1, "Multiple value mapped to one key!");
+    tlc_assert(num == 1, ctx, "Multiple value mapped to one key!");
 }
 
 template<typename Tk, typename Tv>
@@ -107,19 +114,31 @@ bool ScoreBoard<Tk, Tv>::haskey(const Tk &key) {
 }
 
 template<typename T>
-int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref, std::string assert_info) {
+GlobalBoard<T>::GlobalBoard() noexcept
+{
+    std::memset(init_zeros, 0, DATASIZE);
+}
+
+template<std::size_t N>
+inline void data_dump(const uint8_t *dut, const uint8_t *ref)
+{
+    printf("\ndut: ");
+    for (int j = 0; j < DATASIZE; j++) {
+        printf("%02hhx ", dut[j]);
+    }
+    printf("\nref: ");
+    for (int j = 0; j < DATASIZE; j++) {
+        printf("%02hhx ", ref[j]);
+    }
+    printf("\n");
+}
+
+template<typename T>
+int GlobalBoard<T>::data_check(TLLocalContext* ctx, const uint8_t *dut, const uint8_t *ref, std::string assert_info) {
     for (int i = 0; i < DATASIZE; i++) {
         if (dut[i] != ref[i]) {
-            printf("dut: ");
-            for (int j = 0; j < DATASIZE; j++) {
-                printf("%02hhx", dut[j]);
-            }
-            printf("\nref: ");
-            for (int j = 0; j < DATASIZE; j++) {
-                printf("%02hhx", ref[j]);
-            }
-            printf("\n");
-            tlc_assert(false, assert_info.data());
+            data_dump<DATASIZE>(dut, ref);
+            tlc_assert(false, ctx, assert_info.data());
             return -1;
         }
     }
@@ -127,16 +146,22 @@ int GlobalBoard<T>::data_check(const uint8_t *dut, const uint8_t *ref, std::stri
 }
 
 template<typename T>
-int GlobalBoard<T>::verify(const T& key, shared_tldata_t data) {
+int GlobalBoard<T>::verify(TLLocalContext* ctx, const T& key, shared_tldata_t<DATASIZE> data) {
     if (this->mapping.count(key) == 0) { // we assume data is all zero initially
-        return this->data_check(data->data, init_zeros, "Init data is non-zero!");
+        return this->data_check(ctx, data->data, init_zeros, "Init data is non-zero!");
     }
-    tlc_assert(this->mapping.count(key) == 1, "Duplicate records found in GlobalBoard!");
+    tlc_assert(this->mapping.count(key) == 1, ctx, "Duplicate records found in GlobalBoard!");
+
+    // TODO: removed this before release
+    static int cnt = 0;
 
     Global_SBEntry value = *this->mapping.at(key).get();
     if (value.status == Global_SBEntry::SB_VALID) {
-        tlc_assert(value.data != nullptr, "NULL occured in valid entry of GlobalBoard!");
-        return this->data_check(data->data, value.data->data, "Data mismatch!");
+        // TODO: removed this before release
+        std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] SB_VALID #", cnt++, " at ", ctx->cycle()).EndLine().ToString();
+        data_dump<DATASIZE>(data->data, value.data->data);
+        tlc_assert(value.data != nullptr, ctx, "NULL occured in valid entry of GlobalBoard!");
+        return this->data_check(ctx, data->data, value.data->data, "Data mismatch from status SB_VALID!");
     } else if (value.status == Global_SBEntry::SB_PENDING) {
         bool flag = true;
         if (value.data != nullptr) {
@@ -156,19 +181,19 @@ int GlobalBoard<T>::verify(const T& key, shared_tldata_t data) {
             }
             if (flag) return 0;
         }
-        tlc_assert(value.pending_data != nullptr, "NULL occured in pending entry of GlobalBoard!");
-        this->data_check(data->data, value.pending_data->data, "Data mismatch!");
+        tlc_assert(value.pending_data != nullptr, ctx, "NULL occured in pending entry of GlobalBoard!");
+        this->data_check(ctx, data->data, value.pending_data->data, "Data mismatch from status SB_PENDING!");
         return 0;
     } else {
         // TODO: handle other status
-        tlc_assert(false, "Unknown GlobalBoard entry status!");
+        tlc_assert(false, ctx, "Unknown GlobalBoard entry status!");
         return -1;
     }
 }
 
 template<typename T>
-void GlobalBoard<T>::unpending(const T& key) {
-    tlc_assert(this->mapping.count(key) == 1, "Un-pending non-exist entry in GlobalBoard!");
+void GlobalBoard<T>::unpending(TLLocalContext* ctx, const T& key) {
+    tlc_assert(this->mapping.count(key) == 1, ctx, "Un-pending non-exist entry in GlobalBoard!");
     Global_SBEntry* value = this->mapping.at(key).get();
     // tlc_assert(value->pending_data != nullptr, "Un-pending entry with NULL ptr in GlobalBoard!");
     if (value->pending_data == nullptr) {
