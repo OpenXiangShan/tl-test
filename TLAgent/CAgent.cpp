@@ -505,15 +505,25 @@ namespace tl_agent {
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(address);
             auto privilege = entry->privilege[alias];
-            auto status = entry->status[alias];
-            if (status != S_VALID && status != S_INVALID) {
+            // auto status = entry->status[alias];
+            int status[4];
+            for(int i = 0; i < 4; i++) {
+                status[i] = entry->status[i];
+            }
+            if (status[alias] != S_VALID && status[alias] != S_INVALID) {
                 return false;
             }
-            if (status == S_VALID) {
+            if (status[alias] == S_VALID) {
                 if (privilege == TIP) return false;
                 // if (privilege == BRANCH && param != BtoT) { param = BtoT; }
                 if (privilege == BRANCH && param != BtoT) return false;
                 if (privilege == INVALID && param == BtoT) return false;
+            }
+            for(int i = 0; i < 4; i++) {
+                // do not send Release when there is an Acquire with the same address waiting for Grant
+                if(status[i] == S_A_WAITING_D || status[i] == S_A_WAITING_D_INTR) {
+                    return false;   
+                }
             }
         }
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
@@ -544,14 +554,24 @@ namespace tl_agent {
         if (localBoard->haskey(address)) {
             auto entry = localBoard->query(address);
             auto privilege = entry->privilege[alias];
-            auto status = entry->status[alias];
-            if (status != S_VALID && status != S_INVALID) {
+            // auto status = entry->status[alias];
+            int status[4];
+            for(int i = 0; i < 4; i++) {
+                status[i] = entry->status[i];
+            }
+            if (status[alias] != S_VALID && status[alias] != S_INVALID) {
                 return false;
             }
-            if (status == S_VALID) {
+            if (status[alias] == S_VALID) {
                 if (privilege == TIP) return false;
                 if (privilege == BRANCH && param != BtoT) { param = BtoT; }
                 if (privilege == INVALID && param == BtoT) return false;
+            }
+            for(int i = 0; i < 4; i++) {
+                // do not send AcquirePerm when there is an Acquire with the same address waiting for Grant
+                if(status[i] == S_A_WAITING_D || status[i] == S_A_WAITING_D_INTR) {
+                    return false;   
+                }
             }
         }
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
@@ -622,9 +642,19 @@ namespace tl_agent {
         default:
             tlc_assert(false, "Invalid priviledge detected!");
         }
-        auto status = entry->status[alias];
-        if (status != S_VALID) {
+        // auto status = entry->status[alias];
+        int status[4];
+        for(int i = 0; i < 4; i++) {
+            status[i] = entry->status[i];
+        }
+        if (status[alias] != S_VALID) {
             return false;
+        }
+        for(int i = 0; i < 4; i++) {
+         // do not send Release when there is an Acquire with the same address waiting for Grant
+            if(status[i] == S_A_WAITING_D || status[i] == S_A_WAITING_D_INTR) {
+                return false;   
+            }
         }
 
         std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
