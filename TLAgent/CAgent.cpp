@@ -105,12 +105,19 @@ namespace tl_agent {
         tlc_assert(localBoard->haskey(*b->address), "Probe an non-exist block!");
 
         auto info = localBoard->query(*b->address);
-        auto exact_status = info->status[*b->alias];
+        // auto exact_status = info->status[*b->alias];
+        int exact_status[4];
+        for (int i = 0; i < 4; i++){
+            exact_status[i] = info->status[i];
+        }
         auto exact_privilege = info->privilege[*b->alias];
-        tlc_assert(exact_status != S_SENDING_C, "handle_b should be mutual exclusive with pendingC!");
-        if (exact_status == S_C_WAITING_D) {
-            // Probe waits for releaseAck
-            return;
+        tlc_assert(exact_status[*b->alias] != S_SENDING_C, "handle_b should be mutual exclusive with pendingC!");
+        // do not accept probe when there is a release with the same addr waiting for releaseAck 
+        for (int i = 0; i < 4; i++){
+            if (exact_status[i] == S_C_WAITING_D) {
+                // Probe waits for releaseAck
+                return;
+            }
         }
         std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
         req_c->address = new paddr_t(*b->address);
@@ -119,8 +126,8 @@ namespace tl_agent {
         req_c->dirty = new uint8_t(1);
         req_c->alias = new uint8_t(*b->alias);
         // Log("== id == handleB %d\n", *req_c->source);
-        if (exact_status == S_SENDING_A || exact_status == S_INVALID || exact_status == S_A_WAITING_D) {
-            Log("Probe an non-exist block, status: %d\n", exact_status);
+        if (exact_status[*b->alias] == S_SENDING_A || exact_status[*b->alias] == S_INVALID || exact_status[*b->alias] == S_A_WAITING_D) {
+            Log("Probe an non-exist block, status: %d\n", exact_status[*b->alias]);
             req_c->opcode = new uint8_t(ProbeAck);
             req_c->param = new uint8_t(NtoN);
             pendingC.init(req_c, 1);
