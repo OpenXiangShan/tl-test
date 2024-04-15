@@ -4,8 +4,6 @@
 
 #include "TLSequencer.hpp"
 
-#include <cstdlib>
-
 
 TLSequencer::TLSequencer() noexcept
     : globalBoard   (nullptr)
@@ -30,13 +28,12 @@ void TLSequencer::Initialize() noexcept
     std::cout << "[TL-Test-PASSIVE] TLSequencer::TLSequencer(): using seed: " << seed << std::endl;
     std::cout << "[TL-Test-PASSIVE] TLSequencer::TLSequencer(): NR_ULAGENTS = " << NR_ULAGENTS << std::endl;
     std::cout << "[TL-Test-PASSIVE] TLSequencer::TLSequencer(): NR_CAGENTS = " << NR_CAGENTS << std::endl;
-    srand(this->seed);
 
     for (int i = 0; i < NR_ULAGENTS; i++)
     {
         //
         io      [i] = new IOPort;
-        agents  [i] = new ULAgent(globalBoard, i, &cycles);
+        agents  [i] = new ULAgent(globalBoard, i, seed, &cycles);
         agents  [i]->connect(io[i]);
 
         //
@@ -48,7 +45,7 @@ void TLSequencer::Initialize() noexcept
     {
         //
         io      [i] = new IOPort;
-        agents  [i] = new CAgent(globalBoard, i, &cycles);
+        agents  [i] = new CAgent(globalBoard, i, seed, &cycles);
         agents  [i]->connect(io[i]);
 
         //
