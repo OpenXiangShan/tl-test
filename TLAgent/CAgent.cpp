@@ -35,8 +35,8 @@ namespace tl_agent {
         }
     }
 
-    CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int sysId, uint64_t *cycles) noexcept :
-        BaseAgent(sysId), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
+    CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
+        BaseAgent(sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
     {
         this->globalBoard = gb;
         this->cycles = cycles;
@@ -145,7 +145,7 @@ namespace tl_agent {
             Log(this, Append("[", *cycles, "] [ProbeAck NtoN] ")
                 .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", b->address).EndLine());
         } else {
-            int dirty = (exact_privilege == TIP) && (info->dirty[b->alias] || rand() % 3);
+            int dirty = (exact_privilege == TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
             // When should we probeAck with data? request need_data or dirty itself
             req_c->opcode = (dirty || b->needdata) ? ProbeAckData : ProbeAck;
             if (b->param == toB) {
@@ -172,13 +172,24 @@ namespace tl_agent {
                     */
                     req_c->data = make_shared_tldata<DATASIZE>();
                     for (int i = 0; i < DATASIZE; i++) {
-                      req_c->data->data[i] = (uint8_t)rand();
+                      req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
                     }
+
+#                   ifdef CAGENT_DEBUG
+                        std::cout << "[tl-test-passive-DEBUG] [" << cycle() << "] handle_b(): randomized data: " << std::endl;
+                        data_dump<DATASIZE>(req_c->data->data);
+#                   endif
+
                 } else {
                     std::memcpy(
                         (req_c->data = make_shared_tldata<DATASIZE>())->data, 
                         globalBoard->query(this, b->address)->data->data, 
                         DATASIZE);
+
+#                   ifdef CAGENT_DEBUG
+                        std::cout << "[tl-test-passive-DEBUG] [" << cycle() << "] handle_b(): fetched scoreboard data: " << std::endl;
+                        data_dump<DATASIZE>(req_c->data->data);
+#                   endif
                 }
             }
             if (req_c->opcode == ProbeAckData) {
@@ -207,7 +218,7 @@ namespace tl_agent {
             }
             if (req_c->opcode == ProbeAckData) {
                 for (int i = 0; i < DATASIZE; i++) {
-                  Dump(Hex().NextWidth(2).Fill('0').Append(req_c->data->data[i]));
+                  Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(req_c->data->data[i]), " "));
                 }
             } else {
               Dump(Append("no data"));
@@ -234,7 +245,17 @@ namespace tl_agent {
                     this->port->c.data[i - BEATSIZE * beat_num] = c->data[i];
                 }
                 */
-                std::memcpy(this->port->c.data->data, c->data->data + (BEATSIZE * beat_num), BEATSIZE);
+                std::memcpy(this->port->c.data->data, (uint8_t*)(c->data->data) + (BEATSIZE * beat_num), BEATSIZE);
+
+#               ifdef CAGENT_DEBUG
+                    std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] [", cycle(), "] ")
+                        .Hex().ShowBase()
+                        .Append("[CAgent] channel C presenting: ReleaseData: address = ", c->address)
+                        .Append(", data :").EndLine()
+                        .ToString();
+                    data_dump<BEATSIZE>(this->port->c.data->data);
+#               endif
+
                 break;
             }
             case ProbeAckData: {
@@ -253,7 +274,17 @@ namespace tl_agent {
                     this->port->c.data[i - BEATSIZE * beat_num] = c->data[i];
                 }
                 */
-                std::memcpy(this->port->c.data->data, c->data->data + (BEATSIZE * beat_num), BEATSIZE);
+                std::memcpy(this->port->c.data->data, (uint8_t*)(c->data->data) + (BEATSIZE * beat_num), BEATSIZE);
+
+#               ifdef CAGENT_DEBUG
+                    std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] [", cycle(), "] ")
+                        .Hex().ShowBase()
+                        .Append("[CAgent] channel C presenting: ProbeAckData: address = ", c->address)
+                        .Append(", data : ").EndLine()
+                        .ToString();
+                    data_dump<BEATSIZE>(this->port->c.data->data);
+#               endif
+
                 break;
             }
             case ProbeAck: {
@@ -421,7 +452,14 @@ namespace tl_agent {
                     pendingD.info->data[i] = chnD.data[i - BEATSIZE * beat_num];
                 }
                 */
-                std::memcpy(pendingD.info->data->data + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
+                std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
+
+#               ifdef CAGENT_DEBUG
+                    std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] [", cycle(), "] ")
+                        .Append("[CAgent] channel D receiving: data :").EndLine()
+                        .ToString();
+                    data_dump<BEATSIZE>(chnD.data->data);
+#               endif
             }
             if (!pendingD.is_pending()) {
                 switch (chnD.opcode) {
@@ -429,7 +467,7 @@ namespace tl_agent {
                         Log(this, Append("[", *cycles, "] [GrantData] ")
                             .Hex().ShowBase().Append("addr: ", addr, ", alias: ", alias).EndLine());
                         for(int i = 0; i < DATASIZE; i++) {
-                            Dump(Hex().NextWidth(2).Fill('0').Append(pendingD.info->data->data[i]));
+                            Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(pendingD.info->data->data[i]), " "));
                         }
                         Dump(EndLine());
                         this->globalBoard->verify(this, addr, pendingD.info->data);
@@ -632,7 +670,7 @@ namespace tl_agent {
         Log(this, Append("[", *cycles, "] [ReleaseData] ")
             .Hex().ShowBase().Append("addr: ", address, ", alias: ", alias).EndLine());
         for(int i = 0; i < DATASIZE; i++) {
-            Dump(Hex().NextWidth(2).Fill('0').Append(data->data[i]));
+            Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(data->data[i]), " "));
         }
         Dump(EndLine());
         return true;
@@ -677,7 +715,7 @@ namespace tl_agent {
             tlc_assert(param == TtoN, this, "Wrong execution path!");
             req_c->data = make_shared_tldata<DATASIZE>();
             for (int i = 0; i < DATASIZE; i++) {
-                req_c->data->data[i] = (uint8_t)rand();
+                req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
             }
         }
 
@@ -695,7 +733,7 @@ namespace tl_agent {
         }
 
         for(int i = 0; i < DATASIZE; i++) {
-            Dump(Hex().NextWidth(2).Fill('0').Append(req_c->data->data[i]));
+            Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(req_c->data->data[i]), " "));
         }
         Dump(EndLine());
         return true;

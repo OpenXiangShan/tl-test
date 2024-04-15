@@ -50,7 +50,7 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
-        ULAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles) noexcept;
+        ULAgent(GlobalBoard<paddr_t> * const gb, int id, unsigned int seed, uint64_t* cycles) noexcept;
         virtual ~ULAgent() noexcept;
 
         uint64_t    cycle() const noexcept override;

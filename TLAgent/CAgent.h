@@ -10,6 +10,12 @@
 #include "../Utils/ScoreBoard.h"
 #include "Bundle.h"
 
+
+#if AGENT_DEBUG == 1
+#   define CAGENT_DEBUG
+#endif
+
+
 namespace tl_agent {
 
     class C_SBEntry {
@@ -59,6 +65,23 @@ namespace tl_agent {
         }
     };
 
+
+#   ifdef false
+#       define CAGENT_RAND64(agent, source) ( \
+            agent->aux_rand_value = agent->rand64(), \
+            std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] ") \
+                .Append("rand64() called: from ", source, ", counter = ", agent->aux_rand_counter++) \
+                .Hex().ShowBase() \
+                .Append(", seed = ").Append(agent->sysSeed()) \
+                .Append(", value = ").Append(agent->aux_rand_value).EndLine() \
+                .ToString(), \
+            agent->aux_rand_value)
+#   endif
+
+#   ifndef CAGENT_RAND64
+#       define CAGENT_RAND64(agent, source) (agent->rand64())
+#   endif
+
     class CAgent : public BaseAgent {
     private:
         uint64_t *cycles;
@@ -76,7 +99,7 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
-        CAgent(GlobalBoard<paddr_t> * const gb, int id, uint64_t* cycles) noexcept;
+        CAgent(GlobalBoard<paddr_t> * const gb, int id, unsigned int seed, uint64_t* cycles) noexcept;
         virtual ~CAgent() noexcept;
 
         uint64_t    cycle() const noexcept override;

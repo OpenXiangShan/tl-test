@@ -5,7 +5,16 @@
 #ifndef TLC_TEST_BASEAGENT_H
 #define TLC_TEST_BASEAGENT_H
 
+#define AGENT_DEBUG     1
+
+
+#ifndef AGENT_DEBUG
+#   define AGENT_DEBUG     0
+#endif
+
+
 #include <set>
+#include <random>
 #include "Port.h"
 #include "Bundle.h"
 #include "../Utils/Common.h"
@@ -160,8 +169,20 @@ namespace tl_agent {
         IDPool                  idpool;
         virtual void timeout_check() = 0;
 
+        const unsigned int      seed;
+
+    private:
+        std::mt19937_64         rand;
+
     public:
-        inline int   sysId() const noexcept override { return id; }
+#   if AGENT_DEBUG == 1
+        uint64_t                aux_rand_counter = 0;
+        uint64_t                aux_rand_value;
+#   endif
+
+    public:
+        inline int          sysId() const noexcept override { return id; }
+        inline unsigned int sysSeed() const noexcept override { return seed; };
 
         virtual Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a) = 0;
         virtual void handle_b   (std::shared_ptr<BundleChannelB>&                                   b) = 0;
@@ -173,10 +194,12 @@ namespace tl_agent {
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
-        BaseAgent(int sysId): id(sysId), idpool(0, NR_SOURCEID) {};
+        BaseAgent(int sysId, unsigned int seed): id(sysId), idpool(0, NR_SOURCEID), seed(seed), rand(sysId + seed) {};
         virtual ~BaseAgent() = default;
 
         inline void  connect(tlport_t* p){ this->port = p; }
+
+        inline uint64_t rand64() noexcept { return rand(); }
     };
 
 }
