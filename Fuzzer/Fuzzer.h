@@ -8,6 +8,7 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 
+
 class Fuzzer {
 protected:
     uint64_t *cycles;

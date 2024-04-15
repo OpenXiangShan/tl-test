@@ -9,13 +9,13 @@ ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) noexcept {
 }
 
 void ULFuzzer::randomTest(bool put) {
-    paddr_t addr = (rand() % 0x400) << 6;
-    if (!put || rand() % 2) {  // Get
+    paddr_t addr = (CAGENT_RAND64(ulAgent, "CFuzzer") % 0x400) << 6;
+    if (!put || CAGENT_RAND64(ulAgent, "CFuzzer") % 2) {  // Get
         ulAgent->do_getAuto(addr);
     } else { // Put
         auto putdata = make_shared_tldata<DATASIZE>();
         for (int i = 0; i < DATASIZE; i++) {
-            putdata->data[i] = (uint8_t)rand();
+            putdata->data[i] = (uint8_t)CAGENT_RAND64(ulAgent, "CFuzzer");
         }
         ulAgent->do_putfulldata(addr, putdata);
     }
@@ -25,7 +25,7 @@ void ULFuzzer::caseTest() {
     if (*cycles == 500) {
         auto putdata = make_shared_tldata<DATASIZE>();
         for (int i = 0; i < DATASIZE/2; i++) {
-            putdata->data[i] = (uint8_t)rand();
+            putdata->data[i] = (uint8_t)CAGENT_RAND64(ulAgent, "CFuzzer");
         }
         for (int i = DATASIZE/2; i < DATASIZE; i++) {
             putdata->data[i] = putdata->data[i-DATASIZE/2];
@@ -41,7 +41,7 @@ void ULFuzzer::caseTest2() {
   if (*cycles == 100) {
     auto putdata = make_shared_tldata<DATASIZE>();
     for (int i = 0; i < DATASIZE/2; i++) {
-      putdata->data[i] = (uint8_t)rand();
+      putdata->data[i] = (uint8_t)CAGENT_RAND64(ulAgent, "CFuzzer");
     }
     for (int i = DATASIZE/2; i < DATASIZE; i++) {
       putdata->data[i] = putdata->data[i-DATASIZE/2];

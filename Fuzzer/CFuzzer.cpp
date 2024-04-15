@@ -10,11 +10,11 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
 }
 
 void CFuzzer::randomTest(bool do_alias) {
-    paddr_t addr = ((rand() % 0x8) << 13) + ((rand() % 0x80) << 6);  // Tag + Set + Offset
-    int alias = (do_alias) ? (rand() % 4) : 0;
-    if (rand() % 2) {
-        if (rand() % 3) {
-            if (rand() % 2) {
+    paddr_t addr = ((CAGENT_RAND64(cAgent, "CFuzzer") % 0x8) << 13) + ((CAGENT_RAND64(cAgent, "CFuzzer") % 0x80) << 6);  // Tag + Set + Offset
+    int alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % 4) : 0;
+    if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
+        if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
+            if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
                 cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoT
             } else {
                 cAgent->do_acquireBlock(addr, tl_agent::NtoB, alias); // AcquireBlock NtoB
@@ -26,7 +26,7 @@ void CFuzzer::randomTest(bool do_alias) {
         /*
         uint8_t* putdata = new uint8_t[DATASIZE];
         for (int i = 0; i < DATASIZE; i++) {
-            putdata[i] = (uint8_t)rand();
+            putdata[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
         }
         cAgent->do_releaseData(addr, tl_agent::TtoN, putdata); // ReleaseData
         */
@@ -41,7 +41,7 @@ void CFuzzer::caseTest() {
     if (*cycles == 300) {
         auto putdata = make_shared_tldata<DATASIZE>();
         for (int i = 0; i < DATASIZE; i++) {
-            putdata->data[i] = (uint8_t)rand();
+            putdata->data[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
         }
         this->cAgent->do_releaseData(0x1040, tl_agent::TtoN, putdata, 0);
     }
