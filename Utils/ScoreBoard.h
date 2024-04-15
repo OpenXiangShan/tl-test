@@ -7,6 +7,7 @@
 #include <map>
 #include <array>
 #include <memory>
+#include <type_traits>
 
 #include "../Base/TLLocal.hpp"
 
@@ -18,6 +19,40 @@
 
 const int ERR_NOTFOUND = 1;
 const int ERR_MISMATCH = 2;
+
+#define SB_DEBUG        1
+
+
+#ifndef SB_DEBUG
+#   define SB_DEBUG        0
+#endif
+
+
+template<std::size_t N>
+inline void data_dump(const uint8_t* data)
+{
+    Gravity::StringAppender sa;
+
+    sa.Hex().Fill('0');
+
+    for (std::size_t j = 0; j < N; j++)
+        sa.NextWidth(2).Append(unsigned(data[j]), " ");
+
+    std::cout << sa.EndLine().ToString();
+}
+
+template<std::size_t N>
+inline void data_dump_on_verify(const uint8_t *dut, const uint8_t *ref)
+{
+    std::cout << std::endl;
+
+    std::cout << "dut: ";
+    data_dump<N>(dut);
+
+    std::cout << "ref: ";
+    data_dump<N>(ref);
+}
+
 
 template<typename Tk, typename Tv>
 class ScoreBoard {
@@ -75,8 +110,49 @@ std::map<Tk, std::shared_ptr<Tv>>& ScoreBoard<Tk, Tv>::get() {
 
 template<typename Tk, typename Tv>
 void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
+
+#   if SB_DEBUG == 1
+        std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] scoreboard update: ")
+            .ShowBase()
+            .Hex().Append("key = ", key)
+            .Dec().Append(", present = ", mapping.count(key))
+            .ToString();
+
+        if constexpr (std::is_base_of_v<Global_SBEntry, Tv>)
+        {
+            std::cout << ", type = Global_SBEntry";
+
+            std::cout << ", status = ";
+            switch (data->status)
+            {
+                case Global_SBEntry::SB_INVALID:    std::cout << "SB_INVALID";  break;
+                case Global_SBEntry::SB_VALID:      std::cout << "SB_VALID";    break;
+                case Global_SBEntry::SB_PENDING:    std::cout << "SB_PENDING";  break;
+                default:
+                    std::cout << "<unknown:" << data->status << ">";   
+                    break;
+            }
+
+            std::cout << std::endl;
+
+            std::cout << "data - data : ";
+            if (data->data != nullptr)
+                data_dump<DATASIZE>(data->data->data);
+            else
+                std::cout << "<non-initialized>" << std::endl;
+
+            std::cout << "data - pend : ";
+            if (data->data != nullptr)
+                data_dump<DATASIZE>(data->data->data);
+            else
+                std::cout << "<non-initialized>" << std::endl;
+        }
+        else
+            std::cout << std::endl;
+#   endif
+
     if (mapping.count(key) != 0) {
-        mapping[key]= data;
+        mapping[key] = data;
     } else {
         mapping.insert(std::make_pair(key, data));
     }
@@ -119,25 +195,12 @@ GlobalBoard<T>::GlobalBoard() noexcept
     std::memset(init_zeros, 0, DATASIZE);
 }
 
-template<std::size_t N>
-inline void data_dump(const uint8_t *dut, const uint8_t *ref)
-{
-    printf("\ndut: ");
-    for (int j = 0; j < DATASIZE; j++) {
-        printf("%02hhx ", dut[j]);
-    }
-    printf("\nref: ");
-    for (int j = 0; j < DATASIZE; j++) {
-        printf("%02hhx ", ref[j]);
-    }
-    printf("\n");
-}
 
 template<typename T>
 int GlobalBoard<T>::data_check(TLLocalContext* ctx, const uint8_t *dut, const uint8_t *ref, std::string assert_info) {
     for (int i = 0; i < DATASIZE; i++) {
         if (dut[i] != ref[i]) {
-            data_dump<DATASIZE>(dut, ref);
+            data_dump_on_verify<DATASIZE>(dut, ref);
             tlc_assert(false, ctx, assert_info.data());
             return -1;
         }
@@ -152,14 +215,8 @@ int GlobalBoard<T>::verify(TLLocalContext* ctx, const T& key, shared_tldata_t<DA
     }
     tlc_assert(this->mapping.count(key) == 1, ctx, "Duplicate records found in GlobalBoard!");
 
-    // TODO: removed this before release
-    static int cnt = 0;
-
     Global_SBEntry value = *this->mapping.at(key).get();
     if (value.status == Global_SBEntry::SB_VALID) {
-        // TODO: removed this before release
-        std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] SB_VALID #", cnt++, " at ", ctx->cycle()).EndLine().ToString();
-        data_dump<DATASIZE>(data->data, value.data->data);
         tlc_assert(value.data != nullptr, ctx, "NULL occured in valid entry of GlobalBoard!");
         return this->data_check(ctx, data->data, value.data->data, "Data mismatch from status SB_VALID!");
     } else if (value.status == Global_SBEntry::SB_PENDING) {
