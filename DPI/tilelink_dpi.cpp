@@ -116,22 +116,38 @@ extern "C" void TileLinkPullChannelA(
     *address    =  port.a.address;
     *user_alias =  port.a.alias;
     *mask       =  port.a.mask;
-    *data0      = (port.a.data->data[0])
-                | (port.a.data->data[1]     << 8)
-                | (port.a.data->data[2]     << 16)
-                | (port.a.data->data[3]     << 24);
-    *data1      = (port.a.data->data[4])
-                | (port.a.data->data[5]     << 8)
-                | (port.a.data->data[6]     << 16)
-                | (port.a.data->data[7]     << 24);
-    *data2      = (port.a.data->data[8])
-                | (port.a.data->data[9]     << 8)
-                | (port.a.data->data[10]    << 16)
-                | (port.a.data->data[11]    << 24);
-    *data3      = (port.a.data->data[12])
-                | (port.a.data->data[13]    << 8)
-                | (port.a.data->data[14]    << 16)
-                | (port.a.data->data[15]    << 24);
+    *data0      = (uint64_t(port.a.data->data[0]))
+                | (uint64_t(port.a.data->data[1])   << 8)
+                | (uint64_t(port.a.data->data[2])   << 16)
+                | (uint64_t(port.a.data->data[3])   << 24)
+                | (uint64_t(port.a.data->data[4])   << 32)
+                | (uint64_t(port.a.data->data[5])   << 40)
+                | (uint64_t(port.a.data->data[6])   << 48)
+                | (uint64_t(port.a.data->data[7])   << 56);
+    *data1      = (uint64_t(port.a.data->data[8]))
+                | (uint64_t(port.a.data->data[9])   << 8)
+                | (uint64_t(port.a.data->data[10])  << 16)
+                | (uint64_t(port.a.data->data[11])  << 24)
+                | (uint64_t(port.a.data->data[12])  << 32)
+                | (uint64_t(port.a.data->data[13])  << 40)
+                | (uint64_t(port.a.data->data[14])  << 48)
+                | (uint64_t(port.a.data->data[15])  << 56);
+    *data2      = (uint64_t(port.a.data->data[16]))
+                | (uint64_t(port.a.data->data[17])  << 8)
+                | (uint64_t(port.a.data->data[18])  << 16)
+                | (uint64_t(port.a.data->data[19])  << 24)
+                | (uint64_t(port.a.data->data[20])  << 32)
+                | (uint64_t(port.a.data->data[21])  << 40)
+                | (uint64_t(port.a.data->data[22])  << 48)
+                | (uint64_t(port.a.data->data[23])  << 56);
+    *data3      = (uint64_t(port.a.data->data[24]))
+                | (uint64_t(port.a.data->data[25])  << 8)
+                | (uint64_t(port.a.data->data[26])  << 16)
+                | (uint64_t(port.a.data->data[27])  << 24)
+                | (uint64_t(port.a.data->data[28])  << 32)
+                | (uint64_t(port.a.data->data[29])  << 40)
+                | (uint64_t(port.a.data->data[30])  << 48)
+                | (uint64_t(port.a.data->data[31])  << 56);
     *corrupt    =  0;
 
     if (glbl.cfg.verbose_detailed_dpi)
@@ -225,22 +241,38 @@ extern "C" void TileLinkPullChannelC(
     *source     =  port.c.source;
     *address    =  port.c.address;
     *user_alias =  0;
-    *data0      = (port.c.data->data[0])
-                | (port.c.data->data[1]     << 8)
-                | (port.c.data->data[2]     << 16)
-                | (port.c.data->data[3]     << 24);
-    *data1      = (port.c.data->data[4])
-                | (port.c.data->data[5]     << 8)
-                | (port.c.data->data[6]     << 16)
-                | (port.c.data->data[7]     << 24);
-    *data2      = (port.c.data->data[8])
-                | (port.c.data->data[9]     << 8)
-                | (port.c.data->data[10]    << 16)
-                | (port.c.data->data[11]    << 24);
-    *data3      = (port.c.data->data[12])
-                | (port.c.data->data[13]    << 8)
-                | (port.c.data->data[14]    << 16)
-                | (port.c.data->data[15]    << 24);
+    *data0      = (uint64_t(port.c.data->data[0]))
+                | (uint64_t(port.c.data->data[1])   <<  8)
+                | (uint64_t(port.c.data->data[2])   << 16)
+                | (uint64_t(port.c.data->data[3])   << 24)
+                | (uint64_t(port.c.data->data[4])   << 32)
+                | (uint64_t(port.c.data->data[5])   << 40)
+                | (uint64_t(port.c.data->data[6])   << 48)
+                | (uint64_t(port.c.data->data[7])   << 56);
+    *data1      = (uint64_t(port.c.data->data[8]))
+                | (uint64_t(port.c.data->data[9])   <<  8)
+                | (uint64_t(port.c.data->data[10])  << 16)
+                | (uint64_t(port.c.data->data[11])  << 24)
+                | (uint64_t(port.c.data->data[12])  << 32)
+                | (uint64_t(port.c.data->data[13])  << 40)
+                | (uint64_t(port.c.data->data[14])  << 48)
+                | (uint64_t(port.c.data->data[15])  << 56);
+    *data2      = (uint64_t(port.c.data->data[16]))
+                | (uint64_t(port.c.data->data[17])  <<  8)
+                | (uint64_t(port.c.data->data[18])  << 16)
+                | (uint64_t(port.c.data->data[19])  << 24)
+                | (uint64_t(port.c.data->data[20])  << 32)
+                | (uint64_t(port.c.data->data[21])  << 40)
+                | (uint64_t(port.c.data->data[22])  << 48)
+                | (uint64_t(port.c.data->data[23])  << 56);
+    *data3      = (uint64_t(port.c.data->data[24]))
+                | (uint64_t(port.c.data->data[25])  <<  8)
+                | (uint64_t(port.c.data->data[26])  << 16)
+                | (uint64_t(port.c.data->data[27])  << 24)
+                | (uint64_t(port.c.data->data[28])  << 32)
+                | (uint64_t(port.c.data->data[29])  << 40)
+                | (uint64_t(port.c.data->data[30])  << 48)
+                | (uint64_t(port.c.data->data[31])  << 56);
     *corrupt    =  0;
 }
 //
@@ -276,18 +308,34 @@ extern "C" void TileLinkPushChannelD(
     port.d.data->data[1]    = (data0 >>  8) & 0xFF;
     port.d.data->data[2]    = (data0 >> 16) & 0xFF;
     port.d.data->data[3]    = (data0 >> 24) & 0xFF;
-    port.d.data->data[4]    =  data1        & 0xFF;
-    port.d.data->data[5]    = (data1 >>  8) & 0xFF;
-    port.d.data->data[6]    = (data1 >> 16) & 0xFF;
-    port.d.data->data[7]    = (data1 >> 24) & 0xFF;
-    port.d.data->data[8]    =  data2        & 0xFF;
-    port.d.data->data[9]    = (data2 >>  8) & 0xFF;
-    port.d.data->data[10]   = (data2 >> 16) & 0xFF;
-    port.d.data->data[11]   = (data2 >> 24) & 0xFF;
-    port.d.data->data[12]   =  data3        & 0xFF;
-    port.d.data->data[13]   = (data3 >>  8) & 0xFF;
-    port.d.data->data[14]   = (data3 >> 16) & 0xFF;
-    port.d.data->data[15]   = (data3 >> 24) & 0xFF;
+    port.d.data->data[4]    = (data0 >> 32) & 0xFF;
+    port.d.data->data[5]    = (data0 >> 40) & 0xFF;
+    port.d.data->data[6]    = (data0 >> 48) & 0xFF;
+    port.d.data->data[7]    = (data0 >> 56) & 0xFF;
+    port.d.data->data[8]    =  data1        & 0xFF;
+    port.d.data->data[9]    = (data1 >>  8) & 0xFF;
+    port.d.data->data[10]   = (data1 >> 16) & 0xFF;
+    port.d.data->data[11]   = (data1 >> 24) & 0xFF;
+    port.d.data->data[12]   = (data1 >> 32) & 0xFF;
+    port.d.data->data[13]   = (data1 >> 40) & 0xFF;
+    port.d.data->data[14]   = (data1 >> 48) & 0xFF;
+    port.d.data->data[15]   = (data1 >> 56) & 0xFF;
+    port.d.data->data[16]   =  data2        & 0xFF;
+    port.d.data->data[17]   = (data2 >>  8) & 0xFF;
+    port.d.data->data[18]   = (data2 >> 16) & 0xFF;
+    port.d.data->data[19]   = (data2 >> 24) & 0xFF;
+    port.d.data->data[20]   = (data2 >> 32) & 0xFF;
+    port.d.data->data[21]   = (data2 >> 40) & 0xFF;
+    port.d.data->data[22]   = (data2 >> 48) & 0xFF;
+    port.d.data->data[23]   = (data2 >> 56) & 0xFF;
+    port.d.data->data[24]   =  data3        & 0xFF;
+    port.d.data->data[25]   = (data3 >>  8) & 0xFF;
+    port.d.data->data[26]   = (data3 >> 16) & 0xFF;
+    port.d.data->data[27]   = (data3 >> 24) & 0xFF;
+    port.d.data->data[28]   = (data3 >> 32) & 0xFF;
+    port.d.data->data[29]   = (data3 >> 40) & 0xFF;
+    port.d.data->data[30]   = (data3 >> 48) & 0xFF;
+    port.d.data->data[31]   = (data3 >> 56) & 0xFF;
     port.d.corrupt          = corrupt;
 
     passive->FireChannelD();
