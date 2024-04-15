@@ -9,8 +9,8 @@
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int sysId, uint64_t* cycles) noexcept :
-            BaseAgent(sysId), pendingA(), pendingD()
+    ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
+            BaseAgent(sysId, seed), pendingA(), pendingD()
     {
         this->globalBoard = gb;
         this->cycles = cycles;
@@ -45,7 +45,7 @@ namespace tl_agent {
                     this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
                 }
                 */
-                std::memcpy(this->port->a.data->data, a->data->data + BEATSIZE * beat_num, BEATSIZE);
+                std::memcpy(this->port->a.data->data, (uint8_t*)(a->data->data) + BEATSIZE * beat_num, BEATSIZE);
                 break;
             }
             case PutPartialData: {
@@ -58,7 +58,7 @@ namespace tl_agent {
                     this->port->a.data[i - BEATSIZE * beat_num] = a->data[i];
                 }
                 */
-                std::memcpy(this->port->a.data->data, a->data->data + BEATSIZE * beat_num, BEATSIZE);
+                std::memcpy(this->port->a.data->data, (uint8_t*)(a->data->data) + BEATSIZE * beat_num, BEATSIZE);
                 break;
             }
             default:
@@ -138,7 +138,7 @@ namespace tl_agent {
                     pendingD.info->data[i] = chnD.data[i - BEATSIZE * beat_num];
                 }
                 */
-                std::memcpy(pendingD.info->data->data + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
+                std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
             }
             if (!pendingD.is_pending()) {
                 // ULAgent needn't care about endurance
