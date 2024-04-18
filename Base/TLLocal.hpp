@@ -6,6 +6,16 @@
 #include <cstdint>
 
 
+struct TLLocalConfig {
+public:
+    std::uint64_t       seed;
+
+    unsigned int        coreCount;                          // L1-L2 system count
+    unsigned int        masterCountPerCoreTLC;              // TL-C master count per core
+    unsigned int        masterCountPerCoreTLUL;             // TL-UL master count per core
+};
+
+
 class TLLocalContext {
 public:
     virtual uint64_t        cycle() const noexcept = 0;

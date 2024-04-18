@@ -41,25 +41,28 @@ public:
     using IOChannelE        = tl_agent::BundleChannelE;
     using IOPort            = tl_agent::Bundle<ReqField, RespField, EchoField, BEATSIZE>;
 
-    static constexpr int NR_AGENTS  = NR_CAGENTS + NR_ULAGENTS;
-
 private:
     GlobalBoard<paddr_t>*   globalBoard;
 
-    BaseAgent**             const agents;
-    Fuzzer**                const fuzzers;
+    TLLocalConfig           config;
+    bool                    initialized;
 
-    IOPort**                const io;
+    BaseAgent**             agents;
+    Fuzzer**                fuzzers;
+
+    IOPort**                io;
 
     uint64_t                cycles;
-
-    uint64_t                seed;
 
 public:
     TLSequencer() noexcept;
     ~TLSequencer() noexcept;
 
-    void        Initialize() noexcept;
+    size_t      GetAgentCount() const noexcept;
+    size_t      GetCAgentCount() const noexcept;
+    size_t      GetULAgentCount() const noexcept;
+
+    void        Initialize(const TLLocalConfig& cfg) noexcept;
     void        Finalize() noexcept;
     void        Tick(uint64_t cycles) noexcept;
     void        Tock() noexcept;
