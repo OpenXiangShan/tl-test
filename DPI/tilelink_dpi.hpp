@@ -5,6 +5,26 @@
 
 #include <cstdint>
 
+#include "tilelink_dpi_configs.hpp"
+
+
+#ifndef TLTEST_LOCAL_SEED
+#   define TLTEST_LOCAL_SEED                        0
+#endif
+
+
+#ifndef TLTEST_LOCAL_CORE_COUNT
+#   define TLTEST_LOCAL_CORE_COUNT                  1
+#endif
+
+#ifndef TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLC
+#   define TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLC   1
+#endif
+
+#ifndef TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL
+#   define TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL  0
+#endif
+
 
 /*
 * DPI system interactions : Initialize

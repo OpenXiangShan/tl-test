@@ -1,7 +1,5 @@
 #include "tilelink_dpi.hpp"
 
-#include "svdpi.h"
-
 #include "../Sequencer/TLSequencer.hpp"
 
 
@@ -23,6 +21,12 @@ static TLSequencer* passive;
 */
 extern "C" void TileLinkSystemInitialize()
 {
+    TLLocalConfig tlcfg;
+    tlcfg.seed                      = TLTEST_LOCAL_SEED;
+    tlcfg.coreCount                 = TLTEST_LOCAL_CORE_COUNT;
+    tlcfg.masterCountPerCoreTLC     = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLC;
+    tlcfg.masterCountPerCoreTLUL    = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL;
+
     glbl.cfg.verbose                = true;
     glbl.cfg.verbose_detailed_dpi   = false;
 
@@ -30,7 +34,7 @@ extern "C" void TileLinkSystemInitialize()
         TLTP_LOG_GLOBAL(Append("tl_test system initialized").EndLine());
     
     passive = new TLSequencer;
-    passive->Initialize();
+    passive->Initialize(tlcfg);
 }
 
 /*
