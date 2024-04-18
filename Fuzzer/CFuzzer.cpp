@@ -5,13 +5,33 @@
 #include "../TLAgent/TLEnum.h"
 #include "Fuzzer.h"
 
+
+//#define CFUZZER_RAND_RANGE_TAG              0x2
+//#define CFUZZER_RAND_RANGE_SET              0x2
+
+
+#ifndef CFUZZER_RAND_RANGE_TAG
+#   define CFUZZER_RAND_RANGE_TAG           0x8
+#endif
+
+#ifndef CFUZZER_RAND_RANGE_SET
+#   define CFUZZER_RAND_RANGE_SET           0x80
+#endif
+
+#ifndef CFUZZER_RAND_RANGE_ALIAS
+#   define CFUZZER_RANG_RANGE_ALIAS         0x4
+#endif
+
+
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->cAgent = cAgent;
 }
 
 void CFuzzer::randomTest(bool do_alias) {
-    paddr_t addr = ((CAGENT_RAND64(cAgent, "CFuzzer") % 0x8) << 13) + ((CAGENT_RAND64(cAgent, "CFuzzer") % 0x80) << 6);  // Tag + Set + Offset
-    int alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % 4) : 0;
+    paddr_t addr = 
+        ((CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RAND_RANGE_TAG) << 13) 
+      + ((CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RAND_RANGE_SET) << 6);  // Tag + Set + Offset
+    int alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RANG_RANGE_ALIAS) : 0;
     if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
         if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
             if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
