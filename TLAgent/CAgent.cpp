@@ -10,6 +10,15 @@
 #include "TLEnum.h"
 #include "CAgent.h"
 
+
+#define CAGENT_NO_ALIAS_ACQUIRE         1
+
+
+#ifndef CAGENT_NO_ALIAS_ACQUIRE
+#   define CAGENT_NO_ALIAS_ACQUIRE      0
+#endif
+
+
 namespace tl_agent {
 
     int capGenPriv(TLLocalContext* ctx, int param) {
@@ -200,19 +209,19 @@ namespace tl_agent {
 
             if (req_c->param == TtoN) {
                 Log(this, Append("[", *cycles, "] [ProbeAck TtoN] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", b->address).EndLine());
+                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
             } else if (req_c->param == TtoB) {
                 Log(this, Append("[", *cycles, "] [ProbeAck TtoB] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", b->address).EndLine());
+                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
             } else if (req_c->param == NtoN) {
                 Log(this, Append("[", *cycles, "] [ProbeAck NtoN] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", b->address).EndLine());
+                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
             } else if (req_c->param == BtoN) {
                 Log(this, Append("[", *cycles, "] [ProbeAck BtoN] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", b->address).EndLine());
+                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
             } else if (req_c->param == BtoB) {
                 Log(this, Append("[", *cycles, "] [ProbeAck BtoB] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", b->address).EndLine());
+                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
             } else {
                 tlc_assert(false, this, "What the hell is req_c's param?");
             }
@@ -574,16 +583,22 @@ namespace tl_agent {
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(this, address);
-            auto privilege = entry->privilege[alias];
-            auto status = entry->status[alias];
-            if (status != S_VALID && status != S_INVALID) {
-                return false;
-            }
-            if (status == S_VALID) {
-                if (privilege == TIP) return false;
-                // if (privilege == BRANCH && param != BtoT) { param = BtoT; }
-                if (privilege == BRANCH && param != BtoT) return false;
-                if (privilege == INVALID && param == BtoT) return false;
+#           if CAGENT_NO_ALIAS_ACQUIRE == 1
+            for (int i = 0; i < 4; i++) {
+#           else
+            int i = alias; {
+#           endif
+                auto privilege = entry->privilege[i];
+                auto status = entry->status[i];
+                if (status != S_VALID && status != S_INVALID) {
+                    return false;
+                }
+                if (status == S_VALID) {
+                    if (privilege == TIP) return false;
+                    // if (privilege == BRANCH && param != BtoT) { param = BtoT; }
+                    if (privilege == BRANCH && param != BtoT) return false;
+                    if (privilege == INVALID && param == BtoT) return false;
+                }
             }
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
@@ -615,15 +630,21 @@ namespace tl_agent {
             return false;
         if (localBoard->haskey(address)) {
             auto entry = localBoard->query(this, address);
-            auto privilege = entry->privilege[alias];
-            auto status = entry->status[alias];
-            if (status != S_VALID && status != S_INVALID) {
-                return false;
-            }
-            if (status == S_VALID) {
-                if (privilege == TIP) return false;
-                if (privilege == BRANCH && param != BtoT) { param = BtoT; }
-                if (privilege == INVALID && param == BtoT) return false;
+#           if CAGENT_NO_ALIAS_ACQUIRE == 1
+            for (int i = 0; i < 4; i++) {
+#           else
+            int i = alias; {
+#           endif
+                auto privilege = entry->privilege[i];
+                auto status = entry->status[i];
+                if (status != S_VALID && status != S_INVALID) {
+                    return false;
+                }
+                if (status == S_VALID) {
+                    if (privilege == TIP) return false;
+                    if (privilege == BRANCH && param != BtoT) { param = BtoT; }
+                    if (privilege == INVALID && param == BtoT) return false;
+                }
             }
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
@@ -710,7 +731,15 @@ namespace tl_agent {
         req_c->dirty    = 1;
         req_c->alias    = alias;
         if (param == BtoN) {
-            req_c->data = globalBoard->query(this, address)->data;
+            if (globalBoard->haskey(address))   // Data all-zero when present in LocalBoard but not in GlobalBoard
+                req_c->data = globalBoard->query(this, address)->data;
+            else
+            {
+                req_c->data = make_shared_tldata<DATASIZE>();
+                for (int i = 0; i < DATASIZE; i++) {
+                    req_c->data->data[i] = 0;
+                }
+            }
         } else {
             tlc_assert(param == TtoN, this, "Wrong execution path!");
             req_c->data = make_shared_tldata<DATASIZE>();
