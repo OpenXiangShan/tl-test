@@ -127,7 +127,10 @@ namespace tl_agent {
                 resp_d->param   = chnD.param;
                 resp_d->source  = chnD.source;
                 resp_d->data    = hasData ? make_shared_tldata<DATASIZE>() : nullptr;
-                int nr_beat     = (chnD.opcode == Grant || chnD.opcode == AccessAck || chnD.size <= 5) ? 0 : 1; // TODO: parameterize it
+                int nr_beat     = (chnD.opcode == Grant || chnD.opcode == AccessAck) ? 0 :
+                                  (chnD.size <= 5) ? 0 :
+                                  (chnD.size == 6) ? 1 :
+                                  (chnD.size == 7) ? 2 : 0;
                 pendingD.init(resp_d, nr_beat);
             }
             // Store data to pendingD
@@ -144,9 +147,9 @@ namespace tl_agent {
                 // ULAgent needn't care about endurance
                 if (hasData) {
                     Log(this, Append("[", *cycles, "] [AccessAckData] ")
-                        .Hex().ShowBase().Append("addr: ", info->address, ", data: "));
+                        .Hex().ShowBase().Append("addr: ", info->address, ", data: ").EndLine());
                     for(int i = 0; i < DATASIZE; i++) {
-                        Dump(Hex().NextWidth(2).Fill('0').Append(pendingD.info->data->data[i]));
+                        Dump(Hex().NextWidth(2).Fill('0').Append(uint64_t(pendingD.info->data->data[i]), " "));
                     }
                     Dump(EndLine());
                     this->globalBoard->verify(this, info->address, pendingD.info->data);
