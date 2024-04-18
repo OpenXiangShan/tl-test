@@ -36,7 +36,7 @@ inline void data_dump(const uint8_t* data)
     sa.Hex().Fill('0');
 
     for (std::size_t j = 0; j < N; j++)
-        sa.NextWidth(2).Append(unsigned(data[j]), " ");
+        sa.NextWidth(2).Append(uint64_t(data[j]), " ");
 
     std::cout << sa.EndLine().ToString();
 }
@@ -112,14 +112,14 @@ template<typename Tk, typename Tv>
 void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
 
 #   if SB_DEBUG == 1
-        std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] scoreboard update: ")
-            .ShowBase()
-            .Hex().Append("key = ", key)
-            .Dec().Append(", present = ", mapping.count(key))
-            .ToString();
-
         if constexpr (std::is_base_of_v<Global_SBEntry, Tv>)
         {
+            std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] global scoreboard update: ")
+                .ShowBase()
+                .Hex().Append("key = ", uint64_t(key))
+                .Dec().Append(", present = ", mapping.count(key))
+                .ToString();
+
             std::cout << ", type = Global_SBEntry";
 
             std::cout << ", status = ";
@@ -129,7 +129,7 @@ void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
                 case Global_SBEntry::SB_VALID:      std::cout << "SB_VALID";    break;
                 case Global_SBEntry::SB_PENDING:    std::cout << "SB_PENDING";  break;
                 default:
-                    std::cout << "<unknown:" << data->status << ">";   
+                    std::cout << "<unknown:" << uint64_t(data->status) << ">";   
                     break;
             }
 
@@ -147,8 +147,6 @@ void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
             else
                 std::cout << "<non-initialized>" << std::endl;
         }
-        else
-            std::cout << std::endl;
 #   endif
 
     if (mapping.count(key) != 0) {
@@ -163,7 +161,10 @@ std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::query(TLLocalContext* ctx, const Tk& key
     if (mapping.count(key) > 0) {
         return mapping[key];
     } else {
-        tlc_assert(false, ctx, "Key no found!");
+        tlc_assert(false, ctx, 
+            Gravity::StringAppender().Hex().ShowBase()
+                .Append("Key no found: ", uint64_t(key))
+            .ToString());
     }
 }
 
