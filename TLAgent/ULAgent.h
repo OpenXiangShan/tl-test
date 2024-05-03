@@ -9,6 +9,7 @@
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
 #include "Bundle.h"
+#include "CAgent.h"
 
 namespace tl_agent {
 
@@ -38,7 +39,22 @@ namespace tl_agent {
         }
     };
 
+    template<typename Tk>
+    struct ScoreBoardUpdateCallbackULSBEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::UL_SBEntry>
+    {
+        void update(const Tk& key, std::shared_ptr<tl_agent::UL_SBEntry>& data)
+        {
+#           if SB_DEBUG == 1
+
+#           endif
+        }
+    };
+
+
     class ULAgent : public BaseAgent {
+    public:
+        using LocalScoreBoard = ScoreBoard<int, UL_SBEntry, ScoreBoardUpdateCallbackULSBEntry<int>>;
+
     private:
         uint64_t* cycles;
         PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
@@ -46,7 +62,7 @@ namespace tl_agent {
         /* We only need a localBoard recording SourceID -> UL_SBEntry
          * because UL agent needn't store data.
          */
-        ScoreBoard<int, UL_SBEntry> *localBoard; // SourceID -> UL_SBEntry
+        LocalScoreBoard*    localBoard; // SourceID -> UL_SBEntry
         void timeout_check() override;
 
     public:

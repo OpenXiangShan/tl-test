@@ -14,7 +14,7 @@ namespace tl_agent {
     {
         this->globalBoard = gb;
         this->cycles = cycles;
-        this->localBoard = new ScoreBoard<int, UL_SBEntry>();
+        this->localBoard = new LocalScoreBoard();
     }
 
     ULAgent::~ULAgent() noexcept
