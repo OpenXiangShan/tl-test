@@ -49,8 +49,8 @@ namespace tl_agent {
     {
         this->globalBoard = gb;
         this->cycles = cycles;
-        this->localBoard = new ScoreBoard<paddr_t , C_SBEntry>();
-        this->idMap = new ScoreBoard<int, C_IDEntry>();
+        this->localBoard = new LocalScoreBoard();
+        this->idMap = new IDMapScoreBoard();
     }
 
     CAgent::~CAgent() noexcept
@@ -146,13 +146,14 @@ namespace tl_agent {
         req_c->dirty    = 1;
         req_c->alias    = b->alias;
         // Log("== id == handleB %d\n", *req_c->source);
+        Log(this, ShowBase().Hex().Append("Accepting over Probe to ProbeAck: ", uint64_t(b->source), " -> ", uint64_t(req_c->source)).EndLine());
         if (exact_status == S_SENDING_A || exact_status == S_INVALID || exact_status == S_A_WAITING_D) {
-            Log(this, Append("Probe an non-exist block, status: ", exact_status).EndLine());
+            Log(this, Append("Probe an non-exist block, status: ", StatusToString(exact_status)).EndLine());
             req_c->opcode   = ProbeAck;
             req_c->param    = NtoN;
             pendingC.init(req_c, 1);
             Log(this, Append("[", *cycles, "] [ProbeAck NtoN] ")
-                .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", b->address).EndLine());
+                .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
         } else {
             int dirty = (exact_privilege == TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
             // When should we probeAck with data? request need_data or dirty itself
@@ -207,24 +208,18 @@ namespace tl_agent {
                 pendingC.init(req_c, 1);
             }
 
-            if (req_c->param == TtoN) {
-                Log(this, Append("[", *cycles, "] [ProbeAck TtoN] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
-            } else if (req_c->param == TtoB) {
-                Log(this, Append("[", *cycles, "] [ProbeAck TtoB] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
-            } else if (req_c->param == NtoN) {
-                Log(this, Append("[", *cycles, "] [ProbeAck NtoN] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
-            } else if (req_c->param == BtoN) {
-                Log(this, Append("[", *cycles, "] [ProbeAck BtoN] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
-            } else if (req_c->param == BtoB) {
-                Log(this, Append("[", *cycles, "] [ProbeAck BtoB] ")
-                    .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
-            } else {
-                tlc_assert(false, this, "What the hell is req_c's param?");
-            }
+            Log(this, Append("[", *cycles, "] [ProbeAck", req_c->opcode == ProbeAckData ? "Data" : "", " ", 
+                        ProbeAckParamToString(req_c->param), "] ")
+                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
+
+            tlc_assert(req_c->param == TtoN
+                    || req_c->param == TtoB
+                    || req_c->param == NtoN
+                    || req_c->param == BtoN
+                    || req_c->param == BtoB, 
+                this, 
+                Gravity::StringAppender("Not permitted req_c param: ", ProbeAckParamToString(req_c->param)).ToString());
+
             if (req_c->opcode == ProbeAckData) {
                 for (int i = 0; i < DATASIZE; i++) {
                   Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(req_c->data->data[i]), " "));
@@ -359,8 +354,8 @@ namespace tl_agent {
             req_b->alias    = (chnB.alias) >> 1;
             req_b->needdata = (chnB.alias) & 0x1;
             pendingB.init(req_b, 1);
-            Log(this, Append("[", *cycles, "] [Probe] ")
-                .Hex().ShowBase().Append("addr: ", chnB.address, " alias: ", (chnB.alias) >> 1).EndLine());
+            Log(this, Append("[", *cycles, "] [Probe ", ProbeParamToString(chnB.param), "] ")
+                .Hex().ShowBase().Append("source: ", uint64_t(chnB.source), ", addr: ", chnB.address, ", alias: ", (chnB.alias) >> 1).EndLine());
         }
     }
 
@@ -404,7 +399,7 @@ namespace tl_agent {
                     this->globalBoard->update(pendingC.info->address, global_SBEntry);
                 }
                 if (chnC.opcode == ProbeAckData) {
-                    std::shared_ptr<Global_SBEntry> global_SBEntry(new Global_SBEntry());
+                    auto global_SBEntry = std::make_shared<Global_SBEntry>();
                     global_SBEntry->data = pendingC.info->data;
                     global_SBEntry->status = Global_SBEntry::SB_VALID;
                     this->globalBoard->update(pendingC.info->address, global_SBEntry);
@@ -474,7 +469,7 @@ namespace tl_agent {
                 switch (chnD.opcode) {
                     case GrantData: {
                         Log(this, Append("[", *cycles, "] [GrantData] ")
-                            .Hex().ShowBase().Append("addr: ", addr, ", alias: ", alias).EndLine());
+                            .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
                         for(int i = 0; i < DATASIZE; i++) {
                             Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(pendingD.info->data->data[i]), " "));
                         }
@@ -485,14 +480,14 @@ namespace tl_agent {
                     }
                     case Grant: {
                         Log(this, Append("[", *cycles, "] [Grant] ")
-                            .Hex().ShowBase().Append("addr: ", addr, ", alias: ", alias).EndLine());
+                            .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
                         // Always set dirty in acquireperm txns
                         info->update_dirty(true, alias);
                         break;
                     }
                     case ReleaseAck: {
                         Log(this, Append("[", *cycles, "] [ReleaseAck] ")
-                            .Hex().ShowBase().Append("addr: ", addr, ", alias: ", alias).EndLine());
+                            .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
                         if (exact_status == S_C_WAITING_D) {
                             info->update_status(S_INVALID, *cycles, alias);
                             info->update_dirty(0, alias);
@@ -611,16 +606,8 @@ namespace tl_agent {
         req_a->alias    = alias;
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        switch (param) {
-        case NtoB:
-            Log(this, Append("[", *cycles, "] [AcquireBlock NtoB] ")
-                .Hex().ShowBase().Append("addr: ", address, ", alias: ", alias).EndLine());
-            break;
-        case NtoT:
-            Log(this, Append("[", *cycles, "] [AcquireBlock NtoT] ")
-                .Hex().ShowBase().Append("addr: ", address, ", alias: ", alias).EndLine());
-            break;
-        }
+        Log(this, Append("[", *cycles, "] [AcquireBlock ", AcquireParamToString(param), "] ")
+                .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
 
         return true;
     }
@@ -657,8 +644,8 @@ namespace tl_agent {
         req_a->alias    = alias;
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        Log(this, Append("[", *cycles, "] [AcquirePerm] ")
-            .Hex().ShowBase().Append("addr: ", address, ", alias: ", alias).EndLine());
+        Log(this, Append("[", *cycles, "] [AcquirePerm ", AcquireParamToString(param) , "] ")
+            .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
         return true;
     }
 
@@ -688,8 +675,8 @@ namespace tl_agent {
         req_c->data     = data;
         req_c->alias    = alias;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
-        Log(this, Append("[", *cycles, "] [ReleaseData] ")
-            .Hex().ShowBase().Append("addr: ", address, ", alias: ", alias).EndLine());
+        Log(this, Append("[", *cycles, "] [ReleaseData ", ReleaseParamToString(param), "] ")
+            .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
         for(int i = 0; i < DATASIZE; i++) {
             Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(data->data[i]), " "));
         }
@@ -750,16 +737,8 @@ namespace tl_agent {
 
         // Log("== id == release %d\n", *req_c->source);
         pendingC.init(req_c, DATASIZE / BEATSIZE);
-        switch (param) {
-        case BtoN:
-            Log(this, Append("[", *cycles, "] [ReleaseData BtoN] ")
-                .Hex().ShowBase().Append("addr: ", address, ", alias: ", alias).EndLine());
-            break;
-        case TtoN:
-            Log(this, Append("[", *cycles, "] [ReleaseData TtoN] ")
-                .Hex().ShowBase().Append("addr: ", address, ", alias: ", alias).EndLine());
-            break;
-        }
+        Log(this, Append("[", *cycles, "] [ReleaseData ", ReleaseParamToString(param), "] ")
+                .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
 
         for(int i = 0; i < DATASIZE; i++) {
             Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(req_c->data->data[i]), " "));
@@ -783,7 +762,7 @@ namespace tl_agent {
                         .Hex().Append("Address:     ", addr)
                         .Dec().Append("Now time:    ", *this->cycles)
                         .Dec().Append("Last stamp:  ", value->time_stamp)
-                        .Dec().Append("Status[0]:   ", value->status[0])
+                        .Dec().Append("Status[0]:   ", StatusToString(value->status[0]))
                     .ToString();
 
                     tlc_assert(false, this, "Transaction time out");
