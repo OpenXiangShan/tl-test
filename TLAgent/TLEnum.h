@@ -3,6 +3,14 @@
 // Created by Kumonda221 (Ding Haonan) on 2024/03/20
 //
 
+#ifndef TLC_TEST_TLENUM_H
+#define TLC_TEST_TLENUM_H
+
+#include <string>
+
+#include "../Utils/gravity_utility.hpp"
+
+
 namespace tl_agent {
 
     enum {
@@ -70,4 +78,70 @@ namespace tl_agent {
         TRUNK,
         TIP
     };
+
+    //
+    inline std::string ProbeParamToString(int param) noexcept
+    {
+        switch (param)
+        {
+            case toT:       return "toT";
+            case toB:       return "toB";
+            case toN:       return "toN";
+            default:        return Gravity::StringAppender("<unknown_probe_param:", param, ">").ToString();
+        }
+    }
+
+    inline std::string AcquireParamToString(int param) noexcept
+    {
+        switch (param)
+        {
+            case NtoB:      return "NtoB";
+            case NtoT:      return "NtoT";
+            case BtoT:      return "BtoT";
+            default:        return Gravity::StringAppender("<unknown_acquire_param:", param, ">").ToString();
+        }
+    }
+
+    inline std::string ProbeAckParamToString(int param) noexcept
+    {
+        switch (param)
+        {
+            case TtoB:      return "TtoB";
+            case TtoN:      return "TtoN";
+            case BtoN:      return "BtoN";
+            case TtoT:      return "TtoT";
+            case BtoB:      return "BtoB";
+            case NtoN:      return "NtoN";
+            default:        return Gravity::StringAppender("<unknown_probeack_param:", param, ">").ToString();
+        }
+    }
+
+    inline std::string ReleaseParamToString(int param) noexcept
+    {
+        switch (param)
+        {
+            case TtoB:      return "TtoB";
+            case TtoN:      return "TtoN";
+            case BtoN:      return "BtoN";
+            case TtoT:      return "TtoT";
+            case BtoB:      return "BtoB";
+            case NtoN:      return "NtoN";
+            default:        return Gravity::StringAppender("<unknown_release_param:", param, ">").ToString();
+        }
+    }
+
+    inline std::string PrivilegeToString(int privilege) noexcept
+    {
+        switch (privilege)
+        {
+            case INVALID:   return "INVALID";
+            case BRANCH:    return "BRANCH";
+            case TRUNK:     return "TRUNK";
+            case TIP:       return "TIP";
+            default:        return Gravity::StringAppender("<unknown_privilege:", privilege, ">").ToString();
+        }
+    }
 }
+
+
+#endif // TLC_TEST_TLENUM_H
