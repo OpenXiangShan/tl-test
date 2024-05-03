@@ -6,8 +6,9 @@
 #include "Fuzzer.h"
 
 
-//#define CFUZZER_RAND_RANGE_TAG              0x2
-//#define CFUZZER_RAND_RANGE_SET              0x2
+#define CFUZZER_RAND_RANGE_TAG              0x4
+#define CFUZZER_RAND_RANGE_SET              0x4
+#define CFUZZER_RAND_RANGE_ALIAS            0x4
 
 
 #ifndef CFUZZER_RAND_RANGE_TAG
@@ -19,7 +20,7 @@
 #endif
 
 #ifndef CFUZZER_RAND_RANGE_ALIAS
-#   define CFUZZER_RANG_RANGE_ALIAS         0x4
+#   define CFUZZER_RAND_RANGE_ALIAS         0x4
 #endif
 
 
@@ -31,7 +32,7 @@ void CFuzzer::randomTest(bool do_alias) {
     paddr_t addr = 
         ((CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RAND_RANGE_TAG) << 13) 
       + ((CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RAND_RANGE_SET) << 6);  // Tag + Set + Offset
-    int alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RANG_RANGE_ALIAS) : 0;
+    int alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RAND_RANGE_ALIAS) : 0;
     if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
         if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
             if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
