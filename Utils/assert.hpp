@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #ifndef TLCTEST_EVENTS_ASSERT_HEADER
 #define TLCTEST_EVENTS_ASSERT_HEADER
 
@@ -18,6 +19,17 @@ public:
 
     const std::string&  GetInfo() const noexcept;
     void                SetInfo(const std::string& info) noexcept;
+};
+
+
+class TLAssertFailureException : public std::exception {
+private:
+    TLAssertFailureEvent    copiedEvent;
+
+public:
+    TLAssertFailureException(const TLAssertFailureEvent& event) noexcept;
+
+    const TLAssertFailureEvent&     GetCopiedEvent() const noexcept;
 };
 
 
@@ -43,6 +55,21 @@ inline const std::string& TLAssertFailureEvent::GetInfo() const noexcept
 inline void TLAssertFailureEvent::SetInfo(const std::string& info) noexcept
 {
     this->info = info;
+}
+
+
+// Implementation of: class TLAssertFailureException
+/*
+TLAssertFailureEvent    copiedEvent;
+*/
+
+inline TLAssertFailureException::TLAssertFailureException(const TLAssertFailureEvent& event) noexcept
+    : copiedEvent   (event)
+{ }
+
+inline const TLAssertFailureEvent& TLAssertFailureException::GetCopiedEvent() const noexcept
+{
+    return copiedEvent;
 }
 
 
