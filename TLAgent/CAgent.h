@@ -9,6 +9,7 @@
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
 #include "Bundle.h"
+#include "TLEnum.h"
 
 
 #if AGENT_DEBUG == 1
@@ -33,25 +34,75 @@ namespace tl_agent {
               this->status[i] = status[i];
             }
         }
+
         void update_status(int status, uint64_t& time, int alias) {
             this->status[alias] = status;
             this->time_stamp = time;
+
+#           if SB_DEBUG == 1
+                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (status): ")
+                    .ShowBase()
+                    .Dec().Append("[alias = ", alias, "]")
+                    .Hex().Append(" status = ", StatusToString(status))
+                    .EndLine()
+                    .ToString();
+#           endif
         }
+
         void update_priviledge(int priv, uint64_t& time, int alias) {
             this->privilege[alias] = priv;
             this->time_stamp = time;
+
+#           if SB_DEBUG == 1
+                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (privilege): ")
+                    .ShowBase()
+                    .Dec().Append("[alias = ", alias, "]")
+                    .Hex().Append("privilege = ", PrivilegeToString(priv))
+                    .EndLine()
+                    .ToString();
+#           endif
         }
+
         void update_pending_priviledge(int priv, uint64_t& time, int alias) {
             this->pending_privilege[alias] = priv;
             this->time_stamp = time;
+
+#           if SB_DEBUG == 1
+                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (pending_privilege): ")
+                    .ShowBase()
+                    .Dec().Append("[alias = ", alias, "]")
+                    .Hex().Append("pending_privilege = ", PrivilegeToString(priv))
+                    .EndLine()
+                    .ToString();
+#           endif
         }
+
         void unpending_priviledge(uint64_t& time, int alias) {
             this->privilege[alias] = this->pending_privilege[alias];
             this->pending_privilege[alias] = -1;
             this->time_stamp = time;
+
+#           if SB_DEBUG == 1
+                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (unpending_privilege): ")
+                    .ShowBase()
+                    .Dec().Append("[alias = ", alias, "]")
+                    .Hex().Append("pending_privilege = ", PrivilegeToString(this->pending_privilege[alias]))
+                    .EndLine()
+                    .ToString();
+#           endif
         }
+
         void update_dirty(int dirty, int alias) {
             this->dirty[alias] = dirty;
+
+#           if SB_DEBUG == 1
+                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (dirty): ")
+                    .ShowBase()
+                    .Dec().Append("[alias = ", alias, "]")
+                    .Hex().Append("dirty = ", PrivilegeToString(dirty))
+                    .EndLine()
+                    .ToString();
+#           endif
         }
     };
 
@@ -62,6 +113,64 @@ namespace tl_agent {
         C_IDEntry(paddr_t &addr, uint8_t &alias) {
             this->address = addr;
             this->alias = alias;
+        }
+    };
+
+
+    template<typename Tk>
+    struct ScoreBoardUpdateCallbackCSBEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::C_SBEntry>
+    { 
+        void update(const Tk& key, std::shared_ptr<tl_agent::C_SBEntry>& data)
+        {
+#           if SB_DEBUG == 1
+                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update: ")
+                    .ShowBase()
+                    .Hex().Append("key = ", uint64_t(key))
+                //  .Dec().Append(", present = ", mapping.count(key))
+                    .ToString();
+
+                std::cout << ", type = C_SBEntry";
+
+                std::cout << ", timestamp = " << data->time_stamp;
+
+                std::cout << std::endl;
+
+                for (int i = 0; i < 4; i++)
+                {
+                    std::cout << Gravity::StringAppender("[", i, "] ")
+                        .ShowBase()
+                        .Append("status = ", tl_agent::StatusToString(data->status[i]))
+                        .Append(", privilege = ", PrivilegeToString(data->privilege[i]))
+                        .Append(", pending_privilege = ", PrivilegeToString(data->pending_privilege[i]))
+                        .Append(", dirty = ", data->dirty[i])
+                        .EndLine()
+                        .ToString();
+                }
+#           endif 
+        }
+    };
+
+    template<typename Tk>
+    struct ScoreBoardUpdateCallbackCIDEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::C_IDEntry>
+    {
+        void update(const Tk& key, std::shared_ptr<tl_agent::C_IDEntry>& data)
+        {
+#           if SB_DEBUG == 1
+                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update: ")
+                    .ShowBase()
+                    .Hex().Append("key = ", uint64_t(key))
+                    .ToString();
+
+                std::cout << ", type = C_IDEntry";
+
+                std::cout << Gravity::StringAppender()
+                    .ShowBase()
+                    .Hex().Append(", address = ", data->address)
+                    .Hex().Append(", alias = ", data->alias)
+                    .ToString();
+
+                std::cout << std::endl;
+#           endif
         }
     };
 
@@ -82,7 +191,12 @@ namespace tl_agent {
 #       define CAGENT_RAND64(agent, source) (agent->rand64())
 #   endif
 
+
     class CAgent : public BaseAgent {
+    public:
+        using LocalScoreBoard = ScoreBoard<paddr_t, C_SBEntry, ScoreBoardUpdateCallbackCSBEntry<paddr_t>>;
+        using IDMapScoreBoard = ScoreBoard<paddr_t, C_IDEntry, ScoreBoardUpdateCallbackCIDEntry<paddr_t>>;
+
     private:
         uint64_t *cycles;
         PendingTrans<BundleChannelA<ReqField, EchoField, DATASIZE>> pendingA;
@@ -93,8 +207,8 @@ namespace tl_agent {
         /* Here we need a scoreboard called localBoard maintaining address->info
          * For convenience, an idMap(id->addr) is also maintained
          */
-        ScoreBoard<paddr_t , C_SBEntry> *localBoard;
-        ScoreBoard<int, C_IDEntry> *idMap;
+        LocalScoreBoard*    localBoard;
+        IDMapScoreBoard*    idMap;
         IDPool probeIDpool;
         void timeout_check() override;
 
@@ -123,6 +237,9 @@ namespace tl_agent {
     };
 
 }
+
+
+
 
 
 
