@@ -55,9 +55,21 @@ inline void data_dump_on_verify(const uint8_t *dut, const uint8_t *ref)
 
 
 template<typename Tk, typename Tv>
+struct ScoreBoardUpdateCallback {
+    void update(const Tk& key, std::shared_ptr<Tv>& data) {};
+};
+
+template<typename Tk, typename Tv>
+struct ScoreBoardUpdateCallbackDefault : public ScoreBoardUpdateCallback<Tk, Tv> {
+    void update(const Tk& key, std::shared_ptr<Tv>& data) {};
+};
+
+template<typename Tk, typename Tv, typename TUpdateCallback = ScoreBoardUpdateCallbackDefault<Tk, Tv>>
 class ScoreBoard {
+    friend class ScoreBoardUpdateCallback<Tk, Tv>;
 protected:
-    std::map<Tk, std::shared_ptr<Tv>> mapping;
+    TUpdateCallback                     updateCallback;
+    std::map<Tk, std::shared_ptr<Tv>>   mapping;
 public:
     ScoreBoard();
     ~ScoreBoard();
@@ -68,6 +80,7 @@ public:
     int verify(const Tk& key, const Tv& data) const;
     bool haskey(const Tk& key);
 };
+
 
 class Global_SBEntry {
 public:
@@ -81,43 +94,15 @@ public:
     shared_tldata_t<DATASIZE>   pending_data; // used for put&release
 };
 
-template<typename T>
-class GlobalBoard : public ScoreBoard<T, Global_SBEntry> {
-private:
-    int data_check(TLLocalContext* ctx, const uint8_t* dut, const uint8_t* ref, std::string assert_info);
-    uint8_t init_zeros[DATASIZE];
-public:
-    GlobalBoard() noexcept;
-    int verify(TLLocalContext* ctx, const T& key, shared_tldata_t<DATASIZE> data);
-    void unpending(TLLocalContext* ctx, const T& key);
-};
-
-/************************** Implementation **************************/
-
-template<typename Tk, typename Tv>
-ScoreBoard<Tk, Tv>::ScoreBoard() {
-    mapping.clear();
-}
-
-template<typename Tk, typename Tv>
-ScoreBoard<Tk, Tv>::~ScoreBoard() {
-}
-
-template<typename Tk, typename Tv>
-std::map<Tk, std::shared_ptr<Tv>>& ScoreBoard<Tk, Tv>::get() {
-    return this->mapping;
-}
-
-template<typename Tk, typename Tv>
-void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
-
-#   if SB_DEBUG == 1
-        if constexpr (std::is_base_of_v<Global_SBEntry, Tv>)
-        {
+template<typename Tk>
+struct ScoreBoardUpdateCallbackGlobalEntry : public ScoreBoardUpdateCallback<Tk, Global_SBEntry>
+{
+    void update(const Tk& key, std::shared_ptr<Global_SBEntry>& data)
+    {
+#       if SB_DEBUG == 1
             std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] global scoreboard update: ")
                 .ShowBase()
                 .Hex().Append("key = ", uint64_t(key))
-                .Dec().Append(", present = ", mapping.count(key))
                 .ToString();
 
             std::cout << ", type = Global_SBEntry";
@@ -146,18 +131,51 @@ void ScoreBoard<Tk, Tv>::update(const Tk& key, std::shared_ptr<Tv>& data) {
                 data_dump<DATASIZE>(data->data->data);
             else
                 std::cout << "<non-initialized>" << std::endl;
-        }
-#   endif
+#       endif
+    }
+};
 
+
+template<typename T>
+class GlobalBoard : public ScoreBoard<T, Global_SBEntry, ScoreBoardUpdateCallbackGlobalEntry<T>> {
+private:
+    int data_check(TLLocalContext* ctx, const uint8_t* dut, const uint8_t* ref, std::string assert_info);
+    uint8_t init_zeros[DATASIZE];
+public:
+    GlobalBoard() noexcept;
+    int verify(TLLocalContext* ctx, const T& key, shared_tldata_t<DATASIZE> data);
+    void unpending(TLLocalContext* ctx, const T& key);
+};
+
+
+/************************** Implementation **************************/
+template<typename Tk, typename Tv, typename TUpdateCallback>
+ScoreBoard<Tk, Tv, TUpdateCallback>::ScoreBoard() {
+    mapping.clear();
+}
+
+template<typename Tk, typename Tv, typename TUpdateCallback>
+ScoreBoard<Tk, Tv, TUpdateCallback>::~ScoreBoard() {
+}
+
+template<typename Tk, typename Tv, typename TUpdateCallback>
+std::map<Tk, std::shared_ptr<Tv>>& ScoreBoard<Tk, Tv, TUpdateCallback>::get() {
+    return this->mapping;
+}
+
+template<typename Tk, typename Tv, typename TUpdateCallback>
+void ScoreBoard<Tk, Tv, TUpdateCallback>::update(const Tk& key, std::shared_ptr<Tv>& data) {
     if (mapping.count(key) != 0) {
         mapping[key] = data;
     } else {
         mapping.insert(std::make_pair(key, data));
     }
+
+    updateCallback.update(key, data);
 }
 
-template<typename Tk, typename Tv>
-std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::query(TLLocalContext* ctx, const Tk& key) {
+template<typename Tk, typename Tv, typename TUpdateCallback>
+std::shared_ptr<Tv> ScoreBoard<Tk, Tv, TUpdateCallback>::query(TLLocalContext* ctx, const Tk& key) {
     if (mapping.count(key) > 0) {
         return mapping[key];
     } else {
@@ -168,14 +186,14 @@ std::shared_ptr<Tv> ScoreBoard<Tk, Tv>::query(TLLocalContext* ctx, const Tk& key
     }
 }
 
-template<typename Tk, typename Tv>
-void ScoreBoard<Tk, Tv>::erase(TLLocalContext* ctx, const Tk& key) {
+template<typename Tk, typename Tv, typename TUpdateCallback>
+void ScoreBoard<Tk, Tv, TUpdateCallback>::erase(TLLocalContext* ctx, const Tk& key) {
     int num = mapping.erase(key);
     tlc_assert(num == 1, ctx, "Multiple value mapped to one key!");
 }
 
-template<typename Tk, typename Tv>
-int ScoreBoard<Tk, Tv>::verify(const Tk& key, const Tv& data) const {
+template<typename Tk, typename Tv, typename TUpdateCallback>
+int ScoreBoard<Tk, Tv, TUpdateCallback>::verify(const Tk& key, const Tv& data) const {
     if (mapping.count(key) > 0) {
         if (*mapping[key] != data) {
             return ERR_MISMATCH;
@@ -185,8 +203,8 @@ int ScoreBoard<Tk, Tv>::verify(const Tk& key, const Tv& data) const {
     return ERR_NOTFOUND;
 }
 
-template<typename Tk, typename Tv>
-bool ScoreBoard<Tk, Tv>::haskey(const Tk &key) {
+template<typename Tk, typename Tv, typename TUpdateCallback>
+bool ScoreBoard<Tk, Tv, TUpdateCallback>::haskey(const Tk &key) {
     return mapping.count(key) > 0;
 }
 
