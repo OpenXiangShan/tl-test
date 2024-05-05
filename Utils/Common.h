@@ -66,16 +66,18 @@ typedef uint64_t paddr_t;
 #define tlc_assert(cond, ctx, info) \
     do { \
         if (!(cond)) { \
-            TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */ \
+            const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */ \
             if (__tlc_assert__ctx) \
             { \
-                std::cout << "[tl-test-passive-ERROR] [tlc_assert failure at " << __FILE__ << ":" << __LINE__ << "] " << std::endl \
-                << "[tl-test-passive-ERROR] [At cycle " << ctx->cycle() << " in system #" << ctx->sysId() << "] "; \
+                std::cout << "[" << ctx->cycle() << "] [tl-test-passive-ERROR] [tlc_assert failure at " << __FILE__ << ":" << __LINE__ << "] " << std::endl \
+                << "[" << ctx->cycle() << "] [tl-test-passive-ERROR] [At system #" << ctx->sysId() << "] "; \
             } \
             std::cout << "[tl-test-passive-ERROR] " << info << "" << std::endl; \
             fflush(stdout); \
             fflush(stderr); \
-            TLAssertFailureEvent(info).Fire(); \
+            TLAssertFailureEvent assert_event(__PRETTY_FUNCTION__, info); \
+            assert_event.Fire(); \
+            throw TLAssertFailureException(assert_event); \
             assert(false); \
         } \
     } while (0)
@@ -84,9 +86,21 @@ typedef uint64_t paddr_t;
 #define Log(ctx, str_app) \
     do { \
         if (glbl.cfg.verbose) { \
-            TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */  \
+            const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */  \
             if (__tlc_assert__ctx) \
-                std::cout << "[tl-test-passive-INFO] #" << ctx->sysId() << " "; \
+                std::cout << "[" << ctx->cycle() << "] [tl-test-passive-INFO] #" << ctx->sysId() << " "; \
+            std::cout << (Gravity::StringAppender().str_app.ToString()); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
+
+#define Debug(ctx, str_app) \
+    do { \
+        if (glbl.cfg.verbose) { \
+            const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */  \
+            if (__tlc_assert__ctx) \
+                std::cout << "[" << ctx->cycle() << "] [tl-test-passive-DEBUG] #" << ctx->sysId() << " "; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
             fflush(stderr); \
