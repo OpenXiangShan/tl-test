@@ -68,10 +68,10 @@ namespace tl_agent {
         switch (a->opcode) {
             case AcquireBlock: {
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
-                idMap->update(a->source, idmap_entry);
+                idMap->update(this, a->source, idmap_entry);
 
                 if (localBoard->haskey(a->address)) {
-                    localBoard->query(this, a->address)->update_status(S_SENDING_A, *cycles, a->alias);
+                    localBoard->query(this, a->address)->update_status(this, S_SENDING_A, a->alias);
                 } else {
                     int statuses[4] = {S_INVALID};
                     int privileges[4] = {INVALID};
@@ -81,16 +81,16 @@ namespace tl_agent {
                         }
                     }
                     // Set pending as INVALID
-                    auto entry = std::make_shared<C_SBEntry>(statuses, privileges, *cycles);
-                    localBoard->update(a->address, entry);
+                    auto entry = std::make_shared<C_SBEntry>(this, statuses, privileges);
+                    localBoard->update(this, a->address, entry);
                 }
                 break;
             }
             case AcquirePerm: {
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
-                idMap->update(a->source, idmap_entry);
+                idMap->update(this, a->source, idmap_entry);
                 if (localBoard->haskey(a->address)) {
-                    localBoard->query(this, a->address)->update_status(S_SENDING_A, *cycles, a->alias);
+                    localBoard->query(this, a->address)->update_status(this, S_SENDING_A, a->alias);
                 } else {
                     int statuses[4] = {S_INVALID};
                     int privileges[4] = {INVALID};
@@ -100,8 +100,8 @@ namespace tl_agent {
                         }
                     }
                     // Set pending as INVALID
-                    auto entry = std::make_shared<C_SBEntry>(statuses, privileges, *cycles);
-                    localBoard->update(a->address, entry);
+                    auto entry = std::make_shared<C_SBEntry>(this, statuses, privileges);
+                    localBoard->update(this, a->address, entry);
                 }
                 break;
             }
@@ -152,7 +152,7 @@ namespace tl_agent {
             req_c->opcode   = ProbeAck;
             req_c->param    = NtoN;
             pendingC.init(req_c, 1);
-            Log(this, Append("[", *cycles, "] [ProbeAck NtoN] ")
+            Log(this, Append("[ProbeAck NtoN] ")
                 .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
         } else {
             int dirty = (exact_privilege == TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
@@ -186,7 +186,7 @@ namespace tl_agent {
                     }
 
 #                   ifdef CAGENT_DEBUG
-                        std::cout << "[tl-test-passive-DEBUG] [" << cycle() << "] handle_b(): randomized data: " << std::endl;
+                        Debug(this, Append("handle_b(): randomized data: ").EndLine());
                         data_dump<DATASIZE>(req_c->data->data);
 #                   endif
 
@@ -197,7 +197,7 @@ namespace tl_agent {
                         DATASIZE);
 
 #                   ifdef CAGENT_DEBUG
-                        std::cout << "[tl-test-passive-DEBUG] [" << cycle() << "] handle_b(): fetched scoreboard data: " << std::endl;
+                        Debug(this, Append("handle_b(): fetched scoreboard data: ").EndLine());
                         data_dump<DATASIZE>(req_c->data->data);
 #                   endif
                 }
@@ -208,7 +208,7 @@ namespace tl_agent {
                 pendingC.init(req_c, 1);
             }
 
-            Log(this, Append("[", *cycles, "] [ProbeAck", req_c->opcode == ProbeAckData ? "Data" : "", " ", 
+            Log(this, Append("[ProbeAck", req_c->opcode == ProbeAckData ? "Data" : "", " ", 
                         ProbeAckParamToString(req_c->param), "] ")
                     .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
 
@@ -236,10 +236,10 @@ namespace tl_agent {
         switch (c->opcode) {
             case ReleaseData: {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
-                idMap->update(c->source, idmap_entry);
+                idMap->update(this, c->source, idmap_entry);
 
                 if (localBoard->haskey(c->address)) {
-                    localBoard->query(this, c->address)->update_status(S_SENDING_C, *cycles, c->alias);
+                    localBoard->query(this, c->address)->update_status(this, S_SENDING_C, c->alias);
                 } else {
                     tlc_assert(false, this, "Localboard key not found!");
                 }
@@ -252,11 +252,9 @@ namespace tl_agent {
                 std::memcpy(this->port->c.data->data, (uint8_t*)(c->data->data) + (BEATSIZE * beat_num), BEATSIZE);
 
 #               ifdef CAGENT_DEBUG
-                    std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] [", cycle(), "] ")
-                        .Hex().ShowBase()
+                    Debug(this, Hex().ShowBase()
                         .Append("[CAgent] channel C presenting: ReleaseData: address = ", c->address)
-                        .Append(", data :").EndLine()
-                        .ToString();
+                        .Append(", data :").EndLine());
                     data_dump<BEATSIZE>(this->port->c.data->data);
 #               endif
 
@@ -264,11 +262,11 @@ namespace tl_agent {
             }
             case ProbeAckData: {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
-                idMap->update(c->source, idmap_entry);
+                idMap->update(this, c->source, idmap_entry);
 
                 if (localBoard->haskey(c->address)) {
                     // TODO: What if this is an interrupted probe?
-                    localBoard->query(this, c->address)->update_status(S_SENDING_C, *cycles, c->alias);
+                    localBoard->query(this, c->address)->update_status(this, S_SENDING_C, c->alias);
                 } else {
                     tlc_assert(false, this, "Localboard key not found!");
                 }
@@ -281,11 +279,9 @@ namespace tl_agent {
                 std::memcpy(this->port->c.data->data, (uint8_t*)(c->data->data) + (BEATSIZE * beat_num), BEATSIZE);
 
 #               ifdef CAGENT_DEBUG
-                    std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] [", cycle(), "] ")
-                        .Hex().ShowBase()
+                    Debug(this, Hex().ShowBase()
                         .Append("[CAgent] channel C presenting: ProbeAckData: address = ", c->address)
-                        .Append(", data : ").EndLine()
-                        .ToString();
+                        .Append(", data : ").EndLine());
                     data_dump<BEATSIZE>(this->port->c.data->data);
 #               endif
 
@@ -293,16 +289,16 @@ namespace tl_agent {
             }
             case ProbeAck: {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
-                idMap->update(c->source, idmap_entry);
+                idMap->update(this, c->source, idmap_entry);
                 // tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
                 if (localBoard->haskey(c->address)) {
                     auto item = localBoard->query(this, c->address);
                     if (item->status[c->alias] == S_C_WAITING_D) {
-                        item->update_status(S_C_WAITING_D_INTR, *cycles, c->alias);
+                        item->update_status(this, S_C_WAITING_D_INTR, c->alias);
                     } else if (item->status[c->alias] == S_A_WAITING_D) {
-                        item->update_status(S_A_WAITING_D_INTR, *cycles, c->alias);
+                        item->update_status(this, S_A_WAITING_D_INTR, c->alias);
                     } else {
-                        item->update_status(S_SENDING_C, *cycles, c->alias);
+                        item->update_status(this, S_SENDING_C, c->alias);
                     }
                 } else {
                     tlc_assert(false, this, "Localboard key not found!");
@@ -336,7 +332,7 @@ namespace tl_agent {
             tlc_assert(pendingA.is_pending(), this, "No pending A but A fired!");
             pendingA.update(this);
             if (!pendingA.is_pending()) { // req A finished
-                this->localBoard->query(this, pendingA.info->address)->update_status(S_A_WAITING_D, *cycles, pendingA.info->alias);
+                this->localBoard->query(this, pendingA.info->address)->update_status(this, S_A_WAITING_D, pendingA.info->alias);
             }
         }
     }
@@ -354,7 +350,7 @@ namespace tl_agent {
             req_b->alias    = (chnB.alias) >> 1;
             req_b->needdata = (chnB.alias) & 0x1;
             pendingB.init(req_b, 1);
-            Log(this, Append("[", *cycles, "] [Probe ", ProbeParamToString(chnB.param), "] ")
+            Log(this, Append("[Probe ", ProbeParamToString(chnB.param), "] ")
                 .Hex().ShowBase().Append("source: ", uint64_t(chnB.source), ", addr: ", chnB.address, ", alias: ", (chnB.alias) >> 1).EndLine());
         }
     }
@@ -373,17 +369,17 @@ namespace tl_agent {
                 auto info = this->localBoard->query(this, pendingC.info->address);
                 auto exact_status = info->status[pendingC.info->alias];
                 if (needAck) {
-                    info->update_status(S_C_WAITING_D, *cycles, pendingC.info->alias);
+                    info->update_status(this, S_C_WAITING_D, pendingC.info->alias);
                 } else {
                     if (exact_status == S_C_WAITING_D_INTR) {
-                        info->update_status(S_C_WAITING_D, *cycles, pendingC.info->alias);
+                        info->update_status(this, S_C_WAITING_D, pendingC.info->alias);
                     } else if (exact_status == S_A_WAITING_D_INTR || exact_status == S_A_WAITING_D) {
-                        info->update_status(S_A_WAITING_D, *cycles, pendingC.info->alias);
+                        info->update_status(this, S_A_WAITING_D, pendingC.info->alias);
                     } else {
                         if (probeAckDataToB) {
-                            info->update_status(S_VALID, *cycles, pendingC.info->alias);
+                            info->update_status(this, S_VALID, pendingC.info->alias);
                         } else {
-                            info->update_status(S_INVALID, *cycles, pendingC.info->alias);
+                            info->update_status(this, S_INVALID, pendingC.info->alias);
                         }
                     }
                 }
@@ -396,19 +392,19 @@ namespace tl_agent {
                         global_SBEntry->data = this->globalBoard->get()[pendingC.info->address]->data;
                     }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
-                    this->globalBoard->update(pendingC.info->address, global_SBEntry);
+                    this->globalBoard->update(this, pendingC.info->address, global_SBEntry);
                 }
                 if (chnC.opcode == ProbeAckData) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
                     global_SBEntry->data = pendingC.info->data;
                     global_SBEntry->status = Global_SBEntry::SB_VALID;
-                    this->globalBoard->update(pendingC.info->address, global_SBEntry);
+                    this->globalBoard->update(this, pendingC.info->address, global_SBEntry);
                 }
                 if (chnC.opcode == ReleaseData || chnC.opcode == Release) {
-                    info->update_pending_priviledge(shrinkGenPriv(this, pendingC.info->param), *cycles, pendingC.info->alias);
+                    info->update_pending_priviledge(this, shrinkGenPriv(this, pendingC.info->param), pendingC.info->alias);
                 } else {
                     if (chnC.opcode == ProbeAck || chnC.opcode == ProbeAckData) {
-                      info->update_priviledge(shrinkGenPriv(this, pendingC.info->param), *cycles, pendingC.info->alias);
+                      info->update_priviledge(this, shrinkGenPriv(this, pendingC.info->param), pendingC.info->alias);
                     }
                     // Log("== free == fireC %d\n", *chnC.source);
                     this->probeIDpool.freeid(chnC.source);
@@ -459,16 +455,14 @@ namespace tl_agent {
                 std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
 
 #               ifdef CAGENT_DEBUG
-                    std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] [", cycle(), "] ")
-                        .Append("[CAgent] channel D receiving: data :").EndLine()
-                        .ToString();
+                    Debug(this, Append("[CAgent] channel D receiving data: ").EndLine());
                     data_dump<BEATSIZE>(chnD.data->data);
 #               endif
             }
             if (!pendingD.is_pending()) {
                 switch (chnD.opcode) {
                     case GrantData: {
-                        Log(this, Append("[", *cycles, "] [GrantData] ")
+                        Log(this, Append("[GrantData] ")
                             .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
                         for(int i = 0; i < DATASIZE; i++) {
                             Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(pendingD.info->data->data[i]), " "));
@@ -479,27 +473,27 @@ namespace tl_agent {
                         break;
                     }
                     case Grant: {
-                        Log(this, Append("[", *cycles, "] [Grant] ")
+                        Log(this, Append("[Grant] ")
                             .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
                         // Always set dirty in acquireperm txns
-                        info->update_dirty(true, alias);
+                        info->update_dirty(this, true, alias);
                         break;
                     }
                     case ReleaseAck: {
-                        Log(this, Append("[", *cycles, "] [ReleaseAck] ")
+                        Log(this, Append("[ReleaseAck] ")
                             .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
                         if (exact_status == S_C_WAITING_D) {
-                            info->update_status(S_INVALID, *cycles, alias);
-                            info->update_dirty(0, alias);
+                            info->update_status(this, S_INVALID, alias);
+                            info->update_dirty(this, 0, alias);
                         } else {
                             tlc_assert(exact_status == S_C_WAITING_D_INTR, this, 
                                 Gravity::StringAppender("Status error! ReleaseAck not expected.").EndLine()
                                     .Append("current status: ", StatusToString(exact_status)).EndLine()
                                     .Append("description: ", StatusToDescription(exact_status)).EndLine()
                                 .ToString());
-                            info->update_status(S_SENDING_C, *cycles, alias);
+                            info->update_status(this, S_SENDING_C, alias);
                         }
-                        info->unpending_priviledge(*cycles, alias);
+                        info->unpending_priviledge(this, alias);
                         this->globalBoard->unpending(this, addr);
                         break;
                     }
@@ -518,8 +512,8 @@ namespace tl_agent {
                         tlc_assert(false, this, "E is pending!");
                     }
                     pendingE.init(req_e, 1);
-                    info->update_status(S_SENDING_E, *cycles, alias);
-                    info->update_priviledge(capGenPriv(this, chnD.param), *cycles, alias);
+                    info->update_status(this, S_SENDING_E, alias);
+                    info->update_priviledge(this, capGenPriv(this, chnD.param), alias);
                 }
                 idMap->erase(this, chnD.source);
                 // Log("== free == fireD %d\n", *chnD.source);
@@ -534,7 +528,7 @@ namespace tl_agent {
             chnE.valid = false;
             tlc_assert(pendingE.is_pending(), this, "No pending E but E fired!");
             auto info = localBoard->query(this, pendingE.info->addr);
-            info->update_status(S_VALID, *cycles, pendingE.info->alias);
+            info->update_status(this, S_VALID, pendingE.info->alias);
             pendingE.update(this);
         }
     }
@@ -606,7 +600,7 @@ namespace tl_agent {
         req_a->alias    = alias;
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        Log(this, Append("[", *cycles, "] [AcquireBlock ", AcquireParamToString(param), "] ")
+        Log(this, Append("[AcquireBlock ", AcquireParamToString(param), "] ")
                 .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
 
         return true;
@@ -644,7 +638,7 @@ namespace tl_agent {
         req_a->alias    = alias;
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        Log(this, Append("[", *cycles, "] [AcquirePerm ", AcquireParamToString(param) , "] ")
+        Log(this, Append("[AcquirePerm ", AcquireParamToString(param) , "] ")
             .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
         return true;
     }
@@ -675,7 +669,7 @@ namespace tl_agent {
         req_c->data     = data;
         req_c->alias    = alias;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
-        Log(this, Append("[", *cycles, "] [ReleaseData ", ReleaseParamToString(param), "] ")
+        Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
             .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
         for(int i = 0; i < DATASIZE; i++) {
             Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(data->data[i]), " "));
@@ -733,11 +727,15 @@ namespace tl_agent {
             for (int i = 0; i < DATASIZE; i++) {
                 req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
             }
+#           ifdef CAGENT_DEBUG
+                Debug(this, Append("do_releaseDataAuto(): randomized data: ").EndLine());
+                data_dump<DATASIZE>(req_c->data->data);
+#           endif
         }
 
         // Log("== id == release %d\n", *req_c->source);
         pendingC.init(req_c, DATASIZE / BEATSIZE);
-        Log(this, Append("[", *cycles, "] [ReleaseData ", ReleaseParamToString(param), "] ")
+        Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
                 .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
 
         for(int i = 0; i < DATASIZE; i++) {

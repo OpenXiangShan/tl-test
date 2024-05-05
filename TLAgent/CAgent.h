@@ -27,81 +27,76 @@ namespace tl_agent {
         int pending_privilege[4];
         int dirty[4];
 
-        C_SBEntry(const int status[], const int privilege[], uint64_t& time) {
-            this->time_stamp = time;
+        C_SBEntry(const TLLocalContext* ctx, const int status[], const int privilege[]) {
+            this->time_stamp = ctx->cycle();
             for(int i = 0; i<4; i++){
               this->privilege[i] = privilege[i];
               this->status[i] = status[i];
             }
         }
 
-        void update_status(int status, uint64_t& time, int alias) {
+        void update_status(const TLLocalContext* ctx, int status, int alias) {
             this->status[alias] = status;
-            this->time_stamp = time;
+            this->time_stamp = ctx->cycle();
 
 #           if SB_DEBUG == 1
-                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (status): ")
+                Debug(ctx, Append("TL-C local scoreboard update (status): ")
                     .ShowBase()
                     .Dec().Append("[alias = ", alias, "]")
                     .Hex().Append(" status = ", StatusToString(status))
-                    .EndLine()
-                    .ToString();
+                    .EndLine());
 #           endif
         }
 
-        void update_priviledge(int priv, uint64_t& time, int alias) {
+        void update_priviledge(const TLLocalContext* ctx, int priv, int alias) {
             this->privilege[alias] = priv;
-            this->time_stamp = time;
+            this->time_stamp = ctx->cycle();
 
 #           if SB_DEBUG == 1
-                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (privilege): ")
+                Debug(ctx, Append("TL-C local scoreboard update (privilege): ")
                     .ShowBase()
                     .Dec().Append("[alias = ", alias, "]")
-                    .Hex().Append("privilege = ", PrivilegeToString(priv))
-                    .EndLine()
-                    .ToString();
+                    .Hex().Append(" privilege = ", PrivilegeToString(priv))
+                    .EndLine());
 #           endif
         }
 
-        void update_pending_priviledge(int priv, uint64_t& time, int alias) {
+        void update_pending_priviledge(const TLLocalContext* ctx, int priv, int alias) {
             this->pending_privilege[alias] = priv;
-            this->time_stamp = time;
+            this->time_stamp = ctx->cycle();
 
 #           if SB_DEBUG == 1
-                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (pending_privilege): ")
+                Debug(ctx, Append("TL-C local scoreboard update (pending_privilege): ")
                     .ShowBase()
-                    .Dec().Append("[alias = ", alias, "]")
-                    .Hex().Append("pending_privilege = ", PrivilegeToString(priv))
-                    .EndLine()
-                    .ToString();
+                    .Dec().Append("[alias = ", alias, "] ")
+                    .Hex().Append(" pending_privilege = ", PrivilegeToString(priv))
+                    .EndLine());
 #           endif
         }
 
-        void unpending_priviledge(uint64_t& time, int alias) {
+        void unpending_priviledge(const TLLocalContext* ctx, int alias) {
             this->privilege[alias] = this->pending_privilege[alias];
             this->pending_privilege[alias] = -1;
-            this->time_stamp = time;
+            this->time_stamp = ctx->cycle();
 
 #           if SB_DEBUG == 1
-                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (unpending_privilege): ")
+                Debug(ctx, Append("TL-C local scoreboard update (unpending_privilege): ")
                     .ShowBase()
                     .Dec().Append("[alias = ", alias, "]")
-                    .Hex().Append("pending_privilege = ", PrivilegeToString(this->pending_privilege[alias]))
-                    .EndLine()
-                    .ToString();
+                    .Hex().Append(" pending_privilege = ", PrivilegeToString(this->pending_privilege[alias]))
+                    .EndLine());
 #           endif
         }
 
-        void update_dirty(int dirty, int alias) {
+        void update_dirty(const TLLocalContext* ctx, int dirty, int alias) {
             this->dirty[alias] = dirty;
 
 #           if SB_DEBUG == 1
-                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update (dirty): ")
+                Debug(ctx, Append("TL-C local scoreboard update (dirty): ")
                     .ShowBase()
                     .Dec().Append("[alias = ", alias, "]")
-                    .Hex().Append("dirty = ", PrivilegeToString(dirty))
-                    .EndLine()
-                    .ToString();
+                    .Hex().Append(" dirty = ", PrivilegeToString(dirty))
+                    .EndLine());
 #           endif
         }
     };
@@ -120,20 +115,24 @@ namespace tl_agent {
     template<typename Tk>
     struct ScoreBoardUpdateCallbackCSBEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::C_SBEntry>
     { 
-        void update(const Tk& key, std::shared_ptr<tl_agent::C_SBEntry>& data)
+        void update(const TLLocalContext* ctx, const Tk& key, std::shared_ptr<tl_agent::C_SBEntry>& data)
         {
 #           if SB_DEBUG == 1
-                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update: ")
+                Gravity::StringAppender strapp;
+
+                strapp.Append("[tl-test-passive-DEBUG] TL-C local scoreboard update: ")
                     .ShowBase()
                     .Hex().Append("key = ", uint64_t(key))
                 //  .Dec().Append(", present = ", mapping.count(key))
                     .ToString();
 
-                std::cout << ", type = C_SBEntry";
+                strapp.Append(", type = C_SBEntry");
 
-                std::cout << ", timestamp = " << data->time_stamp;
+                strapp.Append(", timestamp = ", data->time_stamp);
 
-                std::cout << std::endl;
+                strapp.EndLine();
+
+                Debug(ctx, Append(strapp.ToString()));
 
                 for (int i = 0; i < 4; i++)
                 {
@@ -153,23 +152,16 @@ namespace tl_agent {
     template<typename Tk>
     struct ScoreBoardUpdateCallbackCIDEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::C_IDEntry>
     {
-        void update(const Tk& key, std::shared_ptr<tl_agent::C_IDEntry>& data)
+        void update(const TLLocalContext* ctx, const Tk& key, std::shared_ptr<tl_agent::C_IDEntry>& data)
         {
 #           if SB_DEBUG == 1
-                std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] TL-C local scoreboard update: ")
+                Debug(ctx, Append("TL-C local scoreboard update: ")
                     .ShowBase()
                     .Hex().Append("key = ", uint64_t(key))
-                    .ToString();
-
-                std::cout << ", type = C_IDEntry";
-
-                std::cout << Gravity::StringAppender()
-                    .ShowBase()
+                    .Dec().Append(", type = C_IDEntry")
                     .Hex().Append(", address = ", data->address)
                     .Hex().Append(", alias = ", data->alias)
-                    .ToString();
-
-                std::cout << std::endl;
+                    .EndLine());
 #           endif
         }
     };
@@ -178,12 +170,12 @@ namespace tl_agent {
 #   ifdef false
 #       define CAGENT_RAND64(agent, source) ( \
             agent->aux_rand_value = agent->rand64(), \
-            std::cout << Gravity::StringAppender("[tl-test-passive-DEBUG] ") \
-                .Append("rand64() called: from ", source, ", counter = ", agent->aux_rand_counter++) \
+            Debug(this,  \
+                Append("rand64() called: from ", source, ", counter = ", agent->aux_rand_counter++) \
                 .Hex().ShowBase() \
                 .Append(", seed = ").Append(agent->sysSeed()) \
                 .Append(", value = ").Append(agent->aux_rand_value).EndLine() \
-                .ToString(), \
+            ), \
             agent->aux_rand_value)
 #   endif
 
