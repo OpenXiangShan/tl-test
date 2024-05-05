@@ -11,11 +11,15 @@
 
 class TLAssertFailureEvent : public Gravity::Event<TLAssertFailureEvent> {
 private:
+    std::string     sourceLocation;
     std::string     info;
 
 public:
     TLAssertFailureEvent() noexcept;
-    TLAssertFailureEvent(const std::string& info) noexcept;
+    TLAssertFailureEvent(const std::string& sourceLocation, const std::string& info) noexcept;
+
+    const std::string&  GetSourceLocation() const noexcept;
+    void                SetSourceLocation(const std::string& info) noexcept;
 
     const std::string&  GetInfo() const noexcept;
     void                SetInfo(const std::string& info) noexcept;
@@ -36,16 +40,31 @@ public:
 
 // Implementation of: class TLAssertFailureEvent
 /*
+std::string     sourceLocation;
 std::string     info;
 */
 
 inline TLAssertFailureEvent::TLAssertFailureEvent() noexcept
-    : info  ()
+    : sourceLocation    ()
+    , info              ()
 { }
 
-inline TLAssertFailureEvent::TLAssertFailureEvent(const std::string& info) noexcept
-    : info  (info)
+inline TLAssertFailureEvent::TLAssertFailureEvent(
+        const std::string& sourceLocation, 
+        const std::string& info) noexcept
+    : sourceLocation    (sourceLocation)
+    , info              (info)
 { }
+
+inline const std::string& TLAssertFailureEvent::GetSourceLocation() const noexcept
+{
+    return sourceLocation;
+}
+
+inline void TLAssertFailureEvent::SetSourceLocation(const std::string& sourceLocation) noexcept
+{
+    this->sourceLocation = sourceLocation;
+}
 
 inline const std::string& TLAssertFailureEvent::GetInfo() const noexcept
 {
