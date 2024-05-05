@@ -19,6 +19,13 @@
 */
 class TLSequencer {
 public:
+    enum class State {
+        NOT_INITIALIZED = 0,
+        ALIVE,
+        FAILED
+    };
+
+public:
     using BaseAgent         = tl_agent::BaseAgent;
     using ULAgent           = tl_agent::ULAgent;
     using CAgent            = tl_agent::CAgent;
@@ -42,10 +49,11 @@ public:
     using IOPort            = tl_agent::Bundle<ReqField, RespField, EchoField, BEATSIZE>;
 
 private:
+    State                   state;
+
     GlobalBoard<paddr_t>*   globalBoard;
 
     TLLocalConfig           config;
-    bool                    initialized;
 
     BaseAgent**             agents;
     Fuzzer**                fuzzers;
@@ -57,6 +65,9 @@ private:
 public:
     TLSequencer() noexcept;
     ~TLSequencer() noexcept;
+
+    State       GetState() const noexcept;
+    bool        IsAlive() const noexcept;
 
     size_t      GetAgentCount() const noexcept;
     size_t      GetCAgentCount() const noexcept;

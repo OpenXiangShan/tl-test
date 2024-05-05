@@ -7,9 +7,9 @@
 
 
 TLSequencer::TLSequencer() noexcept
-    : globalBoard   (nullptr)
+    : state         (State::NOT_INITIALIZED)
+    , globalBoard   (nullptr)
     , config        ()
-    , initialized   (false)
     , agents        (nullptr)
     , fuzzers       (nullptr)
     , io            (nullptr)
@@ -21,6 +21,16 @@ TLSequencer::~TLSequencer() noexcept
     delete[] fuzzers;
     delete[] agents;
     delete[] io;
+}
+
+TLSequencer::State TLSequencer::GetState() const noexcept
+{
+    return state;
+}
+
+bool TLSequencer::IsAlive() const noexcept
+{
+    return state == State::ALIVE;
 }
 
 size_t TLSequencer::GetCAgentCount() const noexcept
@@ -40,6 +50,9 @@ size_t TLSequencer::GetAgentCount() const noexcept
 
 void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
 {
+    if (state != State::NOT_INITIALIZED)
+        return;
+
     globalBoard = new GlobalBoard<paddr_t>;
 
     this->config = cfg;
@@ -159,11 +172,14 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
     }
 
     //
-    this->initialized = true;
+    this->state = State::ALIVE;
 }
 
 void TLSequencer::Finalize() noexcept
 {
+    if (state != State::ALIVE && state != State::FAILED)
+        return;
+
     std::cout << "[TL-Test-PASSIVE] TLSequencer::TLSequencer(): finalized at cycle " << cycles << std::endl;
 
     for (size_t i = 0; i < GetAgentCount(); i++)
@@ -189,16 +205,21 @@ void TLSequencer::Finalize() noexcept
 
     delete globalBoard;
     globalBoard = nullptr;
+
+    this->state = State::NOT_INITIALIZED;
 }
 
 void TLSequencer::Tick(uint64_t cycles) noexcept
 {
+    if (!IsAlive())
+        return;
+
     this->cycles = cycles;
 }
 
 void TLSequencer::Tock() noexcept
 {
-    if (!this->initialized)
+    if (!IsAlive())
         return;
 
     size_t total_n_agents = GetAgentCount();
