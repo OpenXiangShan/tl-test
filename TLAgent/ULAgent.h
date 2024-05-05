@@ -20,29 +20,29 @@ namespace tl_agent {
         int status;
         uint64_t time_stamp;
         std::array<uint8_t, DATASIZE> data;
-        UL_SBEntry(int req_type, int status, paddr_t address, uint64_t& time) {
+        UL_SBEntry(const TLLocalContext* ctx, int req_type, int status, paddr_t address) {
             this->req_type = req_type;
             this->status = status;
             this->address = address;
-            this->time_stamp = time;
+            this->time_stamp = ctx->cycle();
         }
-        UL_SBEntry(int req_type, int status, paddr_t address, uint64_t time, std::array<uint8_t, DATASIZE> data) {
+        UL_SBEntry(const TLLocalContext* ctx, int req_type, int status, paddr_t address, std::array<uint8_t, DATASIZE> data) {
             this->req_type = req_type;
             this->status = status;
             this->address = address;
-            this->time_stamp = time;
+            this->time_stamp = ctx->cycle();
             this->data = data;
         }
-        void update_status(int status, uint64_t& time) {
+        void update_status(const TLLocalContext* ctx, int status) {
             this->status = status;
-            this->time_stamp = time;
+            this->time_stamp = ctx->cycle();
         }
     };
 
     template<typename Tk>
     struct ScoreBoardUpdateCallbackULSBEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::UL_SBEntry>
     {
-        void update(const Tk& key, std::shared_ptr<tl_agent::UL_SBEntry>& data)
+        void update(const TLLocalContext* ctx, const Tk& key, std::shared_ptr<tl_agent::UL_SBEntry>& data)
         {
 #           if SB_DEBUG == 1
 

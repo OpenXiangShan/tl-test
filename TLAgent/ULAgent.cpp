@@ -31,14 +31,14 @@ namespace tl_agent {
         switch (a->opcode) {
             case Get: {
                 auto entry 
-                    = std::make_shared<UL_SBEntry>(Get, S_SENDING_A, a->address, *this->cycles);
-                localBoard->update(a->source, entry);
+                    = std::make_shared<UL_SBEntry>(this, Get, S_SENDING_A, a->address);
+                localBoard->update(this, a->source, entry);
                 break;
             }
             case PutFullData: {
                 auto entry
-                    = std::make_shared<UL_SBEntry>(PutFullData, S_SENDING_A, a->address, *this->cycles);
-                localBoard->update(a->source, entry);
+                    = std::make_shared<UL_SBEntry>(this, PutFullData, S_SENDING_A, a->address);
+                localBoard->update(this, a->source, entry);
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 /*
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
@@ -50,8 +50,8 @@ namespace tl_agent {
             }
             case PutPartialData: {
                 auto entry 
-                    = std::make_shared<UL_SBEntry>(PutPartialData, S_SENDING_A, a->address, *this->cycles);
-                localBoard->update(a->source, entry);
+                    = std::make_shared<UL_SBEntry>(this, PutPartialData, S_SENDING_A, a->address);
+                localBoard->update(this, a->source, entry);
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 /*
                 for (int i = BEATSIZE * beat_num; i < BEATSIZE * (beat_num + 1); i++) {
@@ -85,7 +85,7 @@ namespace tl_agent {
             tlc_assert(pendingA.is_pending(), this, "No pending A but A fired!");
             pendingA.update(this);
             if (!pendingA.is_pending()) { // req A finished
-                this->localBoard->query(this, pendingA.info->source)->update_status(S_A_WAITING_D, *cycles);
+                this->localBoard->query(this, pendingA.info->source)->update_status(this, S_A_WAITING_D);
                 if (hasData) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
                     global_SBEntry->pending_data = pendingA.info->data;
@@ -95,7 +95,7 @@ namespace tl_agent {
                         global_SBEntry->data = this->globalBoard->get()[pendingA.info->address]->data;
                     }
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
-                    this->globalBoard->update(pendingA.info->address, global_SBEntry);
+                    this->globalBoard->update(this, pendingA.info->address, global_SBEntry);
                 }
             }
         }
