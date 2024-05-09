@@ -20,7 +20,7 @@
 const int ERR_NOTFOUND = 1;
 const int ERR_MISMATCH = 2;
 
-#define SB_DEBUG        1
+#define SB_DEBUG        0
 
 
 #ifndef SB_DEBUG
@@ -33,12 +33,46 @@ inline void data_dump(const uint8_t* data)
 {
     Gravity::StringAppender sa;
 
+    sa.Append("[ ");
+
     sa.Hex().Fill('0');
 
-    for (std::size_t j = 0; j < N; j++)
-        sa.NextWidth(2).Append(uint64_t(data[j]), " ");
+    if (glbl.cfg.verbose_data_full)
+    {
+        for (std::size_t j = 0; j < N; j++)
+            sa.NextWidth(2).Append(uint64_t(data[j]), " ");
+    }
+    else
+    {
+        bool skip = false;
+        for (std::size_t j = 0; j < N;)
+        {
+            sa.NextWidth(2).Append(uint64_t(data[j]), " ");
 
-    std::cout << sa.EndLine().ToString();
+            if (skip)
+            {
+                j = (j / BEATSIZE + 1) * BEATSIZE;
+                sa.Append("... ");
+            }
+            else 
+                j++;
+
+            skip = !skip;
+        }
+    }
+
+    sa.Append("]");
+
+    std::cout << sa.ToString();
+}
+
+template<std::size_t N>
+inline void data_dump_embedded(const uint8_t* data)
+{
+    if (glbl.cfg.verbose_data_full)
+        std::cout << std::endl;
+
+    data_dump<N>(data);
 }
 
 template<std::size_t N>
@@ -48,9 +82,11 @@ inline void data_dump_on_verify(const uint8_t *dut, const uint8_t *ref)
 
     std::cout << "dut: ";
     data_dump<N>(dut);
+    std::cout << std::endl;
 
     std::cout << "ref: ";
     data_dump<N>(ref);
+    std::cout << std::endl;
 }
 
 
@@ -126,13 +162,15 @@ struct ScoreBoardUpdateCallbackGlobalEntry : public ScoreBoardUpdateCallback<Tk,
             if (data->data != nullptr)
                 data_dump<DATASIZE>(data->data->data);
             else
-                std::cout << "<non-initialized>" << std::endl;
+                std::cout << "<non-initialized>";
+            std::cout << std::endl;
 
             std::cout << "data - pend : ";
             if (data->data != nullptr)
                 data_dump<DATASIZE>(data->data->data);
             else
-                std::cout << "<non-initialized>" << std::endl;
+                std::cout << "<non-initialized>";
+            std::cout << std::endl;
 #       endif
     }
 };
