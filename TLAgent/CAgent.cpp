@@ -186,8 +186,9 @@ namespace tl_agent {
                     }
 
 #                   ifdef CAGENT_DEBUG
-                        Debug(this, Append("handle_b(): randomized data: ").EndLine());
-                        data_dump<DATASIZE>(req_c->data->data);
+                        Debug(this, Append("handle_b(): randomized data: "));
+                        DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                        DebugEx(std::cout << std::endl);
 #                   endif
 
                 } else {
@@ -197,8 +198,9 @@ namespace tl_agent {
                         DATASIZE);
 
 #                   ifdef CAGENT_DEBUG
-                        Debug(this, Append("handle_b(): fetched scoreboard data: ").EndLine());
-                        data_dump<DATASIZE>(req_c->data->data);
+                        Debug(this, Append("handle_b(): fetched scoreboard data: "));
+                        DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                        DebugEx(std::cout << std::endl);
 #                   endif
                 }
             }
@@ -210,7 +212,7 @@ namespace tl_agent {
 
             Log(this, Append("[ProbeAck", req_c->opcode == ProbeAckData ? "Data" : "", " ", 
                         ProbeAckParamToString(req_c->param), "] ")
-                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
+                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", b->address, ", alias: ", uint64_t(b->alias), ", data: "));
 
             tlc_assert(req_c->param == TtoN
                     || req_c->param == TtoB
@@ -221,13 +223,11 @@ namespace tl_agent {
                 Gravity::StringAppender("Not permitted req_c param: ", ProbeAckParamToString(req_c->param)).ToString());
 
             if (req_c->opcode == ProbeAckData) {
-                for (int i = 0; i < DATASIZE; i++) {
-                  Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(req_c->data->data[i]), " "));
-                }
+                LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
             } else {
-              Dump(Append("no data"));
+                LogEx(std::cout << "no data");
             }
-            Dump(EndLine());
+            LogEx(std::cout << std::endl);
         }
         pendingB.update(this);
     }
@@ -254,8 +254,9 @@ namespace tl_agent {
 #               ifdef CAGENT_DEBUG
                     Debug(this, Hex().ShowBase()
                         .Append("[CAgent] channel C presenting: ReleaseData: address = ", c->address)
-                        .Append(", data :").EndLine());
-                    data_dump<BEATSIZE>(this->port->c.data->data);
+                        .Append(", data: "));
+                    DebugEx(data_dump_embedded<BEATSIZE>(this->port->c.data->data));
+                    DebugEx(std::cout << std::endl);
 #               endif
 
                 break;
@@ -281,8 +282,9 @@ namespace tl_agent {
 #               ifdef CAGENT_DEBUG
                     Debug(this, Hex().ShowBase()
                         .Append("[CAgent] channel C presenting: ProbeAckData: address = ", c->address)
-                        .Append(", data : ").EndLine());
-                    data_dump<BEATSIZE>(this->port->c.data->data);
+                        .Append(", data: "));
+                    DebugEx(data_dump_embedded<BEATSIZE>(this->port->c.data->data));
+                    DebugEx(std::cout << std::endl);
 #               endif
 
                 break;
@@ -455,19 +457,19 @@ namespace tl_agent {
                 std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
 
 #               ifdef CAGENT_DEBUG
-                    Debug(this, Append("[CAgent] channel D receiving data: ").EndLine());
-                    data_dump<BEATSIZE>(chnD.data->data);
+                    Debug(this, Append("[CAgent] channel D receiving data: "));
+                    DebugEx(data_dump_embedded<BEATSIZE>(chnD.data->data));
+                    DebugEx(std::cout << std::endl);
 #               endif
             }
             if (!pendingD.is_pending()) {
                 switch (chnD.opcode) {
                     case GrantData: {
                         Log(this, Append("[GrantData] ")
-                            .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
-                        for(int i = 0; i < DATASIZE; i++) {
-                            Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(pendingD.info->data->data[i]), " "));
-                        }
-                        Dump(EndLine());
+                            .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
+                        LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
+                        LogEx(std::cout << std::endl;);
+                        
                         this->globalBoard->verify(this, addr, pendingD.info->data);
                         // info->update_dirty(*chnD.dirty, alias);
                         break;
@@ -670,11 +672,9 @@ namespace tl_agent {
         req_c->alias    = alias;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
         Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
-            .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
-        for(int i = 0; i < DATASIZE; i++) {
-            Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(data->data[i]), " "));
-        }
-        Dump(EndLine());
+            .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+        LogEx(data_dump_embedded<DATASIZE>(data->data));
+        LogEx(std::cout << std::endl);
         return true;
     }
 
@@ -728,20 +728,19 @@ namespace tl_agent {
                 req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
             }
 #           ifdef CAGENT_DEBUG
-                Debug(this, Append("do_releaseDataAuto(): randomized data: ").EndLine());
-                data_dump<DATASIZE>(req_c->data->data);
+                Debug(this, Append("do_releaseDataAuto(): randomized data: "));
+                DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                DebugEx(std::cout << std::endl);
 #           endif
         }
 
         // Log("== id == release %d\n", *req_c->source);
         pendingC.init(req_c, DATASIZE / BEATSIZE);
         Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
-                .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
+                .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+        LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+        LogEx(std::cout << std::endl);
 
-        for(int i = 0; i < DATASIZE; i++) {
-            Dump(Hex().NextWidth(2).Fill('0').Append(unsigned(req_c->data->data[i]), " "));
-        }
-        Dump(EndLine());
         return true;
     }
 

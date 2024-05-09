@@ -120,7 +120,7 @@ namespace tl_agent {
 #           if SB_DEBUG == 1
                 Gravity::StringAppender strapp;
 
-                strapp.Append("[tl-test-passive-DEBUG] TL-C local scoreboard update: ")
+                strapp.Append("TL-C local scoreboard update: ")
                     .ShowBase()
                     .Hex().Append("key = ", uint64_t(key))
                 //  .Dec().Append(", present = ", mapping.count(key))
