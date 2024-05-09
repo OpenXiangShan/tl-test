@@ -27,6 +27,22 @@
 
 
 /*
+* DPI system interactions : IsAlive
+*/
+extern "C" int TileLinkSystemIsAlive();
+
+/*
+* DPI system interactions : IsFailed
+*/
+extern "C" int TileLinkSystemIsFailed();
+
+/*
+* DPI system interactions : IsFinished
+*/
+extern "C" int TileLinkSystemIsFinished();
+
+
+/*
 * DPI system interactions : Initialize
 */
 extern "C" void TileLinkSystemInitialize();

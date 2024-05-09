@@ -6,6 +6,26 @@
 
 
 /*
+* DPI system interactions : IsAlive
+*/
+import "DPI-C" function int TileLinkSystemIsAlive();
+//
+
+/*
+* DPI system interactions : IsFailed
+*/
+import "DPI-C" function int TileLinkSystemIsFailed();
+//
+
+/*
+* DPI system interactions : IsFinished
+*/
+import "DPI-C" function int TileLinkSystemIsFinished();
+//
+
+
+
+/*
 * DPI system interactions : Initialize
 */
 import "DPI-C" function void TileLinkSystemInitialize();

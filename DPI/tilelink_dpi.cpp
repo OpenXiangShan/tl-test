@@ -1,10 +1,17 @@
 #include "tilelink_dpi.hpp"
 
 #include "../Sequencer/TLSequencer.hpp"
+#include "../Events/TLSystemEvent.hpp"
+
+#include "../Plugins/PluginManager.hpp"
+#include "../Plugins/ChiselDB.hpp"
+#include <functional>
 
 
 /*
+* =======================================================================
 * IMPORTANT NOTICE:
+* -----------------------------------------------------------------------
 * The following rules must be obeyed in DPI-C calling host:
 *   1. Procedure sequence of a TileLink cycle:
 *       SystemTick() -> PushChannel*() -> SystemTock() -> PullChannel*()
@@ -12,8 +19,52 @@
 *       SystemInitialize() -> [< TileLink cycles >] -> SystemFinalize()
 *   3. Procedure contraint:
 *       A -> B -> C -> E -> D
+* -----------------------------------------------------------------------
+* Three states are designed for TL-Test TileLink subsystem:
+*   - NOT_INITIALIZED   : system not initialized
+*   - ALIVE             : system on the run
+*   - FAILED            : system failed and stopped
+*   - FINISHED          : system reached pre-designed finish
+* Important rules for utilizing the subsystem:
+*   1. Finalizing procedure is never called by the subsystem itself, and 
+*      should be manually called outside the TL-Test TileLink subsystem 
+*      (e.g. in Test Top).
+*   2. Initializing procedure of plug-in systems of TL-Test TileLink 
+*      subsystem should be called from the TLSystemInitialization<*>Event. 
+*   3. Finalizing procedure of plug-in systems of TL-Test TileLink
+*      subsystem should be called from the TLSystemFinalization<*>Event.
+* =======================================================================
 */
-static TLSequencer* passive;
+static TLSequencer*     passive;
+
+/*
+*/
+static PluginManager*   plugins;
+
+
+/*
+* DPI system interactions : IsAlive
+*/
+extern "C" int TileLinkSystemIsAlive()
+{
+    return passive->IsAlive();
+}
+
+/*
+* DPI system interactions : IsFailed
+*/
+extern "C" int TileLinkSystemIsFailed()
+{
+    return passive->IsFailed();
+}
+
+/*
+* DPI system interactions : IsFinished
+*/
+extern "C" int TileLinkSystemIsFinished()
+{
+    return passive->IsFinished();
+}
 
 
 /*
@@ -21,6 +72,40 @@ static TLSequencer* passive;
 */
 extern "C" void TileLinkSystemInitialize()
 {
+    // internal event handlers
+    Gravity::RegisterListener(
+        Gravity::MakeListener(
+            "tltest.logger.plugins.enable", 0,
+            (std::function<void(PluginEvent::PostEnable&)>)
+            [] (PluginEvent::PostEnable& event) -> void {
+                LogInfo("tl-test-DPI", Append("---PluginManager------------------------------------------------").EndLine());
+                LogInfo("tl-test-DPI", Append("Enabled Plugin:").EndLine());
+                LogInfo("tl-test-DPI", Append(" - name          : ", event.GetPlugin()->GetName()).EndLine());
+                LogInfo("tl-test-DPI", Append(" - display_name  : ", event.GetPlugin()->GetDisplayName()).EndLine());
+                LogInfo("tl-test-DPI", Append(" - version       : ", event.GetPlugin()->GetVersion()).EndLine());
+                LogInfo("tl-test-DPI", Append(" - description   : ", event.GetPlugin()->GetDescription()).EndLine());
+                LogInfo("tl-test-DPI", Append("----------------------------------------------------------------").EndLine());
+            }
+        )
+    );
+
+    Gravity::RegisterListener(
+        Gravity::MakeListener(
+            "tltest.logger.plugins.disable", 0,
+            (std::function<void(PluginEvent::PostDisable&)>)
+            [] (PluginEvent::PostDisable& event) -> void {
+                LogInfo("tl-test-DPI", Append("---PluginManager------------------------------------------------").EndLine());
+                LogInfo("tl-test-DPI", Append("Disabled Plugin:").EndLine());
+                LogInfo("tl-test-DPI", Append(" - name          : ", event.GetPlugin()->GetName()).EndLine());
+                LogInfo("tl-test-DPI", Append(" - display_name  : ", event.GetPlugin()->GetDisplayName()).EndLine());
+                LogInfo("tl-test-DPI", Append(" - version       : ", event.GetPlugin()->GetVersion()).EndLine());
+                LogInfo("tl-test-DPI", Append(" - description   : ", event.GetPlugin()->GetDescription()).EndLine());
+                LogInfo("tl-test-DPI", Append("----------------------------------------------------------------").EndLine());
+            }
+        )
+    );
+
+    // system initialization
     TLLocalConfig tlcfg;
     tlcfg.seed                      = TLTEST_LOCAL_SEED;
     tlcfg.coreCount                 = TLTEST_LOCAL_CORE_COUNT;
@@ -29,12 +114,19 @@ extern "C" void TileLinkSystemInitialize()
 
     glbl.cfg.verbose                = true;
     glbl.cfg.verbose_detailed_dpi   = false;
+    glbl.cfg.verbose_data_full      = false;
 
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("tl_test system initialized").EndLine());
+    // read configuration override
     
+
     passive = new TLSequencer;
     passive->Initialize(tlcfg);
+
+    plugins = new PluginManager;
+    plugins->EnablePlugin(new ChiselDB::PluginInstance);
+
+    if (glbl.cfg.verbose_detailed_dpi)
+        TLTP_LOG_GLOBAL(Append("tl-test system initialized").EndLine());
 }
 
 /*
@@ -42,11 +134,14 @@ extern "C" void TileLinkSystemInitialize()
 */
 extern "C" void TileLinkSystemFinalize()
 {
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("tl-test system finalized").EndLine());
-
+    plugins->DisableAll([](auto plugin) -> void { delete plugin; });
+    delete plugins;
+    
     passive->Finalize();
     delete passive;
+
+    if (glbl.cfg.verbose_detailed_dpi)
+        TLTP_LOG_GLOBAL(Append("tl-test system finalized").EndLine());
 }
 
 /*
@@ -56,7 +151,7 @@ extern "C" void TileLinkSystemTick(
     const uint64_t      cycles)
 {
     if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("[tl-test-passive] tick at cycle: ", cycles));
+        TLTP_LOG_GLOBAL(Append("[tl-test-new] tick at cycle: ", cycles));
 
     passive->Tick(cycles);
 }
@@ -69,7 +164,7 @@ extern "C" void TileLinkSystemTock()
     passive->Tock();
 
     if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("[tl-test-passive] tock"));
+        TLTP_LOG_GLOBAL(Append("[tl-test-new] tock"));
 }
 
 
@@ -105,12 +200,12 @@ extern "C" void TileLinkPullChannelA(
     passive->UpdateChannelA();
 
     if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("[tl-test-passive] UpdateChannelA()"));
+        TLTP_LOG_GLOBAL(Append("[tl-test-new] UpdateChannelA()"));
 
     TLSequencer::IOPort& port = passive->IO(deviceId);
 
     if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("[tl-test-passive] Fetched IO: deviceId: ", deviceId));
+        TLTP_LOG_GLOBAL(Append("[tl-test-new] Fetched IO: deviceId: ", deviceId));
 
     *valid      =  port.a.valid;
     *opcode     =  port.a.opcode;
@@ -156,7 +251,7 @@ extern "C" void TileLinkPullChannelA(
 
     if (glbl.cfg.verbose_detailed_dpi)
         TLTP_LOG_GLOBAL(ShowBase()
-            .Append("[tl-test-passive] PullChannelA:").EndLine()
+            .Append("[tl-test-new] PullChannelA:").EndLine()
             .Dec().Append("   -> valid    = ", (uint32_t)*valid     ).EndLine()
             .Hex().Append("   -> opcode   = ", (uint32_t)*opcode    ).EndLine()
             .Hex().Append("   -> address  = ", (uint64_t)*address   ).EndLine()
