@@ -8,6 +8,8 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 
+#include <vector>
+
 
 class Fuzzer {
 protected:
@@ -16,7 +18,7 @@ public:
     Fuzzer() noexcept = default;
     virtual ~Fuzzer() noexcept = default;
     virtual void tick() = 0;
-    void set_cycles(uint64_t *cycles) {
+    inline void set_cycles(uint64_t *cycles) {
         this->cycles = cycles;
     }
 };
@@ -33,9 +35,31 @@ public:
     void tick();
 };
 
+
+struct CFuzzRange {
+    size_t      ordinal;
+    uint64_t    maxTag;
+    uint64_t    maxSet;
+    uint64_t    maxAlias;
+
+    inline bool operator<(const CFuzzRange& obj) const noexcept
+    {
+        return ordinal < obj.ordinal;
+    }
+
+    inline void swap(CFuzzRange& obj) const noexcept
+    {
+
+    }
+};
+
 class CFuzzer: public Fuzzer {
 private:
-    tl_agent::CAgent *cAgent;
+    tl_agent::CAgent*   cAgent;
+    size_t              rangeIndex;
+    size_t              rangeIterateTime;
+    size_t              rangeIteration;
+    std::vector<int>    rangeOrdinal;
 public:
     CFuzzer(tl_agent::CAgent *cAgent) noexcept;
     virtual ~CFuzzer() noexcept = default;

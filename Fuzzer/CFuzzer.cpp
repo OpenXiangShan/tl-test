@@ -5,14 +5,13 @@
 #include "../TLAgent/TLEnum.h"
 #include "Fuzzer.h"
 
+#include "../Events/TLSystemEvent.hpp"
 
-#define CFUZZER_RAND_RANGE_TAG              0x4
-#define CFUZZER_RAND_RANGE_SET              0x4
-#define CFUZZER_RAND_RANGE_ALIAS            0x4
+#include <algorithm>
 
 
 #ifndef CFUZZER_RAND_RANGE_TAG
-#   define CFUZZER_RAND_RANGE_TAG           0x8
+#   define CFUZZER_RAND_RANGE_TAG           0x80
 #endif
 
 #ifndef CFUZZER_RAND_RANGE_SET
@@ -24,15 +23,50 @@
 #endif
 
 
+#ifndef CFUZZER_RANGE_ITERATE_INTERVAL
+#   define CFUZZER_RANGE_ITERATE_INTERVAL   (5 * 1000 * 1000)
+#endif
+
+#ifndef CFUZZER_RANGE_ITERATE_TARGET
+#   define CFUZZER_RANGE_ITERATE_TARGET     12
+#endif
+
+
+static std::vector<CFuzzRange> RANGES = {
+    { .ordinal = 0, .maxTag = CFUZZER_RAND_RANGE_TAG,     .maxSet = CFUZZER_RAND_RANGE_SET,   .maxAlias = CFUZZER_RAND_RANGE_ALIAS    },
+    { .ordinal = 1, .maxTag = 0x1,                        .maxSet = 0x10,                     .maxAlias = 0x4                         },
+    { .ordinal = 2, .maxTag = 0x10,                       .maxSet = 0x1,                      .maxAlias = 0x4                         }
+};
+
+static inline size_t fact(size_t n) noexcept
+{
+    size_t r = 1;
+    for (size_t i = 1; i <= n; i++)
+        r *= i;
+    return r;
+}
+
+
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->cAgent = cAgent;
+
+    this->rangeIndex        = 0;
+    this->rangeIterateTime  = CFUZZER_RANGE_ITERATE_INTERVAL;
+    this->rangeIteration    = 0;
+
+    for (size_t i = 0; i < RANGES.size(); i++)
+        this->rangeOrdinal.push_back(i);
+
+    size_t loop = cAgent->sysSeed() % fact(rangeOrdinal.size());
+    for (size_t i = 0; i < loop; i++)
+        std::next_permutation(rangeOrdinal.begin(), rangeOrdinal.end());
 }
 
 void CFuzzer::randomTest(bool do_alias) {
     paddr_t addr = 
-        ((CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RAND_RANGE_TAG) << 13) 
-      + ((CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RAND_RANGE_SET) << 6);  // Tag + Set + Offset
-    int alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % CFUZZER_RAND_RANGE_ALIAS) : 0;
+        ((CAGENT_RAND64(cAgent, "CFuzzer") % RANGES[rangeOrdinal[rangeIndex]].maxTag) << 13) 
+      + ((CAGENT_RAND64(cAgent, "CFuzzer") % RANGES[rangeOrdinal[rangeIndex]].maxSet) << 6);  // Tag + Set + Offset
+    int alias = (do_alias) ? (CAGENT_RAND64(cAgent, "CFuzzer") % RANGES[rangeOrdinal[rangeIndex]].maxAlias) : 0;
     if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
         if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
             if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
@@ -74,4 +108,32 @@ void CFuzzer::caseTest() {
 void CFuzzer::tick() {
     this->randomTest(true);
 //    this->caseTest();
+
+    if (this->cAgent->cycle() >= this->rangeIterateTime)
+    {
+        this->rangeIterateTime += CFUZZER_RANGE_ITERATE_INTERVAL;
+        this->rangeIndex++;
+
+        if (this->rangeIndex == rangeOrdinal.size())
+        {
+            this->rangeIndex = 0;
+            this->rangeIteration++;
+
+            std::next_permutation(rangeOrdinal.begin(), rangeOrdinal.end());
+        }
+
+        LogInfo(this->cAgent->cycle(), Append("Fuzz Set switched: index = ", this->rangeIndex, ", permutation: "));
+        LogEx(
+            std::cout << "[ ";
+            for (size_t i = 0; i < rangeOrdinal.size(); i++)
+                std::cout << rangeOrdinal[i] << " ";
+            std::cout << "]";
+        );
+        LogEx(std::cout << std::endl);
+    }
+
+    if (this->rangeIteration == CFUZZER_RANGE_ITERATE_TARGET)
+    {
+        TLSystemFinishEvent().Fire();
+    }
 }
