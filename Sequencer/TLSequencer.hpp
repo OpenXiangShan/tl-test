@@ -3,9 +3,10 @@
 // Created by Kumonda221 on 04/04/24
 //
 
-#include <cstdint>
 #ifndef TLC_TEST_SEQUENCER_H
 #define TLC_TEST_SEQUENCER_H
+
+#include <cstdint>
 
 #include "../Utils/ScoreBoard.h"
 #include "../Utils/Common.h"
@@ -22,7 +23,8 @@ public:
     enum class State {
         NOT_INITIALIZED = 0,
         ALIVE,
-        FAILED
+        FAILED,
+        FINISHED
     };
 
 public:
@@ -66,8 +68,12 @@ public:
     TLSequencer() noexcept;
     ~TLSequencer() noexcept;
 
+    const TLLocalConfig&    GetLocalConfig() const noexcept;
+
     State       GetState() const noexcept;
     bool        IsAlive() const noexcept;
+    bool        IsFailed() const noexcept;
+    bool        IsFinished() const noexcept;
 
     size_t      GetAgentCount() const noexcept;
     size_t      GetCAgentCount() const noexcept;
