@@ -12,10 +12,12 @@ ADD_SUBDIRECTORY(DPI)
 ADD_SUBDIRECTORY(Sequencer)
 ADD_SUBDIRECTORY(TLAgent)
 ADD_SUBDIRECTORY(Fuzzer)
+ADD_SUBDIRECTORY(Events)
+ADD_SUBDIRECTORY(Plugins)
 
-ADD_LIBRARY(${PROJECT_NAME} SHARED Base DPI Sequencer TLAgent Fuzzer)
+ADD_LIBRARY(${PROJECT_NAME} SHARED Base DPI Sequencer TLAgent Fuzzer Events Plugins)
 
 TARGET_LINK_LIBRARIES(tltest_passive PUBLIC
     "-Wl,--whole-archive"
-    Base DPI Sequencer TLAgent Fuzzer
+    Base DPI Sequencer TLAgent Fuzzer Events Plugins
     "-Wl,--no-whole-archive")
