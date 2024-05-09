@@ -14,6 +14,7 @@
 #include <iostream>
 #include <assert.h>
 #include <unistd.h>
+#include <execinfo.h>
 
 #include "../Base/TLGlobal.hpp"
 
@@ -69,10 +70,34 @@ typedef uint64_t paddr_t;
             const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */ \
             if (__tlc_assert__ctx) \
             { \
-                std::cout << "[" << ctx->cycle() << "] [tl-test-passive-ERROR] [tlc_assert failure at " << __FILE__ << ":" << __LINE__ << "] " << std::endl \
-                << "[" << ctx->cycle() << "] [tl-test-passive-ERROR] [At system #" << ctx->sysId() << "] "; \
+                std::cout << "[" << ctx->cycle() << "] [tl-test-new-ERROR] [tlc_assert failure at " << __FILE__ << ":" << __LINE__ << "] " << std::endl \
+                << "[" << ctx->cycle() << "] [tl-test-new-ERROR] [At system #" << ctx->sysId() << "] "; \
             } \
-            std::cout << "[tl-test-passive-ERROR] " << info << "" << std::endl; \
+            std::cout << "[tl-test-new-ERROR] " << "info: " << info << "" << std::endl; \
+            std::cout << "[tl-test-new-ERROR] " << "stack backtrace: " << "" << std::endl; \
+            { \
+                size_t bktr_i, bktr_size; \
+                void* array[1024]; \
+                bktr_size = backtrace(array, 1024); \
+                char** bktr_strings = backtrace_symbols(array, bktr_size); \
+                for (bktr_i = 0; bktr_i < bktr_size; bktr_i++) \
+                    std::cout << "#" << bktr_i << " " << bktr_strings[bktr_i] << std::endl; \
+                free(bktr_strings); \
+            } \
+            fflush(stdout); \
+            fflush(stderr); \
+            TLAssertFailureEvent assert_event(__PRETTY_FUNCTION__, info); \
+            assert_event.Fire(); \
+            throw TLAssertFailureException(assert_event); \
+            assert(false); \
+        } \
+    } while (0)
+
+#define tlsys_assert(cond, info) \
+    do { \
+        if (!(cond)) { \
+            std::cout << "[tl-test-new-ERROR] tlsys_assert() failure at " << __PRETTY_FUNCTION__ << ":" << __LINE__ << " " << std::endl; \
+            std::cout << "[tl-test-new-ERROR] " << info << "" << std::endl; \
             fflush(stdout); \
             fflush(stderr); \
             TLAssertFailureEvent assert_event(__PRETTY_FUNCTION__, info); \
@@ -88,22 +113,78 @@ typedef uint64_t paddr_t;
         if (glbl.cfg.verbose) { \
             const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */  \
             if (__tlc_assert__ctx) \
-                std::cout << "[" << ctx->cycle() << "] [tl-test-passive-INFO] #" << ctx->sysId() << " "; \
+                std::cout << "[" << ctx->cycle() << "] [tl-test-new-INFO] #" << ctx->sysId() << " "; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
             fflush(stderr); \
         } \
     } while(0)
 
+#define LogEx(action) \
+    do { \
+        if (glbl.cfg.verbose) { \
+            action; \
+        } \
+    } while(0)
+
+
+#define LogInfo(time, str_app) \
+    do { \
+        { \
+            std::cout << "[" << time << "] [tl-test-new-INFO] "; \
+            std::cout << (Gravity::StringAppender().str_app.ToString()); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
+
+#define LogFinal(time, str_app) \
+    do { \
+        { \
+            std::cout << "[" << time << "] [tl-test-new-FINAL] "; \
+            std::cout << (Gravity::StringAppender().str_app.ToString()); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
+
+#define LogFatal(time, str_app) \
+    do { \
+        { \
+            std::cout << "[" << time << "] [tl-test-new-FATAL] "; \
+            std::cout << (Gravity::StringAppender().str_app.ToString()); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
+
+#define LogError(time, str_app) \
+    do { \
+        { \
+            std::cout << "[" << time << "] [tl-test-new-ERROR] "; \
+            std::cout << (Gravity::StringAppender().str_app.ToString()); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
+
+
 #define Debug(ctx, str_app) \
     do { \
         if (glbl.cfg.verbose) { \
             const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */  \
             if (__tlc_assert__ctx) \
-                std::cout << "[" << ctx->cycle() << "] [tl-test-passive-DEBUG] #" << ctx->sysId() << " "; \
+                std::cout << "[" << ctx->cycle() << "] [tl-test-new-DEBUG] #" << ctx->sysId() << " "; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
             fflush(stderr); \
+        } \
+    } while(0)
+
+#define DebugEx(action) \
+    do { \
+        if (glbl.cfg.verbose) { \
+            action; \
         } \
     } while(0)
 
@@ -114,6 +195,13 @@ typedef uint64_t paddr_t;
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
             fflush(stderr); \
+        } \
+    } while(0)
+
+#define DumpEx(action) \
+    do { \
+        if (glbl.cfg.verbose) { \
+            action; \
         } \
     } while(0)
 
