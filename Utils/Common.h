@@ -60,6 +60,14 @@ inline shared_tldata_t<N> make_shared_tldata() noexcept
     return std::make_shared<wrapped_tldata_t<N>>();
 }
 
+template<std::size_t N>
+inline shared_tldata_t<N> make_shared_tldata_zero() noexcept
+{
+    auto data = make_shared_tldata<N>();
+    std::memset(data->data, 0, DATASIZE);
+    return data;
+}
+
 //
 
 typedef uint64_t paddr_t;
