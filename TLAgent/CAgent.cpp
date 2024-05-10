@@ -11,11 +11,17 @@
 #include "CAgent.h"
 
 
+// debug purpuse, never remove for TileLink spec
 #define CAGENT_NO_ALIAS_ACQUIRE         1
+#define CAGENT_NO_ALIAS_RELEASE         1
 
 
 #ifndef CAGENT_NO_ALIAS_ACQUIRE
 #   define CAGENT_NO_ALIAS_ACQUIRE      0
+#endif
+
+#ifndef CAGENT_NO_ALIAS_RELEASE
+#   define CAGENT_NO_ALIAS_RELEASE      0
 #endif
 
 
@@ -648,6 +654,7 @@ namespace tl_agent {
     bool CAgent::do_releaseData(paddr_t address, int param, shared_tldata_t<DATASIZE> data, int alias) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
+        // ** DEPRECATED **
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(this, address);
@@ -681,10 +688,10 @@ namespace tl_agent {
     bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
-        // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(this, address);
         auto privilege = entry->privilege[alias];
+
         int param;
         switch (privilege) {
         case INVALID:
@@ -698,9 +705,18 @@ namespace tl_agent {
         default:
             tlc_assert(false, this, "Invalid priviledge detected!");
         }
-        auto status = entry->status[alias];
-        if (status != S_VALID) {
+
+        auto status = entry->status;
+        if (status[alias] != S_VALID) 
             return false;
+#if     CAGENT_NO_ALIAS_RELEASE == 1
+        for (int i = 0; i < 4; i++) {
+#else
+        int i = alias; {
+#endif
+            // never send Release/ReleaseData when there is an pending Acquire with same address
+            if (status[i] == S_A_WAITING_D || status[i] == S_A_WAITING_D_INTR)
+                return false;
         }
 
         auto req_c = std::make_shared<BundleChannelC<ReqField, EchoField, DATASIZE>>();
