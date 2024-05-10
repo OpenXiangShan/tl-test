@@ -150,12 +150,15 @@ namespace tl_agent {
         tlc_assert(localBoard->haskey(b->address), this, "Probe an non-exist block!");
 
         auto info = localBoard->query(this, b->address);
-        auto exact_status = info->status[b->alias];
+        auto exact_status = info->status;
         auto exact_privilege = info->privilege[b->alias];
-        tlc_assert(exact_status != S_SENDING_C, this, "handle_b should be mutual exclusive with pendingC!");
-        if (exact_status == S_C_WAITING_D) {
-            // Probe waits for releaseAck
-            return;
+        tlc_assert(exact_status[b->alias] != S_SENDING_C, this, "handle_b should be mutual exclusive with pendingC!");
+        for (int i = 0; i < 4; i++)
+        {
+            if (exact_status[i] == S_C_WAITING_D) {
+                // Probe waits for releaseAck
+                return;
+            }
         }
         auto req_c = std::make_shared<BundleChannelC<ReqField, EchoField, DATASIZE>>();
         req_c->address  = b->address;
@@ -165,8 +168,8 @@ namespace tl_agent {
         req_c->alias    = b->alias;
         // Log("== id == handleB %d\n", *req_c->source);
         Log(this, ShowBase().Hex().Append("Accepting over Probe to ProbeAck: ", uint64_t(b->source), " -> ", uint64_t(req_c->source)).EndLine());
-        if (exact_status == S_SENDING_A || exact_status == S_INVALID || exact_status == S_A_WAITING_D) {
-            Log(this, Append("Probe an non-exist block, status: ", StatusToString(exact_status)).EndLine());
+        if (exact_status[b->alias] == S_SENDING_A || exact_status[b->alias] == S_INVALID || exact_status[b->alias] == S_A_WAITING_D) {
+            Log(this, Append("Probe an non-exist block, status: ", StatusToString(exact_status[b->alias])).EndLine());
             req_c->opcode   = ProbeAck;
             req_c->param    = NtoN;
             pendingC.init(req_c, 1);
