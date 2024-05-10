@@ -11,6 +11,18 @@
 #include "CAgent.h"
 
 
+/*
+* 0 = Non-inclusive System
+* 1 = Inclusive System
+*/
+#define CAGENT_INCLUSIVE_SYSTEM         1
+//
+
+#ifndef CAGENT_INCLUSIVE_SYSTEM
+#   define CAGENT_INCLUSIVE_SYSTEM      0
+#endif
+
+
 // debug purpuse, never remove for TileLink spec
 #define CAGENT_NO_ALIAS_ACQUIRE         1
 #define CAGENT_NO_ALIAS_RELEASE         1
@@ -267,6 +279,17 @@ namespace tl_agent {
 
                 break;
             }
+            case Release: {
+                std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
+                idMap->update(this, c->source, idmap_entry);
+
+                if (localBoard->haskey(c->address))
+                    localBoard->query(this, c->address)->update_status(this, S_SENDING_C, c->alias);
+                else 
+                    tlc_assert(false, this, "Localboard key not found!");
+
+                break;
+            }
             case ProbeAckData: {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
                 idMap->update(this, c->source, idmap_entry);
@@ -502,7 +525,8 @@ namespace tl_agent {
                             info->update_status(this, S_SENDING_C, alias);
                         }
                         info->unpending_priviledge(this, alias);
-                        this->globalBoard->unpending(this, addr);
+                        if (this->globalBoard->haskey(addr))
+                            this->globalBoard->unpending(this, addr); // ReleaseData
                         break;
                     }
                     default:
@@ -732,42 +756,126 @@ namespace tl_agent {
         }
 
         auto req_c = std::make_shared<BundleChannelC<ReqField, EchoField, DATASIZE>>();
-        req_c->opcode   = ReleaseData;
-        req_c->address  = address;
-        req_c->param    = param;
-        req_c->size     = ceil(log2((double)DATASIZE));
-        req_c->source   = this->idpool.getid();
-        req_c->dirty    = 1;
-        req_c->alias    = alias;
-        if (param == BtoN) {
-            if (globalBoard->haskey(address))   // Data all-zero when present in LocalBoard but not in GlobalBoard
-                req_c->data = globalBoard->query(this, address)->data;
-            else
+        if (param == BtoN)
+        {
+            req_c->address  = address;
+            req_c->param    = param;
+            req_c->size     = ceil(log2((double)DATASIZE));
+            req_c->source   = this->idpool.getid();
+            req_c->dirty    = 0;
+            req_c->alias    = alias;
+
+#           if CAGENT_INCLUSIVE_SYSTEM == 1
             {
-                req_c->data = make_shared_tldata<DATASIZE>();
-                for (int i = 0; i < DATASIZE; i++) {
-                    req_c->data->data[i] = 0;
-                }
+                req_c->opcode   = Release;
+                req_c->data     = make_shared_tldata_zero<DATASIZE>();
+
+#               ifdef CAGENT_DEBUG
+                    Debug(this, Append("do_releaseDataAuto(): BtoN release without data").EndLine());
+#               endif
+
+                pendingC.init(req_c, 1);
+
+                Log(this, Append("[Release ", ReleaseParamToString(param), "] ")
+                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
             }
-        } else {
-            tlc_assert(param == TtoN, this, "Wrong execution path!");
-            req_c->data = make_shared_tldata<DATASIZE>();
-            for (int i = 0; i < DATASIZE; i++) {
-                req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
+#           else
+            {
+                req_c->opcode   = ReleaseData;
+
+                if (globalBoard->haskey(address))
+                    req_c->data = globalBoard->query(this, address)->data;
+                else
+                    req_c->data = make_shared_tldata_zero<DATASIZE>();
+
+#               ifdef CAGENT_DEBUG
+                    Debug(this, Append("do_releaseDataAuto(): BtoN release with non-dirty data: "));
+                    DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                    DebugEx(std::cout << std::endl);
+#               endif
+
+                pendingC.init(req_c, DATASIZE / BEATSIZE);
+
+                Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
+                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+                LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                LogEx(std::cout << std::endl);
             }
-#           ifdef CAGENT_DEBUG
-                Debug(this, Append("do_releaseDataAuto(): randomized data: "));
-                DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
-                DebugEx(std::cout << std::endl);
 #           endif
         }
+        else
+        {
+            tlc_assert(param == TtoN, this, "Wrong execution path!");
 
-        // Log("== id == release %d\n", *req_c->source);
-        pendingC.init(req_c, DATASIZE / BEATSIZE);
-        Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
-                .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
-        LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
-        LogEx(std::cout << std::endl);
+            req_c->address  = address;
+            req_c->param    = param;
+            req_c->size     = ceil(log2((double)DATASIZE));
+            req_c->source   = this->idpool.getid();
+            req_c->dirty    = 1;
+            req_c->alias    = alias;
+
+            if (dirty)
+            {
+                req_c->opcode   = ReleaseData;
+
+                req_c->data = make_shared_tldata<DATASIZE>();
+                for (int i = 0; i < DATASIZE; i++) {
+                    req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
+                }
+#               ifdef CAGENT_DEBUG
+                    Debug(this, Append("do_releaseDataAuto(): TtoN randomized dirty data: "));
+                    DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                    DebugEx(std::cout << std::endl);
+#               endif
+
+                pendingC.init(req_c, DATASIZE / BEATSIZE);
+
+                Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
+                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+                LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                LogEx(std::cout << std::endl);
+            }
+            else
+            {
+#               if CAGENT_INCLUSIVE_SYSTEM == 1
+                {
+                    req_c->opcode   = Release;
+                    req_c->data     = make_shared_tldata_zero<DATASIZE>();
+
+#                   ifdef CAGENT_DEBUG
+                        Debug(this, Append("do_releaseDataAuto(): TtoN release without data").EndLine());
+#                   endif
+
+                    pendingC.init(req_c, 1);
+
+                    Log(this, Append("[Release ", ReleaseParamToString(param), "] ")
+                        .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
+                }
+#               else
+                {
+                    req_c->opcode   = ReleaseData;
+                    
+                    if (globalBoard->haskey(address))
+                        req_c->data = globalBoard->query(this, address)->data;
+                    else
+                        req_c->data = make_shared_tldata_zero<DATASIZE>();
+
+#                   ifdef CAGENT_DEBUG
+                        Debug(this, Append("do_releaseDataAuto(): TtoN release with non-dirty data: "));
+                        DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                        DebugEx(std::cout << std::endl);
+#                   endif
+
+                    pendingC.init(req_c, DATASIZE / BEATSIZE);
+
+                    Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
+                        .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+                    LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                    LogEx(std::cout << std::endl);
+                }
+#               endif
+            }
+        }
 
         return true;
     }
