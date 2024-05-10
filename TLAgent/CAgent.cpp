@@ -176,7 +176,7 @@ namespace tl_agent {
                 Log(this, Append("probeAck Data all-zero\n"));
                 std::memset((req_c->data = make_shared_tldata<DATASIZE>())->data, 0, DATASIZE);
             } else {
-                if (req_c->opcode == ProbeAckData && req_c->param != BtoN) {
+                if (req_c->opcode == ProbeAckData && (req_c->param == TtoT || req_c->param == TtoB || req_c->param == TtoN)) {
                     /* NOTICE: Random procedure could be better in C++ stdlib.
                                For data & seed compatibility, legacy code is preserved. The same below.
                     */
