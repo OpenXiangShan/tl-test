@@ -28,7 +28,7 @@
 #endif
 
 #ifndef CFUZZER_RANGE_ITERATE_TARGET
-#   define CFUZZER_RANGE_ITERATE_TARGET     12
+#   define CFUZZER_RANGE_ITERATE_TARGET     24
 #endif
 
 
@@ -85,7 +85,9 @@ void CFuzzer::randomTest(bool do_alias) {
         }
         cAgent->do_releaseData(addr, tl_agent::TtoN, putdata); // ReleaseData
         */
-        cAgent->do_releaseDataAuto(addr, alias); // feel free to releaseData according to its priv
+        cAgent->do_releaseDataAuto(addr, alias, 
+            CAGENT_RAND64(cAgent, "CFuzzer") & 0x1,
+            CAGENT_RAND64(cAgent, "CFuzzer") & 0x1); // feel free to releaseData according to its priv
     }
 }
 

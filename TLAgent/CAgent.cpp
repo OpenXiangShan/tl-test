@@ -685,7 +685,19 @@ namespace tl_agent {
         return true;
     }
 
-    bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
+    bool CAgent::do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced)
+    {
+        if (forced)
+        {
+            auto& localMap = localBoard->get();
+            size_t picked = CAGENT_RAND64(this, "CAgent") % localMap.size();
+
+            auto iter = localMap.begin();
+            for (size_t pi = 0; pi < picked; pi++, iter++);
+    
+            address = iter->first;
+        }
+
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
         // TODO: checkout pendingB - give way?

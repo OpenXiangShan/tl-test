@@ -225,7 +225,7 @@ namespace tl_agent {
         bool do_acquireBlock(paddr_t address, int param, int alias);
         bool do_acquirePerm(paddr_t address, int param, int alias);
         bool do_releaseData(paddr_t address, int param, shared_tldata_t<DATASIZE> data, int alias);
-        bool do_releaseDataAuto(paddr_t address, int alias);
+        bool do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced);
     };
 
 }
