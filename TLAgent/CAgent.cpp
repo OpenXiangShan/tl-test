@@ -69,12 +69,14 @@ namespace tl_agent {
         this->cycles = cycles;
         this->localBoard = new LocalScoreBoard();
         this->idMap = new IDMapScoreBoard();
+        this->acquirePermBoard = new AcquirePermScoreBoard();
     }
 
     CAgent::~CAgent() noexcept
     {
         delete this->localBoard;
         delete this->idMap;
+        delete this->acquirePermBoard;
     }
 
     uint64_t CAgent::cycle() const noexcept
@@ -102,6 +104,10 @@ namespace tl_agent {
                     auto entry = std::make_shared<C_SBEntry>(this, statuses, privileges);
                     localBoard->update(this, a->address, entry);
                 }
+
+                if (acquirePermBoard->haskey(a->address))
+                    acquirePermBoard->erase(this, a->address);
+
                 break;
             }
             case AcquirePerm: {
@@ -121,6 +127,10 @@ namespace tl_agent {
                     auto entry = std::make_shared<C_SBEntry>(this, statuses, privileges);
                     localBoard->update(this, a->address, entry);
                 }
+
+                auto acquirePermRecord = std::make_shared<C_AcquirePermEntry>();
+                acquirePermBoard->update(this, a->address, acquirePermRecord);
+
                 break;
             }
             default:
@@ -814,12 +824,15 @@ namespace tl_agent {
             req_c->param    = param;
             req_c->size     = ceil(log2((double)DATASIZE));
             req_c->source   = this->idpool.getid();
-            req_c->dirty    = 1;
             req_c->alias    = alias;
 
-            if (dirty)
+            if (dirty || acquirePermBoard->haskey(address))
             {
+                /*
+                * *NOTICE: always dirty with previous AcquirePerm
+                */
                 req_c->opcode   = ReleaseData;
+                req_c->dirty    = 1;
 
                 req_c->data = make_shared_tldata<DATASIZE>();
                 for (int i = 0; i < DATASIZE; i++) {
@@ -843,6 +856,7 @@ namespace tl_agent {
 #               if CAGENT_INCLUSIVE_SYSTEM == 1
                 {
                     req_c->opcode   = Release;
+                    req_c->dirty    = 0;
                     req_c->data     = make_shared_tldata_zero<DATASIZE>();
 
 #                   ifdef CAGENT_DEBUG
@@ -857,6 +871,7 @@ namespace tl_agent {
 #               else
                 {
                     req_c->opcode   = ReleaseData;
+                    req_c->dirty    = 0;
                     
                     if (globalBoard->haskey(address))
                         req_c->data = globalBoard->query(this, address)->data;

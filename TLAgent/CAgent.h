@@ -111,6 +111,10 @@ namespace tl_agent {
         }
     };
 
+    class C_AcquirePermEntry {
+    public:
+    };
+
 
     template<typename Tk>
     struct ScoreBoardUpdateCallbackCSBEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::C_SBEntry>
@@ -186,8 +190,9 @@ namespace tl_agent {
 
     class CAgent : public BaseAgent {
     public:
-        using LocalScoreBoard = ScoreBoard<paddr_t, C_SBEntry, ScoreBoardUpdateCallbackCSBEntry<paddr_t>>;
-        using IDMapScoreBoard = ScoreBoard<paddr_t, C_IDEntry, ScoreBoardUpdateCallbackCIDEntry<paddr_t>>;
+        using LocalScoreBoard       = ScoreBoard<paddr_t, C_SBEntry, ScoreBoardUpdateCallbackCSBEntry<paddr_t>>;
+        using IDMapScoreBoard       = ScoreBoard<paddr_t, C_IDEntry, ScoreBoardUpdateCallbackCIDEntry<paddr_t>>;
+        using AcquirePermScoreBoard = ScoreBoard<paddr_t, C_AcquirePermEntry>;
 
     private:
         uint64_t *cycles;
@@ -199,8 +204,16 @@ namespace tl_agent {
         /* Here we need a scoreboard called localBoard maintaining address->info
          * For convenience, an idMap(id->addr) is also maintained
          */
-        LocalScoreBoard*    localBoard;
-        IDMapScoreBoard*    idMap;
+        LocalScoreBoard*        localBoard;
+        IDMapScoreBoard*        idMap;
+        /*
+        * *NOTICE:
+        *   L1D infers that all following Release must obtain dirty data (must be ReleaseData)
+        *   after the AcquirePerm with the same address.
+        *   Besides, this is not straight-forward for inclusive system simulation, so the
+        *   AcquirePermScoreBoard must be maintained.
+        */
+        AcquirePermScoreBoard*  acquirePermBoard;
         IDPool probeIDpool;
         void timeout_check() override;
 
@@ -229,10 +242,6 @@ namespace tl_agent {
     };
 
 }
-
-
-
-
 
 
 #endif //TLC_TEST_CAGENT_H
