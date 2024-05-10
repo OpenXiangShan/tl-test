@@ -72,49 +72,6 @@ inline shared_tldata_t<N> make_shared_tldata_zero() noexcept
 
 typedef uint64_t paddr_t;
 
-#define tlc_assert(cond, ctx, info) \
-    do { \
-        if (!(cond)) { \
-            const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */ \
-            if (__tlc_assert__ctx) \
-            { \
-                std::cout << "[" << ctx->cycle() << "] [tl-test-new-ERROR] [tlc_assert failure at " << __FILE__ << ":" << __LINE__ << "] " << std::endl \
-                << "[" << ctx->cycle() << "] [tl-test-new-ERROR] [At system #" << ctx->sysId() << "] "; \
-            } \
-            std::cout << "[tl-test-new-ERROR] " << "info: " << info << "" << std::endl; \
-            std::cout << "[tl-test-new-ERROR] " << "stack backtrace: " << "" << std::endl; \
-            { \
-                size_t bktr_i, bktr_size; \
-                void* array[1024]; \
-                bktr_size = backtrace(array, 1024); \
-                char** bktr_strings = backtrace_symbols(array, bktr_size); \
-                for (bktr_i = 0; bktr_i < bktr_size; bktr_i++) \
-                    std::cout << "#" << bktr_i << " " << bktr_strings[bktr_i] << std::endl; \
-                free(bktr_strings); \
-            } \
-            fflush(stdout); \
-            fflush(stderr); \
-            TLAssertFailureEvent assert_event(__PRETTY_FUNCTION__, info); \
-            assert_event.Fire(); \
-            throw TLAssertFailureException(assert_event); \
-            assert(false); \
-        } \
-    } while (0)
-
-#define tlsys_assert(cond, info) \
-    do { \
-        if (!(cond)) { \
-            std::cout << "[tl-test-new-ERROR] tlsys_assert() failure at " << __PRETTY_FUNCTION__ << ":" << __LINE__ << " " << std::endl; \
-            std::cout << "[tl-test-new-ERROR] " << info << "" << std::endl; \
-            fflush(stdout); \
-            fflush(stderr); \
-            TLAssertFailureEvent assert_event(__PRETTY_FUNCTION__, info); \
-            assert_event.Fire(); \
-            throw TLAssertFailureException(assert_event); \
-            assert(false); \
-        } \
-    } while (0)
-
 
 #define Log(ctx, str_app) \
     do { \
@@ -156,25 +113,77 @@ typedef uint64_t paddr_t;
         } \
     } while(0)
 
+#define LogError(time, str_app) \
+    do { \
+        { \
+            std::cout << "[" << time << "]\033[31m [tl-test-new-ERROR] \033[1;31m"; \
+            std::cout << (Gravity::StringAppender().str_app.Append("\033[0m").ToString()); \
+            fflush(stdout); \
+            fflush(stderr); \
+        } \
+    } while(0)
+
 #define LogFatal(time, str_app) \
     do { \
         { \
-            std::cout << "[" << time << "] [tl-test-new-FATAL] "; \
+            std::cout << "[" << time << "]\033[31m [tl-test-new-FATAL] \033[0m"; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
             fflush(stderr); \
         } \
     } while(0)
 
-#define LogError(time, str_app) \
+
+#define tlc_assert(cond, ctx, info) \
     do { \
-        { \
-            std::cout << "[" << time << "] [tl-test-new-ERROR] "; \
-            std::cout << (Gravity::StringAppender().str_app.ToString()); \
+        if (!(cond)) { \
+            const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */ \
+            if (__tlc_assert__ctx) \
+            { \
+                LogError(ctx->cycle(), Append("[tlc_assert failure at ", __PRETTY_FUNCTION__, ":", __LINE__, "]").EndLine()); \
+                LogError(ctx->cycle(), Append("[tlc_assert failure from system #", ctx->sysId(), "]").EndLine()); \
+            } \
+            LogError(ctx->cycle(), Append("info: ", info).EndLine()); \
+            LogError(ctx->cycle(), Append("\033[0m", "stack backtrace: ").EndLine()); \
+            { \
+                size_t bktr_i, bktr_size; \
+                void* array[1024]; \
+                bktr_size = backtrace(array, 1024); \
+                char** bktr_strings = backtrace_symbols(array, bktr_size); \
+                for (bktr_i = 0; bktr_i < bktr_size; bktr_i++) \
+                { \
+                    size_t pos; \
+                    std::string bktr_str(bktr_strings[bktr_i]); \
+                    if ((pos = bktr_str.find_last_of('/')) != std::string::npos) \
+                        bktr_str = bktr_str.substr(pos); \
+                    if ((pos = bktr_str.find_last_of('\\')) != std::string::npos) \
+                        bktr_str = bktr_str.substr(pos); \
+                    LogError(ctx->cycle(), Append("\033[0m", "#", bktr_i, " ", bktr_str).EndLine()); \
+                } \
+                free(bktr_strings); \
+            } \
             fflush(stdout); \
             fflush(stderr); \
+            TLAssertFailureEvent assert_event(__PRETTY_FUNCTION__, info); \
+            assert_event.Fire(); \
+            throw TLAssertFailureException(assert_event); \
+            assert(false); \
         } \
-    } while(0)
+    } while (0)
+
+#define tlsys_assert(cond, info) \
+    do { \
+        if (!(cond)) { \
+            LogError("tlsys_assert", Append("tlsys_assert() failure at ", __PRETTY_FUNCTION__, ":", __LINE__, " ").EndLine()); \
+            LogError("tlsys_assert", Append(info).EndLine()); \
+            fflush(stdout); \
+            fflush(stderr); \
+            TLAssertFailureEvent assert_event(__PRETTY_FUNCTION__, info); \
+            assert_event.Fire(); \
+            throw TLAssertFailureException(assert_event); \
+            assert(false); \
+        } \
+    } while (0)
 
 
 #define Debug(ctx, str_app) \
