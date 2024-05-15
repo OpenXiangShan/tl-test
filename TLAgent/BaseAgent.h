@@ -5,14 +5,6 @@
 #ifndef TLC_TEST_BASEAGENT_H
 #define TLC_TEST_BASEAGENT_H
 
-#define AGENT_DEBUG     1
-
-
-#ifndef AGENT_DEBUG
-#   define AGENT_DEBUG     0
-#endif
-
-
 #include <set>
 #include <random>
 #include "Port.h"
@@ -20,6 +12,7 @@
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
 #include "../Base/TLLocal.hpp"
+
 
 namespace tl_agent {
 
@@ -163,6 +156,7 @@ namespace tl_agent {
         using tlport_t = Bundle<ReqField, RespField, EchoField, BEATSIZE>;
 
     protected:
+        TLLocalConfig*          cfg;
         const int id;
         tlport_t                *port;
         GlobalBoard<paddr_t>    *globalBoard;
@@ -181,8 +175,11 @@ namespace tl_agent {
 #   endif
 
     public:
-        inline int          sysId() const noexcept override { return id; }
-        inline unsigned int sysSeed() const noexcept override { return seed; };
+        inline int                  sysId() const noexcept override { return id; }
+        inline unsigned int         sysSeed() const noexcept override { return seed; }
+
+        inline TLLocalConfig&       config() noexcept override { return *cfg; }
+        inline const TLLocalConfig& config() const noexcept override { return *cfg; }
 
         virtual Resp send_a     (std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>>&    a) = 0;
         virtual void handle_b   (std::shared_ptr<BundleChannelB>&                                   b) = 0;
@@ -194,7 +191,7 @@ namespace tl_agent {
         virtual void fire_e() = 0;
         virtual void handle_channel() = 0;
         virtual void update_signal() = 0;
-        BaseAgent(int sysId, unsigned int seed): id(sysId), idpool(0, NR_SOURCEID), seed(seed), rand(sysId + seed) {};
+        BaseAgent(TLLocalConfig* cfg, int sysId, unsigned int seed): cfg(cfg), id(sysId), idpool(0, NR_SOURCEID), seed(seed), rand(sysId + seed) {};
         virtual ~BaseAgent() = default;
 
         inline void  connect(tlport_t* p){ this->port = p; }

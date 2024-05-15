@@ -232,7 +232,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new CAgent(globalBoard, i, cfg.seed, &cycles);
+                agents  [i] = new CAgent(&this->config, globalBoard, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
                 //
@@ -251,7 +251,7 @@ void TLSequencer::Initialize(const TLLocalConfig& cfg) noexcept
             {
                 //
                 io      [i] = new IOPort;
-                agents  [i] = new ULAgent(globalBoard, i, cfg.seed, &cycles);
+                agents  [i] = new ULAgent(&this->config, globalBoard, i, cfg.seed, &cycles);
                 agents  [i]->connect(io[i]);
 
                 //

@@ -6,15 +6,12 @@
 #define TLC_TEST_CAGENT_H
 
 #include "BaseAgent.h"
+
+#include "../Base/TLEnum.hpp"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
+
 #include "Bundle.h"
-#include "TLEnum.h"
-
-
-#if AGENT_DEBUG == 1
-#   define CAGENT_DEBUG
-#endif
 
 
 namespace tl_agent {

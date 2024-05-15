@@ -2,15 +2,16 @@
 // Created by ljw on 10/21/21.
 //
 
+#include "../Base/TLEnum.hpp"
+
 #include "Bundle.h"
-#include "TLEnum.h"
 #include <memory>
 #include "ULAgent.h"
 
 namespace tl_agent {
 
-    ULAgent::ULAgent(GlobalBoard<paddr_t> *gb, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
-            BaseAgent(sysId, seed), pendingA(), pendingD()
+    ULAgent::ULAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *gb, int sysId, unsigned int seed, uint64_t* cycles) noexcept :
+            BaseAgent(cfg, sysId, seed), pendingA(), pendingD()
     {
         this->globalBoard = gb;
         this->cycles = cycles;
@@ -80,11 +81,87 @@ namespace tl_agent {
     void ULAgent::fire_a() {
         if (this->port->a.fire()) {
             auto& chnA = this->port->a;
+
+            if (chnA.opcode == Get)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire A] [Get] ")
+                        .Append("addr: ",       uint64_t(chnA.address))
+                        .Append(", size: ",     uint64_t(chnA.size))
+                        .EndLine());
+                }
+            }
+            else if (chnA.opcode == PutFullData)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire A] [PutFullData] ")
+                        .Append("addr: ",       uint64_t(chnA.address))
+                        .Append(", data: "));
+                    LogEx(data_dump_embedded<BEATSIZE>(chnA.data->data));
+                    LogEx(std::cout << std::endl);
+                }
+            }
+            else if (chnA.opcode == PutPartialData)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    // TODO: better data verbosity for PutPartialData
+
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire A] [PutPartialData] ")
+                        .Append("addr: ",       uint64_t(chnA.address))
+                        .Append(", size: ",     uint64_t(chnA.size))
+                        .Append(", mask: ",     uint64_t(chnA.mask))
+                        .Append(", data: "));
+                    LogEx(data_dump_embedded<BEATSIZE>(chnA.data->data));
+                    LogEx(std::cout << std::endl);
+                }
+            }
+            else
+            {
+                tlc_assert(false, this, Gravity::StringAppender()
+                    .Hex().ShowBase()
+                    .Append("[fire A] unknown opcode: ", uint64_t(chnA.opcode))
+                    .EndLine().ToString());
+            }
+
             bool hasData = chnA.opcode == PutFullData || chnA.opcode == PutPartialData;
             chnA.valid = false;
             tlc_assert(pendingA.is_pending(), this, "No pending A but A fired!");
             pendingA.update(this);
+
             if (!pendingA.is_pending()) { // req A finished
+
+                if (glbl.cfg.verbose_xact_data_complete)
+                {
+                    if (chnA.opcode == PutFullData)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[data complete A] [PutFullData] ")
+                            .Append("addr: ",       uint64_t(chnA.address))
+                            .Append(", data: "));
+                        LogEx(data_dump_embedded<DATASIZE>(pendingA.info->data->data));
+                        LogEx(std::cout << std::endl);
+                    }
+                    else if (chnA.opcode == PutPartialData)
+                    {
+                        // TODO: better data verbosity for PutPartialData
+
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire A] [PutPartialData] ")
+                            .Append("addr: ",       uint64_t(chnA.address))
+                            .Append(", size: ",     uint64_t(chnA.size))
+                            .Append(", mask: ",     uint64_t(chnA.mask))
+                            .Append(", data: "));
+                        LogEx(data_dump_embedded<DATASIZE>(pendingA.info->data->data));
+                        LogEx(std::cout << std::endl);
+                    }
+                }
+
                 this->localBoard->query(this, pendingA.info->source)->update_status(this, S_A_WAITING_D);
                 if (hasData) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
@@ -113,7 +190,37 @@ namespace tl_agent {
         if (this->port->d.fire()) {
             auto& chnD = this->port->d;
             auto info = localBoard->query(this, chnD.source);
-            bool hasData = chnD.opcode == GrantData || chnD.opcode == AccessAckData;
+
+            if (chnD.opcode == AccessAck)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire D] [AccessAck] ")
+                        .Append("addr: ", info->address)
+                        .EndLine());
+                }
+            }
+            else if (chnD.opcode == AccessAckData)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire D] [AccessAckData] ")
+                        .Append("addr: ", info->address, ", data: "));
+                    LogEx(data_dump_embedded<BEATSIZE>(chnD.data->data));
+                    LogEx(std::cout << std::endl);
+                }
+            }
+            else 
+            {
+                tlc_assert(false, this, Gravity::StringAppender()
+                    .Hex().ShowBase()
+                    .Append("[fire D] unknown opcode: ", uint64_t(chnD.opcode))
+                    .EndLine().ToString());
+            }
+
+            bool hasData = chnD.opcode == AccessAckData;
             tlc_assert(info->status == S_A_WAITING_D, this, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 // TODO: wrap the following assertions into a function
@@ -143,19 +250,25 @@ namespace tl_agent {
                 */
                 std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
             }
+
             if (!pendingD.is_pending()) {
                 // ULAgent needn't care about endurance
-                if (hasData) {
-                    Log(this, Append("[", *cycles, "] [AccessAckData] ")
-                        .Hex().ShowBase().Append("addr: ", info->address, ", data: ").EndLine());
-                    for(int i = 0; i < DATASIZE; i++) {
-                        Dump(Hex().NextWidth(2).Fill('0').Append(uint64_t(pendingD.info->data->data[i]), " "));
+
+                if (glbl.cfg.verbose_xact_data_complete)
+                {
+                    if (chnD.opcode == AccessAckData)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[data complete D] [AccessAckData] ")
+                            .Append("addr: ", info->address, ", data: "));
+                        LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
+                        LogEx(std::cout << std::endl);
                     }
-                    Dump(EndLine());
+                }
+
+                if (hasData) {
                     this->globalBoard->verify(this, info->address, pendingD.info->data);
                 } else if (chnD.opcode == AccessAck) { // finish pending status in GlobalBoard
-                    Log(this, Append("[", *cycles, "] [AccessAck] ")
-                        .Hex().ShowBase().Append("addr: ", info->address).EndLine());
                     this->globalBoard->unpending(this, info->address);
                 }
                 localBoard->erase(this, chnD.source);
@@ -200,8 +313,16 @@ namespace tl_agent {
         req_a->mask     = 0xffffffffUL;
         req_a->source   = this->idpool.getid();
         pendingA.init(req_a, 1);
-        Log(this, Append("[", *cycles, "] [Get] ")
-            .Hex().ShowBase().Append("addr: ", address).EndLine());
+
+        if (glbl.cfg.verbose_xact_sequenced)
+        {
+            Log(this, Hex().ShowBase()
+                .Append("[sequenced A] [Get] ")
+                .Append("addr: ",       uint64_t(req_a->address))
+                .Append(", size: ",     uint64_t(req_a->size))
+                .EndLine());
+        }
+
         return true;
     }
 
@@ -215,8 +336,16 @@ namespace tl_agent {
         req_a->mask     = mask;
         req_a->source   = this->idpool.getid();
         pendingA.init(req_a, 1);
-        Log(this, Append("[", *cycles, "] [Get] ")
-            .Hex().ShowBase().Append("addr: ", address, ", size: ", size).EndLine());
+
+        if (glbl.cfg.verbose_xact_sequenced)
+        {
+            Log(this, Hex().ShowBase()
+                .Append("[sequenced A] [Get] ")
+                .Append("addr: ",       uint64_t(req_a->address))
+                .Append(", size: ",     uint64_t(req_a->size))
+                .EndLine());
+        }
+
         return true;
     }
     
@@ -234,12 +363,17 @@ namespace tl_agent {
         req_a->source   = this->idpool.getid();
         req_a->data     = data;
         pendingA.init(req_a, DATASIZE / BEATSIZE);
-        Log(this, Append("[", *cycles, "] [PutFullData] ")
-            .Hex().ShowBase().Append("addr: ", address, ", data: "));
-        for(int i = 0; i < DATASIZE; i++) {
-            Dump(Hex().NextWidth(2).Fill('0').Append(data->data[i]));
+
+        if (glbl.cfg.verbose_xact_sequenced)
+        {
+            Log(this, Hex().ShowBase()
+                .Append("[sequenced A] [PutFullData] ")
+                .Append("addr: ",       uint64_t(req_a->address))
+                .Append(", data: "));
+            LogEx(data_dump_embedded<DATASIZE>(req_a->data->data));
+            LogEx(std::cout << std::endl);
         }
-        Dump(EndLine());
+
         return true;
     }
 
@@ -257,6 +391,21 @@ namespace tl_agent {
         req_a->data     = data;
         int nrBeat = ceil((float)pow(2, size) / (float)BEATSIZE);
         pendingA.init(req_a, nrBeat);
+
+        if (glbl.cfg.verbose_xact_sequenced)
+        {
+            // TODO: better data verbosity for PutPartialData
+
+            Log(this, Hex().ShowBase()
+                .Append("[sequenced A] [PutPartialData] ")
+                .Append("addr: ",       uint64_t(req_a->address))
+                .Append(", size: ",     uint64_t(req_a->size))
+                .Append(", mask: ",     uint64_t(req_a->mask))
+                .Append(", data: "));
+            LogEx(data_dump_embedded<DATASIZE>(req_a->data->data));
+            LogEx(std::cout << std::endl);
+        }
+
         Log(this, Append("[", *cycles, "] [PutPartialData] ")
             .Hex().ShowBase().Append("addr: ", address, ", data: "));
         for(int i = 0; i < DATASIZE; i++) {

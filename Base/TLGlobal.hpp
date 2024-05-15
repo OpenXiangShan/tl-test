@@ -11,8 +11,11 @@
 struct TLGlobalConfiguration {
 
     bool                    verbose;
-    bool                    verbose_detailed_dpi;
+    bool                    verbose_xact_fired;
+    bool                    verbose_xact_sequenced;
+    bool                    verbose_xact_data_complete;
     bool                    verbose_data_full;
+    bool                    verbose_agent_debug;
 };
 
 struct TLGlobalContext {

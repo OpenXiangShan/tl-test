@@ -1,10 +1,13 @@
 #include "tilelink_dpi.hpp"
 
 #include "../Sequencer/TLSequencer.hpp"
+#include "../Fuzzer/Fuzzer.h"
 #include "../Events/TLSystemEvent.hpp"
+#include "../Utils/inicpp.hpp"
 
 #include "../Plugins/PluginManager.hpp"
 #include "../Plugins/ChiselDB.hpp"
+
 #include <functional>
 
 
@@ -111,12 +114,15 @@ extern "C" void TileLinkSystemInitialize()
     tlcfg.coreCount                     = TLTEST_LOCAL_CORE_COUNT;
     tlcfg.masterCountPerCoreTLC         = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLC;
     tlcfg.masterCountPerCoreTLUL        = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL;
-tlcfg.ariInterval                   = CFUZZER_RANGE_ITERATE_INTERVAL;
+    tlcfg.ariInterval                   = CFUZZER_RANGE_ITERATE_INTERVAL;
     tlcfg.ariTarget                     = CFUZZER_RANGE_ITERATE_TARGET;
 
-    glbl.cfg.verbose                = true;
-    glbl.cfg.verbose_detailed_dpi   = false;
-    glbl.cfg.verbose_data_full      = false;
+    glbl.cfg.verbose                    = false;
+    glbl.cfg.verbose_xact_fired         = false;
+    glbl.cfg.verbose_xact_sequenced     = false;
+    glbl.cfg.verbose_xact_data_complete = false;
+    glbl.cfg.verbose_data_full          = false;
+    glbl.cfg.verbose_agent_debug        = false;
 
     // read configuration override
     inicpp::IniManager ini("tltest.ini");
@@ -140,6 +146,13 @@ tlcfg.ariInterval                   = CFUZZER_RANGE_ITERATE_INTERVAL;
     INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.ariInterval);
     INI_OVERRIDE_INT("tltest.fuzzer", "ari.target",                 tlcfg.ariTarget);
 
+    INI_OVERRIDE_INT("tltest.logger", "verbose",                    glbl.cfg.verbose);
+    INI_OVERRIDE_INT("tltest.logger", "verbose.xact_fired",         glbl.cfg.verbose_xact_fired);
+    INI_OVERRIDE_INT("tltest.logger", "verbose.xact_sequenced",     glbl.cfg.verbose_xact_sequenced);
+    INI_OVERRIDE_INT("tltest.logger", "verbose.xact_data_complete", glbl.cfg.verbose_xact_data_complete);
+    INI_OVERRIDE_INT("tltest.logger", "verbose.data_full",          glbl.cfg.verbose_data_full);
+    INI_OVERRIDE_INT("tltest.logger", "verbose.agent_debug",        glbl.cfg.verbose_agent_debug);
+
 #   undef INI_OVERRIDE_INT
 
     //
@@ -148,9 +161,6 @@ tlcfg.ariInterval                   = CFUZZER_RANGE_ITERATE_INTERVAL;
 
     plugins = new PluginManager;
     plugins->EnablePlugin(new ChiselDB::PluginInstance);
-
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("tl-test system initialized").EndLine());
 }
 
 /*
@@ -163,9 +173,6 @@ extern "C" void TileLinkSystemFinalize()
     
     passive->Finalize();
     delete passive;
-
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("tl-test system finalized").EndLine());
 }
 
 /*
@@ -174,9 +181,6 @@ extern "C" void TileLinkSystemFinalize()
 extern "C" void TileLinkSystemTick(
     const uint64_t      cycles)
 {
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("[tl-test-new] tick at cycle: ", cycles));
-
     passive->Tick(cycles);
 }
 
@@ -186,9 +190,6 @@ extern "C" void TileLinkSystemTick(
 extern "C" void TileLinkSystemTock()
 {
     passive->Tock();
-
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("[tl-test-new] tock"));
 }
 
 
@@ -223,13 +224,7 @@ extern "C" void TileLinkPullChannelA(
 {
     passive->UpdateChannelA();
 
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("[tl-test-new] UpdateChannelA()"));
-
     TLSequencer::IOPort& port = passive->IO(deviceId);
-
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(Append("[tl-test-new] Fetched IO: deviceId: ", deviceId));
 
     *valid      =  port.a.valid;
     *opcode     =  port.a.opcode;
@@ -272,14 +267,6 @@ extern "C" void TileLinkPullChannelA(
                 | (uint64_t(port.a.data->data[30])  << 48)
                 | (uint64_t(port.a.data->data[31])  << 56);
     *corrupt    =  0;
-
-    if (glbl.cfg.verbose_detailed_dpi)
-        TLTP_LOG_GLOBAL(ShowBase()
-            .Append("[tl-test-new] PullChannelA:").EndLine()
-            .Dec().Append("   -> valid    = ", (uint32_t)*valid     ).EndLine()
-            .Hex().Append("   -> opcode   = ", (uint32_t)*opcode    ).EndLine()
-            .Hex().Append("   -> address  = ", (uint64_t)*address   ).EndLine()
-            .EndLine());
 }
 //
 

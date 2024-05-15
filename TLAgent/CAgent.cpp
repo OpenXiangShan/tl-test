@@ -61,8 +61,8 @@ namespace tl_agent {
         }
     }
 
-    CAgent::CAgent(GlobalBoard<paddr_t> *const gb, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
-        BaseAgent(sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
+    CAgent::CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> *const gb, int sysId, unsigned int seed, uint64_t *cycles) noexcept :
+        BaseAgent(cfg, sysId, seed), pendingA(), pendingB(), pendingC(), pendingD(), pendingE(), probeIDpool(NR_SOURCEID, NR_SOURCEID+1)
     {
         this->globalBoard = gb;
         this->cycles = cycles;
@@ -189,12 +189,14 @@ namespace tl_agent {
         // Log("== id == handleB %d\n", *req_c->source);
         Log(this, ShowBase().Hex().Append("Accepting over Probe to ProbeAck: ", uint64_t(b->source), " -> ", uint64_t(req_c->source)).EndLine());
         if (exact_status[b->alias] == S_SENDING_A || exact_status[b->alias] == S_INVALID || exact_status[b->alias] == S_A_WAITING_D) {
-            Log(this, Append("Probe an non-exist block, status: ", StatusToString(exact_status[b->alias])).EndLine());
             req_c->opcode   = ProbeAck;
             req_c->param    = NtoN;
             pendingC.init(req_c, 1);
-            Log(this, Append("[ProbeAck NtoN] ")
-                .Hex().ShowBase().Append("addr: ", b->address, ", alias: ", uint64_t(b->alias)).EndLine());
+
+            if (glbl.cfg.verbose_agent_debug)
+            {
+                Debug(this, Append("[CAgent] handle_b(): probed an non-exist block, status: ", StatusToString(exact_status[b->alias])).EndLine());
+            }
         } else {
             int dirty = (exact_privilege == TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
             // When should we probeAck with data? request need_data or dirty itself
@@ -214,23 +216,24 @@ namespace tl_agent {
             }
             if (!globalBoard->haskey(b->address)) {
                 // want to probe an all-zero block which does not exist in global board
-                Log(this, Append("probeAck Data all-zero\n"));
+                if (glbl.cfg.verbose_agent_debug)
+                {
+                    Debug(this, Append("[CAgent] handle_b(): probed data all-zero").EndLine());
+                }
                 std::memset((req_c->data = make_shared_tldata<DATASIZE>())->data, 0, DATASIZE);
             } else {
                 if (req_c->opcode == ProbeAckData && (req_c->param == TtoT || req_c->param == TtoB || req_c->param == TtoN)) {
-                    /* NOTICE: Random procedure could be better in C++ stdlib.
-                               For data & seed compatibility, legacy code is preserved. The same below.
-                    */
                     req_c->data = make_shared_tldata<DATASIZE>();
                     for (int i = 0; i < DATASIZE; i++) {
                       req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
                     }
 
-#                   ifdef CAGENT_DEBUG
-                        Debug(this, Append("handle_b(): randomized data: "));
+                    if (glbl.cfg.verbose_agent_debug)
+                    {
+                        Debug(this, Append("[CAgent] handle_b(): randomized data: "));
                         DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
                         DebugEx(std::cout << std::endl);
-#                   endif
+                    }
 
                 } else {
                     std::memcpy(
@@ -238,11 +241,12 @@ namespace tl_agent {
                         globalBoard->query(this, b->address)->data->data, 
                         DATASIZE);
 
-#                   ifdef CAGENT_DEBUG
-                        Debug(this, Append("handle_b(): fetched scoreboard data: "));
+                    if (glbl.cfg.verbose_agent_debug)
+                    {
+                        Debug(this, Append("[CAgent] handle_b(): fetched scoreboard data: "));
                         DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
                         DebugEx(std::cout << std::endl);
-#                   endif
+                    }
                 }
             }
             if (req_c->opcode == ProbeAckData) {
@@ -251,10 +255,6 @@ namespace tl_agent {
                 pendingC.init(req_c, 1);
             }
 
-            Log(this, Append("[ProbeAck", req_c->opcode == ProbeAckData ? "Data" : "", " ", 
-                        ProbeAckParamToString(req_c->param), "] ")
-                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", b->address, ", alias: ", uint64_t(b->alias), ", data: "));
-
             tlc_assert(req_c->param == TtoN
                     || req_c->param == TtoB
                     || req_c->param == NtoN
@@ -262,13 +262,6 @@ namespace tl_agent {
                     || req_c->param == BtoB, 
                 this, 
                 Gravity::StringAppender("Not permitted req_c param: ", ProbeAckParamToString(req_c->param)).ToString());
-
-            if (req_c->opcode == ProbeAckData) {
-                LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
-            } else {
-                LogEx(std::cout << "no data");
-            }
-            LogEx(std::cout << std::endl);
         }
         pendingB.update(this);
     }
@@ -292,13 +285,14 @@ namespace tl_agent {
                 */
                 std::memcpy(this->port->c.data->data, (uint8_t*)(c->data->data) + (BEATSIZE * beat_num), BEATSIZE);
 
-#               ifdef CAGENT_DEBUG
+                if (glbl.cfg.verbose_agent_debug)
+                {
                     Debug(this, Hex().ShowBase()
                         .Append("[CAgent] channel C presenting: ReleaseData: address = ", c->address)
                         .Append(", data: "));
                     DebugEx(data_dump_embedded<BEATSIZE>(this->port->c.data->data));
                     DebugEx(std::cout << std::endl);
-#               endif
+                }
 
                 break;
             }
@@ -331,13 +325,14 @@ namespace tl_agent {
                 */
                 std::memcpy(this->port->c.data->data, (uint8_t*)(c->data->data) + (BEATSIZE * beat_num), BEATSIZE);
 
-#               ifdef CAGENT_DEBUG
+                if (glbl.cfg.verbose_agent_debug)
+                {
                     Debug(this, Hex().ShowBase()
                         .Append("[CAgent] channel C presenting: ProbeAckData: address = ", c->address)
                         .Append(", data: "));
                     DebugEx(data_dump_embedded<BEATSIZE>(this->port->c.data->data));
                     DebugEx(std::cout << std::endl);
-#               endif
+                }
 
                 break;
             }
@@ -381,7 +376,39 @@ namespace tl_agent {
     void CAgent::fire_a() {
         if (this->port->a.fire()) {
             auto& chnA = this->port->a;
-            // Log("[%ld] [A fire] addr: %hx\n", *cycles, *chnA.address);
+
+            if (chnA.opcode == AcquireBlock)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire A] [AcquireBlock ", AcquireParamToString(chnA.param), "] ")
+                        .Append("source: ",     uint64_t(chnA.source))
+                        .Append(", addr: ",     uint64_t(chnA.address))
+                        .Append(", alias: ",    uint64_t(chnA.alias))
+                        .EndLine());
+                }
+            }
+            else if (chnA.opcode == AcquirePerm)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire A] [AcquirePerm ", AcquireParamToString(chnA.param) , "] ")
+                        .Append("source: ",     uint64_t(chnA.source))
+                        .Append(", addr: ",     uint64_t(chnA.address))
+                        .Append(", alias: ",    uint64_t(chnA.alias))
+                        .EndLine());
+                }
+            }
+            else
+            {
+                tlc_assert(false, this, Gravity::StringAppender()
+                    .Hex().ShowBase()
+                    .Append("[fire A] unknown opcode: ", uint64_t(chnA.opcode))
+                    .EndLine().ToString());
+            }
+
             chnA.valid = false;
             tlc_assert(pendingA.is_pending(), this, "No pending A but A fired!");
             pendingA.update(this);
@@ -394,7 +421,41 @@ namespace tl_agent {
     void CAgent::fire_b() {
         if (this->port->b.fire()) {
             auto& chnB = this->port->b;
-            // Log("[%ld] [B fire] addr: %hx\n", *cycles, *chnB.address);
+
+            if (chnB.opcode == ProbeBlock)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire B] [ProbeBlock ", ProbeParamToString(chnB.param), "] ")
+                        .Append("source: ",     uint64_t(chnB.source))
+                        .Append(", addr: ",     uint64_t(chnB.address))
+                        .Append(", alias: ",    uint64_t((chnB.alias) >> 1))
+                        .EndLine());
+                }
+            }
+            /*
+            else if (chnB.opcode == ProbePerm)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire B] [ProbePerm ", ProbeParamToString(chnB.param), "] ")
+                        .Append("source: ",     uint64_t(chnB.source))
+                        .Append(", addr: ",     uint64_t(chnB.address))
+                        .Append(", alias: ",    uint64_t((chnB.alias) >> 1))
+                        .EndLine());
+                }
+            }
+            */
+            else
+            {
+                tlc_assert(false, this, Gravity::StringAppender()
+                    .Hex().ShowBase()
+                    .Append("[fire B] unknown opcode: ", uint64_t(chnB.opcode))
+                    .EndLine().ToString());
+            }
+
             auto req_b = std::make_shared<BundleChannelB>();
             req_b->opcode   = chnB.opcode;
             req_b->address  = chnB.address;
@@ -404,21 +465,109 @@ namespace tl_agent {
             req_b->alias    = (chnB.alias) >> 1;
             req_b->needdata = (chnB.alias) & 0x1;
             pendingB.init(req_b, 1);
-            Log(this, Append("[Probe ", ProbeParamToString(chnB.param), "] ")
-                .Hex().ShowBase().Append("source: ", uint64_t(chnB.source), ", addr: ", chnB.address, ", alias: ", (chnB.alias) >> 1).EndLine());
         }
     }
 
     void CAgent::fire_c() {
         if (this->port->c.fire()) {
             auto& chnC = this->port->c;
+
+            if (chnC.opcode == Release)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire C] [Release ", ReleaseParamToString(chnC.param), "] ")
+                        .Append("source: ",     uint64_t(chnC.source))
+                        .Append(", addr: ",     uint64_t(chnC.address))
+                        .Append(", alias: ",    uint64_t(chnC.alias))
+                        .EndLine());
+                }
+            }
+            else if (chnC.opcode == ReleaseData)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire C] [ReleaseData ", ReleaseParamToString(chnC.param), "] ")
+                        .Append("source: ",     uint64_t(chnC.source))
+                        .Append(", addr: ",     uint64_t(chnC.address))
+                        .Append(", alias: ",    uint64_t(chnC.alias))
+                        .Append(", data: "));
+                    LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
+                    LogEx(std::cout << std::endl);
+                }
+            }
+            else if (chnC.opcode == ProbeAck)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire C] [ProbeAck ", ProbeAckParamToString(chnC.param), "] ")
+                        .Append("source: ",     uint64_t(chnC.source))
+                        .Append(", addr: ",     uint64_t(chnC.address))
+                        .Append(", alias: ",    uint64_t(chnC.alias))
+                        .EndLine());
+                }
+            }
+            else if (chnC.opcode == ProbeAckData)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire C] [ProbeAckData ", ProbeAckParamToString(chnC.param), "] ")
+                        .Append("source: ",     uint64_t(chnC.source))
+                        .Append(", addr: ",     uint64_t(chnC.address))
+                        .Append(", alias: ",    uint64_t(chnC.alias))
+                        .Append(", data: "));
+                    LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
+                    LogEx(std::cout << std::endl);
+                }
+            }
+            else
+            {
+                tlc_assert(false, this, Gravity::StringAppender()
+                    .Hex().ShowBase()
+                    .Append("[fire C] unknown opcode: ", uint64_t(chnC.opcode))
+                    .EndLine().ToString());
+            }
+
             bool releaseHasData = chnC.opcode == ReleaseData;
             bool needAck = chnC.opcode == ReleaseData || chnC.opcode == Release;
-            bool probeAckDataToB = chnC.opcode == ProbeAckData && (chnC.param == TtoB || chnC.param == BtoB);
+            bool probeAckDataToB    = chnC.opcode == ProbeAckData   && (chnC.param == TtoB || chnC.param == BtoB);
+            bool probeAckToB        = chnC.opcode == ProbeAck       && (chnC.param == TtoB || chnC.param == BtoB);
             tlc_assert(pendingC.is_pending(), this, "No pending C but C fired!");
             pendingC.update(this);
             if (!pendingC.is_pending()) { // req C finished
+
+                if (glbl.cfg.verbose_xact_data_complete)
+                {
+                    if (chnC.opcode == ReleaseData)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[data complete C] [ReleaseData ", ProbeAckParamToString(chnC.param), "] ")
+                            .Append("source: ",     uint64_t(chnC.source))
+                            .Append(", addr: ",     uint64_t(chnC.address))
+                            .Append(", alias: ",    uint64_t(chnC.alias))
+                            .Append(", data: "));
+                        LogEx(data_dump_embedded<DATASIZE>(pendingC.info->data->data));
+                        LogEx(std::cout << std::endl);
+                    }
+                    else if (chnC.opcode == ProbeAckData)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[data complete C] [ProbeAckData ", ProbeAckParamToString(chnC.param), "] ")
+                            .Append("source: ",     uint64_t(chnC.source))
+                            .Append(", addr: ",     uint64_t(chnC.address))
+                            .Append(", alias: ",    uint64_t(chnC.alias))
+                            .Append(", data: "));
+                        LogEx(data_dump_embedded<DATASIZE>(pendingC.info->data->data));
+                        LogEx(std::cout << std::endl);
+                    }
+                }
+
                 chnC.valid = false;
+
                 // Log("[%ld] [C fire] addr: %hx opcode: %hx\n", *cycles, *chnC.address, *chnC.opcode);
                 auto info = this->localBoard->query(this, pendingC.info->address);
                 auto exact_status = info->status[pendingC.info->alias];
@@ -471,10 +620,59 @@ namespace tl_agent {
     void CAgent::fire_d() {
         if (this->port->d.fire()) {
             auto& chnD = this->port->d;
-            bool hasData = chnD.opcode == GrantData;
-            bool grant = chnD.opcode == GrantData || chnD.opcode == Grant;
+
             auto addr = idMap->query(this, chnD.source)->address;
             auto alias = idMap->query(this, chnD.source)->alias;
+
+            if (chnD.opcode == Grant)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire D] [Grant ", GrantParamToString(chnD.param), "] ")
+                        .Append("source: ",     uint64_t(chnD.source))
+                        .Append(", addr: ",     uint64_t(addr))
+                        .Append(", alias: ",    uint64_t(alias))
+                        .EndLine());
+                }
+            }
+            else if (chnD.opcode == GrantData)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire D] [GrantData ", GrantDataParamToString(chnD.param), "] ")
+                        .Append("source: ",     uint64_t(chnD.source))
+                        .Append(", addr: ",     uint64_t(addr))
+                        .Append(", alias: ",    uint64_t(alias))
+                        .Append(", data: "));
+                    LogEx(data_dump_embedded<BEATSIZE>(chnD.data->data));
+                    LogEx(std::cout << std::endl);
+                }
+            }
+            else if (chnD.opcode == ReleaseAck)
+            {
+                if (glbl.cfg.verbose_xact_fired)
+                {
+                    Log(this, Hex().ShowBase()
+                        .Append("[fire D] [ReleaseAck] ")
+                        .Append("source: ",     uint64_t(chnD.source))
+                        .Append(", addr: ",     uint64_t(addr))
+                        .Append(", alias: ",    uint64_t(alias))
+                        .EndLine());
+                }
+            }
+            else
+            {
+                tlc_assert(false, this, Gravity::StringAppender()
+                    .Hex().ShowBase()
+                    .Append("[fire D] unknown opcode: ", uint64_t(chnD.opcode))
+                    .EndLine().ToString());
+            }
+
+            bool hasData = chnD.opcode == GrantData;
+            bool grant = chnD.opcode == GrantData || chnD.opcode == Grant;
+
             auto info = localBoard->query(this, addr);
             auto exact_status = info->status[alias];
             if (!(exact_status == S_C_WAITING_D || exact_status == S_A_WAITING_D || exact_status == S_C_WAITING_D_INTR || exact_status == S_A_WAITING_D_INTR || exact_status == S_INVALID)) {
@@ -508,34 +706,35 @@ namespace tl_agent {
                 */
                 std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
 
-#               ifdef CAGENT_DEBUG
+                if (glbl.cfg.verbose_agent_debug)
+                {
                     Debug(this, Append("[CAgent] channel D receiving data: "));
                     DebugEx(data_dump_embedded<BEATSIZE>(chnD.data->data));
                     DebugEx(std::cout << std::endl);
-#               endif
+                }
             }
             if (!pendingD.is_pending()) {
                 switch (chnD.opcode) {
                     case GrantData: {
-                        Log(this, Append("[GrantData] ")
-                            .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
-                        LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
-                        LogEx(std::cout << std::endl;);
+
+                        if (glbl.cfg.verbose_xact_data_complete)
+                        {
+                            Log(this, Append("[data complete D] [GrantData ", GrantDataParamToString(chnD.param), "] ")
+                                .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
+                            LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
+                            LogEx(std::cout << std::endl);
+                        }
                         
                         this->globalBoard->verify(this, addr, pendingD.info->data);
                         // info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
                     case Grant: {
-                        Log(this, Append("[Grant] ")
-                            .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
-                        // Always set dirty in acquireperm txns
+                        // Always set dirty in AcquirePerm toT txns
                         info->update_dirty(this, true, alias);
                         break;
                     }
                     case ReleaseAck: {
-                        Log(this, Append("[ReleaseAck] ")
-                            .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias).EndLine());
                         if (exact_status == S_C_WAITING_D) {
                             info->update_status(this, S_INVALID, alias);
                             info->update_dirty(this, 0, alias);
@@ -580,6 +779,14 @@ namespace tl_agent {
     void CAgent::fire_e() {
         if (this->port->e.fire()) {
             auto& chnE = this->port->e;
+
+            if (glbl.cfg.verbose_xact_fired)
+            {
+                Log(this, 
+                    Append("[fire E] GrantAck")
+                    .EndLine());
+            }
+
             chnE.valid = false;
             tlc_assert(pendingE.is_pending(), this, "No pending E but E fired!");
             auto info = localBoard->query(this, pendingE.info->addr);
@@ -693,8 +900,13 @@ namespace tl_agent {
         req_a->alias    = alias;
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        Log(this, Append("[AcquirePerm ", AcquireParamToString(param) , "] ")
-            .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
+
+        if (glbl.cfg.verbose_xact_sequenced)
+        {
+            Log(this, Append("[sequenced A] [AcquirePerm ", AcquireParamToString(param) , "] ")
+                .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
+        }
+        
         return true;
     }
 
@@ -725,10 +937,15 @@ namespace tl_agent {
         req_c->data     = data;
         req_c->alias    = alias;
         pendingC.init(req_c, DATASIZE / BEATSIZE);
-        Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
-            .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
-        LogEx(data_dump_embedded<DATASIZE>(data->data));
-        LogEx(std::cout << std::endl);
+
+        if (glbl.cfg.verbose_xact_sequenced)
+        {
+            Log(this, Append("[sequenced C] [ReleaseData ", ReleaseParamToString(param), "] ")
+                .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+            LogEx(data_dump_embedded<DATASIZE>(data->data));
+            LogEx(std::cout << std::endl);
+        }
+        
         return true;
     }
 
@@ -793,14 +1010,18 @@ namespace tl_agent {
                 req_c->opcode   = Release;
                 req_c->data     = make_shared_tldata_zero<DATASIZE>();
 
-#               ifdef CAGENT_DEBUG
-                    Debug(this, Append("do_releaseDataAuto(): BtoN release without data").EndLine());
-#               endif
+                if (glbl.cfg.verbose_agent_debug)
+                {
+                    Debug(this, Append("[CAgent] do_releaseDataAuto(): BtoN release without data").EndLine());
+                }
 
                 pendingC.init(req_c, 1);
 
-                Log(this, Append("[Release ", ReleaseParamToString(param), "] ")
-                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
+                if (glbl.cfg.verbose_xact_sequenced)
+                {
+                    Log(this, Append("[sequenced C] [Release ", ReleaseParamToString(param), "] ")
+                        .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
+                }
             }
 #           else
             {
@@ -811,18 +1032,22 @@ namespace tl_agent {
                 else
                     req_c->data = make_shared_tldata_zero<DATASIZE>();
 
-#               ifdef CAGENT_DEBUG
-                    Debug(this, Append("do_releaseDataAuto(): BtoN release with non-dirty data: "));
+                if (glbl.cfg.verbose_agent_debug)
+                {
+                    Debug(this, Append("[CAgent] do_releaseDataAuto(): BtoN release with non-dirty data: "));
                     DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
                     DebugEx(std::cout << std::endl);
-#               endif
+                }
 
                 pendingC.init(req_c, DATASIZE / BEATSIZE);
 
-                Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
-                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
-                LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
-                LogEx(std::cout << std::endl);
+                if (glbl.cfg.verbose_xact_sequenced)
+                {
+                    Log(this, Append("[sequenced C] [ReleaseData ", ReleaseParamToString(param), "] ")
+                        .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+                    LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                    LogEx(std::cout << std::endl);
+                }
             }
 #           endif
         }
@@ -852,18 +1077,23 @@ namespace tl_agent {
                 for (int i = 0; i < DATASIZE; i++) {
                     req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
                 }
-#               ifdef CAGENT_DEBUG
-                    Debug(this, Append("do_releaseDataAuto(): TtoN randomized dirty data: "));
+
+                if (glbl.cfg.verbose_agent_debug)
+                {
+                    Debug(this, Append("[CAgent] do_releaseDataAuto(): TtoN randomized dirty data: "));
                     DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
                     DebugEx(std::cout << std::endl);
-#               endif
+                }
 
                 pendingC.init(req_c, DATASIZE / BEATSIZE);
 
-                Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
-                    .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
-                LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
-                LogEx(std::cout << std::endl);
+                if (glbl.cfg.verbose_xact_sequenced)
+                {
+                    Log(this, Append("[sequenced C] [ReleaseData ", ReleaseParamToString(param), "] ")
+                        .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+                    LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                    LogEx(std::cout << std::endl);
+                }
             }
             else
             {
@@ -873,14 +1103,18 @@ namespace tl_agent {
                     req_c->dirty    = 0;
                     req_c->data     = make_shared_tldata_zero<DATASIZE>();
 
-#                   ifdef CAGENT_DEBUG
-                        Debug(this, Append("do_releaseDataAuto(): TtoN release without data").EndLine());
-#                   endif
+                    if (glbl.cfg.verbose_agent_debug)
+                    {
+                        Debug(this, Append("[CAgent] do_releaseDataAuto(): TtoN release without data").EndLine());
+                    }
 
                     pendingC.init(req_c, 1);
 
-                    Log(this, Append("[Release ", ReleaseParamToString(param), "] ")
-                        .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
+                    if (glbl.cfg.verbose_xact_sequenced)
+                    {
+                        Log(this, Append("[sequenced C] [Release ", ReleaseParamToString(param), "] ")
+                            .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias).EndLine());
+                    }
                 }
 #               else
                 {
@@ -892,18 +1126,22 @@ namespace tl_agent {
                     else
                         req_c->data = make_shared_tldata_zero<DATASIZE>();
 
-#                   ifdef CAGENT_DEBUG
-                        Debug(this, Append("do_releaseDataAuto(): TtoN release with non-dirty data: "));
+                    if (glbl.cfg.verbose_agent_debug)
+                    {
+                        Debug(this, Append("[CAgent] do_releaseDataAuto(): TtoN release with non-dirty data: "));
                         DebugEx(data_dump_embedded<DATASIZE>(req_c->data->data));
                         DebugEx(std::cout << std::endl);
-#                   endif
+                    }
 
                     pendingC.init(req_c, DATASIZE / BEATSIZE);
 
-                    Log(this, Append("[ReleaseData ", ReleaseParamToString(param), "] ")
-                        .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
-                    LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
-                    LogEx(std::cout << std::endl);
+                    if (glbl.cfg.verbose_xact_sequenced)
+                    {
+                        Log(this, Append("[sequenced A] [ReleaseData ", ReleaseParamToString(param), "] ")
+                            .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+                        LogEx(data_dump_embedded<DATASIZE>(req_c->data->data));
+                        LogEx(std::cout << std::endl);
+                    }
                 }
 #               endif
             }
