@@ -6,8 +6,6 @@
 #ifndef TLC_TEST_PLUGINS_CHISEL_DB
 #define TLC_TEST_PLUGINS_CHISEL_DB
 
-#include "../../coupledL2/build/chisel_db.h"
-
 #include "PluginManager.hpp"
 
 

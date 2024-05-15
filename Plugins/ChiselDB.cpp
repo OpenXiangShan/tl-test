@@ -1,7 +1,14 @@
 #include "ChiselDB.hpp"
-#include "../../coupledL2/build/chisel_db.cpp"
 
 #include "../Utils/Common.h"
+
+
+#ifndef CHISELDB_INCLUDE
+#include "../../coupledL2/build/chisel_db.cpp"
+#else
+#include CHISELDB_INCLUDE
+#endif
+
 
 
 //
