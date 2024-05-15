@@ -7,7 +7,6 @@
 
 #include "BaseAgent.h"
 #include "Bundle.h"
-#include "TLEnum.h"
 #include "CAgent.h"
 
 
@@ -85,6 +84,12 @@ namespace tl_agent {
     }
 
     Resp CAgent::send_a(std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>> &a) {
+        /*
+        * *NOTICE: The AcquirePermBoard is only needed to be updated in send_a() procedure,
+        *          since AcquirePerm NtoB is never issued by L1 and the transition of NtoB -> toT
+        *          is not currently possible.
+        */
+
         switch (a->opcode) {
             case AcquireBlock: {
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
@@ -106,7 +111,7 @@ namespace tl_agent {
                 }
 
                 if (acquirePermBoard->haskey(a->address))
-                    acquirePermBoard->erase(this, a->address);
+                    acquirePermBoard->query(this, a->address)->valid[a->alias] = false;
 
                 break;
             }
@@ -128,8 +133,13 @@ namespace tl_agent {
                     localBoard->update(this, a->address, entry);
                 }
 
-                auto acquirePermRecord = std::make_shared<C_AcquirePermEntry>();
-                acquirePermBoard->update(this, a->address, acquirePermRecord);
+                std::shared_ptr<C_AcquirePermEntry> acquirePermRecord;
+                if (!acquirePermBoard->haskey(a->address))
+                    acquirePermBoard->update(this, a->address, acquirePermRecord = std::make_shared<C_AcquirePermEntry>());
+                else
+                    acquirePermRecord = acquirePermBoard->query(this, a->address);
+
+                acquirePermRecord->valid[a->alias] = true;
 
                 break;
             }
@@ -826,7 +836,11 @@ namespace tl_agent {
             req_c->source   = this->idpool.getid();
             req_c->alias    = alias;
 
-            if (dirty || acquirePermBoard->haskey(address))
+            bool acquirePermPrev = false;
+            if (acquirePermBoard->haskey(address))
+                acquirePermPrev = acquirePermBoard->query(this, address)->valid[alias];
+
+            if (dirty || acquirePermPrev)
             {
                 /*
                 * *NOTICE: always dirty with previous AcquirePerm
