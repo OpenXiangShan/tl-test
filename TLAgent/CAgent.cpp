@@ -579,7 +579,7 @@ namespace tl_agent {
                     } else if (exact_status == S_A_WAITING_D_INTR || exact_status == S_A_WAITING_D) {
                         info->update_status(this, S_A_WAITING_D, pendingC.info->alias);
                     } else {
-                        if (probeAckDataToB) {
+                        if (probeAckDataToB || probeAckToB) {
                             info->update_status(this, S_VALID, pendingC.info->alias);
                         } else {
                             info->update_status(this, S_INVALID, pendingC.info->alias);
