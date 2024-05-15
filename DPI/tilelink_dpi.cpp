@@ -107,18 +107,42 @@ extern "C" void TileLinkSystemInitialize()
 
     // system initialization
     TLLocalConfig tlcfg;
-    tlcfg.seed                      = TLTEST_LOCAL_SEED;
-    tlcfg.coreCount                 = TLTEST_LOCAL_CORE_COUNT;
-    tlcfg.masterCountPerCoreTLC     = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLC;
-    tlcfg.masterCountPerCoreTLUL    = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL;
+    tlcfg.seed                          = TLTEST_LOCAL_SEED;
+    tlcfg.coreCount                     = TLTEST_LOCAL_CORE_COUNT;
+    tlcfg.masterCountPerCoreTLC         = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLC;
+    tlcfg.masterCountPerCoreTLUL        = TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL;
+tlcfg.ariInterval                   = CFUZZER_RANGE_ITERATE_INTERVAL;
+    tlcfg.ariTarget                     = CFUZZER_RANGE_ITERATE_TARGET;
 
     glbl.cfg.verbose                = true;
     glbl.cfg.verbose_detailed_dpi   = false;
     glbl.cfg.verbose_data_full      = false;
 
     // read configuration override
-    
+    inicpp::IniManager ini("tltest.ini");
 
+#   define INI_OVERRIDE_INT(section_name, key, target) \
+    { \
+        auto section = ini[section_name]; \
+        if (section.isKeyExist(key)) \
+        { \
+            target = section.toInt(key); \
+            LogInfo("tl-test-INI", \
+                Append("Configuration \'" #target "\' overrided by " section_name ":" key " = ", uint64_t(target), ".").EndLine()); \
+        } \
+    } \
+
+    INI_OVERRIDE_INT("tltest.config", "core",                       tlcfg.coreCount);
+    INI_OVERRIDE_INT("tltest.config", "core.tl_c",                  tlcfg.masterCountPerCoreTLC);
+    INI_OVERRIDE_INT("tltest.config", "core.tl_ul",                 tlcfg.masterCountPerCoreTLUL)
+
+    INI_OVERRIDE_INT("tltest.fuzzer", "seed",                       tlcfg.seed);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.ariInterval);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.target",                 tlcfg.ariTarget);
+
+#   undef INI_OVERRIDE_INT
+
+    //
     passive = new TLSequencer;
     passive->Initialize(tlcfg);
 

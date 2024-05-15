@@ -8,11 +8,14 @@
 
 struct TLLocalConfig {
 public:
-    std::uint64_t       seed;
+    uint64_t            seed;
 
     unsigned int        coreCount;                          // L1-L2 system count
     unsigned int        masterCountPerCoreTLC;              // TL-C master count per core
     unsigned int        masterCountPerCoreTLUL;             // TL-UL master count per core
+
+    uint64_t            ariInterval;                        // Auto Range Iteration interval
+    uint64_t            ariTarget;                          // Auto Range Iteration target
 };
 
 

@@ -5,10 +5,33 @@
 #ifndef TLC_TEST_FUZZER_H
 #define TLC_TEST_FUZZER_H
 
+#include "../Base/TLLocal.hpp"
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 
 #include <vector>
+
+
+#ifndef CFUZZER_RAND_RANGE_TAG
+#   define CFUZZER_RAND_RANGE_TAG           0x80
+#endif
+
+#ifndef CFUZZER_RAND_RANGE_SET
+#   define CFUZZER_RAND_RANGE_SET           0x80
+#endif
+
+#ifndef CFUZZER_RAND_RANGE_ALIAS
+#   define CFUZZER_RAND_RANGE_ALIAS         0x4
+#endif
+
+
+#ifndef CFUZZER_RANGE_ITERATE_INTERVAL
+#   define CFUZZER_RANGE_ITERATE_INTERVAL   (5 * 1000 * 1000)
+#endif
+
+#ifndef CFUZZER_RANGE_ITERATE_TARGET
+#   define CFUZZER_RANGE_ITERATE_TARGET     24
+#endif
 
 
 class Fuzzer {
@@ -57,8 +80,10 @@ class CFuzzer: public Fuzzer {
 private:
     tl_agent::CAgent*   cAgent;
     size_t              rangeIndex;
-    size_t              rangeIterateTime;
-    size_t              rangeIteration;
+    size_t              rangeIterationTime;
+    size_t              rangeIterationInterval;
+    size_t              rangeIterationCount;
+    size_t              rangeIterationTarget;
     std::vector<int>    rangeOrdinal;
 public:
     CFuzzer(tl_agent::CAgent *cAgent) noexcept;

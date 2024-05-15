@@ -10,28 +10,6 @@
 #include <algorithm>
 
 
-#ifndef CFUZZER_RAND_RANGE_TAG
-#   define CFUZZER_RAND_RANGE_TAG           0x80
-#endif
-
-#ifndef CFUZZER_RAND_RANGE_SET
-#   define CFUZZER_RAND_RANGE_SET           0x80
-#endif
-
-#ifndef CFUZZER_RAND_RANGE_ALIAS
-#   define CFUZZER_RAND_RANGE_ALIAS         0x4
-#endif
-
-
-#ifndef CFUZZER_RANGE_ITERATE_INTERVAL
-#   define CFUZZER_RANGE_ITERATE_INTERVAL   (5 * 1000 * 1000)
-#endif
-
-#ifndef CFUZZER_RANGE_ITERATE_TARGET
-#   define CFUZZER_RANGE_ITERATE_TARGET     24
-#endif
-
-
 static std::vector<CFuzzRange> RANGES = {
     { .ordinal = 0, .maxTag = CFUZZER_RAND_RANGE_TAG,     .maxSet = CFUZZER_RAND_RANGE_SET,   .maxAlias = CFUZZER_RAND_RANGE_ALIAS    },
     { .ordinal = 1, .maxTag = 0x1,                        .maxSet = 0x10,                     .maxAlias = 0x4                         },
@@ -50,9 +28,12 @@ static inline size_t fact(size_t n) noexcept
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     this->cAgent = cAgent;
 
-    this->rangeIndex        = 0;
-    this->rangeIterateTime  = CFUZZER_RANGE_ITERATE_INTERVAL;
-    this->rangeIteration    = 0;
+    this->rangeIndex                = 0;
+    this->rangeIterationInterval    = cAgent->config().ariInterval;
+    this->rangeIterationTarget      = cAgent->config().ariTarget;
+
+    this->rangeIterationCount       = 0;
+    this->rangeIterationTime        = cAgent->config().ariInterval;
 
     for (size_t i = 0; i < RANGES.size(); i++)
         this->rangeOrdinal.push_back(i);
@@ -60,6 +41,15 @@ CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) noexcept {
     size_t loop = cAgent->sysSeed() % fact(rangeOrdinal.size());
     for (size_t i = 0; i < loop; i++)
         std::next_permutation(rangeOrdinal.begin(), rangeOrdinal.end());
+
+    LogInfo(this->cAgent->cycle(), Append("Initial Fuzz Set: index = ", this->rangeIndex, ", permutation: "));
+    LogEx(
+        std::cout << "[ ";
+        for (size_t i = 0; i < rangeOrdinal.size(); i++)
+            std::cout << rangeOrdinal[i] << " ";
+        std::cout << "]";
+    );
+    LogEx(std::cout << std::endl);
 }
 
 void CFuzzer::randomTest(bool do_alias) {
@@ -111,15 +101,15 @@ void CFuzzer::tick() {
     this->randomTest(true);
 //    this->caseTest();
 
-    if (this->cAgent->cycle() >= this->rangeIterateTime)
+    if (this->cAgent->cycle() >= this->rangeIterationTime)
     {
-        this->rangeIterateTime += CFUZZER_RANGE_ITERATE_INTERVAL;
+        this->rangeIterationTime += this->rangeIterationInterval;
         this->rangeIndex++;
 
         if (this->rangeIndex == rangeOrdinal.size())
         {
             this->rangeIndex = 0;
-            this->rangeIteration++;
+            this->rangeIterationCount++;
 
             std::next_permutation(rangeOrdinal.begin(), rangeOrdinal.end());
         }
@@ -134,7 +124,7 @@ void CFuzzer::tick() {
         LogEx(std::cout << std::endl);
     }
 
-    if (this->rangeIteration == CFUZZER_RANGE_ITERATE_TARGET)
+    if (this->rangeIterationCount == this->rangeIterationTarget)
     {
         TLSystemFinishEvent().Fire();
     }
