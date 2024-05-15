@@ -24,7 +24,8 @@ namespace tl_agent {
         int pending_privilege[4];
         int dirty[4];
 
-        C_SBEntry(const TLLocalContext* ctx, const int status[], const int privilege[]) {
+        inline C_SBEntry(const TLLocalContext* ctx, const int status[], const int privilege[])
+        {
             this->time_stamp = ctx->cycle();
             for(int i = 0; i<4; i++){
               this->privilege[i] = privilege[i];
@@ -32,7 +33,8 @@ namespace tl_agent {
             }
         }
 
-        void update_status(const TLLocalContext* ctx, int status, int alias) {
+        inline void update_status(const TLLocalContext* ctx, int status, int alias)
+        {
             this->status[alias] = status;
             this->time_stamp = ctx->cycle();
 
@@ -45,7 +47,8 @@ namespace tl_agent {
 #           endif
         }
 
-        void update_priviledge(const TLLocalContext* ctx, int priv, int alias) {
+        inline void update_priviledge(const TLLocalContext* ctx, int priv, int alias)
+        {
             this->privilege[alias] = priv;
             this->time_stamp = ctx->cycle();
 
@@ -58,7 +61,8 @@ namespace tl_agent {
 #           endif
         }
 
-        void update_pending_priviledge(const TLLocalContext* ctx, int priv, int alias) {
+        inline void update_pending_priviledge(const TLLocalContext* ctx, int priv, int alias)
+        {
             this->pending_privilege[alias] = priv;
             this->time_stamp = ctx->cycle();
 
@@ -71,7 +75,8 @@ namespace tl_agent {
 #           endif
         }
 
-        void unpending_priviledge(const TLLocalContext* ctx, int alias) {
+        inline void unpending_priviledge(const TLLocalContext* ctx, int alias)
+        {
             this->privilege[alias] = this->pending_privilege[alias];
             this->pending_privilege[alias] = -1;
             this->time_stamp = ctx->cycle();
@@ -85,7 +90,8 @@ namespace tl_agent {
 #           endif
         }
 
-        void update_dirty(const TLLocalContext* ctx, int dirty, int alias) {
+        inline void update_dirty(const TLLocalContext* ctx, int dirty, int alias)
+        {
             this->dirty[alias] = dirty;
 
 #           if SB_DEBUG == 1
@@ -102,7 +108,9 @@ namespace tl_agent {
     public:
         paddr_t address;
         int alias;
-        C_IDEntry(paddr_t &addr, uint8_t &alias) {
+
+        inline C_IDEntry(paddr_t &addr, uint8_t &alias) 
+        {
             this->address = addr;
             this->alias = alias;
         }
@@ -110,13 +118,20 @@ namespace tl_agent {
 
     class C_AcquirePermEntry {
     public:
+        bool valid[4];
+    
+    public:
+        inline C_AcquirePermEntry()
+        { 
+            std::memset(valid, false, 4 * sizeof(bool));
+        }
     };
 
 
     template<typename Tk>
     struct ScoreBoardUpdateCallbackCSBEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::C_SBEntry>
     { 
-        void update(const TLLocalContext* ctx, const Tk& key, std::shared_ptr<tl_agent::C_SBEntry>& data)
+        inline void update(const TLLocalContext* ctx, const Tk& key, std::shared_ptr<tl_agent::C_SBEntry>& data)
         {
 #           if SB_DEBUG == 1
                 Gravity::StringAppender strapp;
@@ -153,7 +168,7 @@ namespace tl_agent {
     template<typename Tk>
     struct ScoreBoardUpdateCallbackCIDEntry : public ScoreBoardUpdateCallback<Tk, tl_agent::C_IDEntry>
     {
-        void update(const TLLocalContext* ctx, const Tk& key, std::shared_ptr<tl_agent::C_IDEntry>& data)
+        inline void update(const TLLocalContext* ctx, const Tk& key, std::shared_ptr<tl_agent::C_IDEntry>& data)
         {
 #           if SB_DEBUG == 1
                 Debug(ctx, Append("TL-C local scoreboard update: ")
@@ -215,7 +230,7 @@ namespace tl_agent {
         void timeout_check() override;
 
     public:
-        CAgent(GlobalBoard<paddr_t> * const gb, int id, unsigned int seed, uint64_t* cycles) noexcept;
+        CAgent(TLLocalConfig* cfg, GlobalBoard<paddr_t> * const gb, int id, unsigned int seed, uint64_t* cycles) noexcept;
         virtual ~CAgent() noexcept;
 
         uint64_t    cycle() const noexcept override;
