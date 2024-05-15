@@ -834,22 +834,34 @@ namespace tl_agent {
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(this, address);
+
 #           if CAGENT_NO_ALIAS_ACQUIRE == 1
-            for (int i = 0; i < 4; i++) {
-#           else
-            int i = alias; {
+            {
+                for (int i = 0; i < 4; i++) 
+                {
+                    if (i == alias)
+                        continue;
+
+                    if (entry->status[i] != S_VALID && entry->status[i] != S_INVALID)
+                        return false;
+                }
+            }
 #           endif
-                auto privilege = entry->privilege[i];
-                auto status = entry->status[i];
-                if (status != S_VALID && status != S_INVALID) {
+
+            auto privilege = entry->privilege[alias];
+            auto status = entry->status[alias];
+            
+            if (status != S_VALID && status != S_INVALID)
+                return false;
+
+            if (status == S_VALID)
+            {
+                if (privilege == TIP)
                     return false;
-                }
-                if (status == S_VALID) {
-                    if (privilege == TIP) return false;
-                    // if (privilege == BRANCH && param != BtoT) { param = BtoT; }
-                    if (privilege == BRANCH && param != BtoT) return false;
-                    if (privilege == INVALID && param == BtoT) return false;
-                }
+                if (privilege == BRANCH && param != BtoT)
+                    return false;
+                if (privilege == INVALID && param == BtoT)
+                    return false;
             }
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
@@ -862,32 +874,54 @@ namespace tl_agent {
         req_a->alias    = alias;
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
-        Log(this, Append("[AcquireBlock ", AcquireParamToString(param), "] ")
+
+        if (glbl.cfg.verbose_xact_sequenced)
+        {
+            Log(this, Append("[sequenced A] [AcquireBlock ", AcquireParamToString(param), "] ")
                 .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
+        }
 
         return true;
     }
 
     bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
+        /*
+        * *NOTICE: Only AcquirePerm NtoT & BtoT were possible to be issued,
+        *          currently NtoB not utilized in L1.
+        */
+
         if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) {
             auto entry = localBoard->query(this, address);
+
 #           if CAGENT_NO_ALIAS_ACQUIRE == 1
-            for (int i = 0; i < 4; i++) {
-#           else
-            int i = alias; {
+            {
+                for (int i = 0; i < 4; i++) 
+                {
+                    if (i == alias)
+                        continue;
+
+                    if (entry->status[i] != S_VALID && entry->status[i] != S_INVALID)
+                        return false;
+                }
+            }
 #           endif
-                auto privilege = entry->privilege[i];
-                auto status = entry->status[i];
-                if (status != S_VALID && status != S_INVALID) {
+
+            auto privilege = entry->privilege[alias];
+            auto status = entry->status[alias];
+
+            if (status != S_VALID && status != S_INVALID)
+                return false;
+
+            if (status == S_VALID)
+            {
+                if (privilege == TIP) 
                     return false;
-                }
-                if (status == S_VALID) {
-                    if (privilege == TIP) return false;
-                    if (privilege == BRANCH && param != BtoT) { param = BtoT; }
-                    if (privilege == INVALID && param == BtoT) return false;
-                }
+                if (privilege == BRANCH && param != BtoT) 
+                    param = BtoT;
+                if (privilege == INVALID && param == BtoT)
+                    return false;
             }
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
@@ -954,6 +988,9 @@ namespace tl_agent {
         if (forced)
         {
             auto& localMap = localBoard->get();
+            if (localMap.empty())
+                return false;
+
             size_t picked = CAGENT_RAND64(this, "CAgent") % localMap.size();
 
             auto iter = localMap.begin();
