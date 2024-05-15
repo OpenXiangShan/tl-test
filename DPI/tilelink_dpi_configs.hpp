@@ -3,7 +3,7 @@
 // TL-Test-Passive Infrastructure
 //   - author    : Kumonda 221 (Ding Haonan)
 //   - email     : <kumonda@kucro3.org>
-// Built on: May  2 2024 - 19:33:56
+// Built on: May 13 2024 - 16:00:25
 // ------------------------------------------------
 // Build target: tltest_dpi_configs_gen.cpp
 // ================================================
@@ -14,7 +14,7 @@
 #define TLTEST_LOCAL_CORE_COUNT                   4
 
 #define TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLC    1
-#define TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL   0
+#define TLTEST_LOCAL_MASTER_COUNT_PER_CORE_TLUL   2
 
 #endif
 
