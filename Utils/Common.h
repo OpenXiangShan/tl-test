@@ -17,6 +17,7 @@
 #include <execinfo.h>
 
 #include "../Base/TLGlobal.hpp"
+#include "../Base/TLLocal.hpp"
 
 #include "gravity_utility.hpp"
 #include "assert.hpp"
@@ -73,12 +74,42 @@ inline shared_tldata_t<N> make_shared_tldata_zero() noexcept
 typedef uint64_t paddr_t;
 
 
+inline std::string GetDeviceName(const TLLocalContext* ctx)
+{
+    /* Cache the result of GetDeviceName for 64 cores (with 1 TL-C and 2 TL-UL) */
+    static constexpr int DEVICE_NAME_CACHE_SIZE = 192;
+    static std::string cached[DEVICE_NAME_CACHE_SIZE];
+
+    if (ctx->sysId() < DEVICE_NAME_CACHE_SIZE)
+        if (!cached[ctx->sysId()].empty())
+            return cached[ctx->sysId()];
+
+    Gravity::StringAppender strapp;
+
+    int64_t coreId  = int64_t(ctx->sysId() / (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL));
+    int64_t tlcId   = int64_t(ctx->sysId() % (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL));
+    int64_t tlulId  = int64_t(ctx->sysId() % (ctx->config().masterCountPerCoreTLC + ctx->config().masterCountPerCoreTLUL)) - ctx->config().masterCountPerCoreTLC;
+
+    strapp.Append("#", ctx->sysId(), " L2[", coreId, "].");
+        
+    if (tlulId < 0)
+        strapp.Append("C[", tlcId, "]");
+    else
+        strapp.Append("UL[", tlulId, "]");
+
+    if (ctx->sysId() < DEVICE_NAME_CACHE_SIZE)
+        cached[ctx->sysId()] = strapp.ToString();
+
+    return strapp.ToString();
+}
+
+
 #define Log(ctx, str_app) \
     do { \
         if (glbl.cfg.verbose) { \
             const TLLocalContext* __tlc_assert__ctx = ctx; /* suppress the warning: -Wnonnull-compare */  \
             if (__tlc_assert__ctx) \
-                std::cout << "[" << ctx->cycle() << "] [tl-test-new-INFO] #" << ctx->sysId() << " "; \
+                std::cout << "[" << ctx->cycle() << "] [tl-test-new-INFO] " << GetDeviceName(ctx) << " "; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
             fflush(stderr); \
