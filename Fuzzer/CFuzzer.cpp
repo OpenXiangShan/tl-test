@@ -3,22 +3,76 @@
 //
 
 #include "Fuzzer.h"
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <queue>
+
+// // for 36-bit address(same as xiangshan)
+// paddr_t fullAddr(unsigned tag, unsigned set, unsigned bank, unsigned offset = 0) {
+//     tag = tag % 0x10000;
+//     set = set % 0x1000;
+//     bank = bank % 0x4;
+//     return (paddr_t)((tag << 20) + (set << 8) + (bank << 6) + offset);
+// }
+
+// // TODO: alias
+// struct Transaction
+// {
+//     uint64_t timestamp;
+//     int sender;
+//     int channel;
+//     int opcode;
+//     paddr_t address;
+//     int param;
+
+//     Transaction(){}
+//     Transaction(uint64_t timestamp, int sender, int channel, int opcode, paddr_t address, int param):
+//         timestamp(timestamp), sender(sender), channel(channel), opcode(opcode), address(address), param(param) {}
+
+//     void parseManual(std::string line) {
+//         std::stringstream ss(line);
+//         std::string value;
+//         std::vector<std::string> values;
+
+//         while (std::getline(ss, value, ',')) {
+//             values.push_back(value);
+//         }
+//         // timestamp, which L1, channel, opcode, tag, set, bank, param
+//         this->timestamp = std::stoull(values[0]);
+//         this->sender = std::stoi(values[1]);
+//         this->channel = std::stoi(values[2]);
+//         this->opcode = std::stoi(values[3]);
+//         this->param = std::stoi(values[4]);
+//         unsigned tag = std::stoul(values[5]);
+//         unsigned set = std::stoul(values[6]);
+//         unsigned bank = std::stoul(values[7]);
+//         this->address = fullAddr(tag, set, bank);
+
+//     }
+//     void parseDB(std::string path) {
+//     }
+// };
 
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
     this->cAgent = cAgent;
 }
 
 void CFuzzer::randomTest(bool do_alias) {
-    paddr_t addr = ((rand() % 0x8) << 13) + ((rand() % 0x80) << 6);  // Tag + Set + Offset
+    paddr_t addr = ((rand() % 0x2000) << 20) + ((rand() % 0x4000) << 6);
     int alias = (do_alias) ? (rand() % 4) : 0;
     if (rand() % 2) {
         if (rand() % 3) {
             if (rand() % 2) {
+                // printf("AcquireBlock NtoT, addr = %016x\n", addr);  
                 cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoT
             } else {
+                // printf("AcquireBlock NtoB, addr = %016x\n", addr);  
                 cAgent->do_acquireBlock(addr, tl_agent::NtoB, alias); // AcquireBlock NtoB
             }
         } else {
+            // printf("AcquirePerm NtoT, addr = %016x\n", addr);  
             cAgent->do_acquirePerm(addr, tl_agent::NtoT, alias); // AcquirePerm
         }
     } else {
@@ -29,6 +83,7 @@ void CFuzzer::randomTest(bool do_alias) {
         }
         cAgent->do_releaseData(addr, tl_agent::TtoN, putdata); // ReleaseData
         */
+        // printf("ReleaseData, addr = %016x\n", addr);  
         cAgent->do_releaseDataAuto(addr, alias); // feel free to releaseData according to its priv
     }
 }
@@ -49,7 +104,22 @@ void CFuzzer::caseTest() {
     }
 }
 
-bool CFuzzer::transaction(int channel, int opcode, paddr_t address, int param) {
+// void CFuzzer::traceTest(std::string line) {
+//     const static int NR_AGENTS = NR_CAGENTS + NR_ULAGENTS;
+//     Fuzzer ** const fuzzers = new Fuzzer*[NR_AGENTS];
+//     Transaction t = Transaction();
+//     t.parseManual(line);
+
+//     int code = fuzzers[t.sender]->transaction(t.channel, t.opcode, t.address, t.param);
+//     if(code) {
+//         printf("L1_%d Failed to send transaction: %s, by %d\n", t.sender, line.c_str(), code);
+//         // TODO: should retry when failed
+//         assert(0);
+//     }
+// }
+
+// bool CFuzzer::transaction(int channel, int opcode, paddr_t address, int param) {
+int CFuzzer::transaction(int channel, int opcode, paddr_t address, int param) {
     switch (channel) {
         case 1:
             switch (opcode) {
@@ -76,7 +146,14 @@ bool CFuzzer::transaction(int channel, int opcode, paddr_t address, int param) {
 }
 
 
+// void CFuzzer::tick(bool mode, std::string line) {
+//     if (mode) {
+//         this->traceTest(line);
+//     } else {
+//         this->randomTest(true);
+//     }
+// }
+
 void CFuzzer::tick() {
-    this->randomTest(true);
-//    this->caseTest();
+    this->randomTest(false);
 }

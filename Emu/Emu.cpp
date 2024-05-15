@@ -19,6 +19,7 @@ void Emu::parse_args(int argc, char **argv) {
         { "wave-end",   1, NULL, 'e' },
         { "cycles",     1, NULL, 'c' },
         { "trace",      1, NULL, 't' },
+        { "trace-size", 1, NULL, 'q' },
         { "wave-full",  0, NULL, 'f' },
         { "verbose",    0, NULL, 'v' },
         { "dump-db",    0, NULL, 'd' },
@@ -27,7 +28,7 @@ void Emu::parse_args(int argc, char **argv) {
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:t:f:vd", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:t:q:f:vd", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
@@ -44,6 +45,8 @@ void Emu::parse_args(int argc, char **argv) {
             case 't':
                 this->enable_trace = true;
                 this->tracefile = optarg;               break;
+            case 'q':
+                this->queueSize = atoll(optarg);        break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -78,8 +81,8 @@ Emu::Emu(int argc, char **argv) {
             auto port = naive_gen_port();
             agents[i]->connect(port);
         } else {
-            auto port = naive_gen_port2();
-            agents[i]->connect(port);
+            // auto port = naive_gen_port2();
+            // agents[i]->connect(port);
         }
         fuzzers[i] = new CFuzzer(static_cast<CAgent_t*>(agents[i]));
         fuzzers[i]->set_cycles(&Cycles);
@@ -136,10 +139,13 @@ void abortHandler(int signal) {
 #include <sstream>
 #include <queue>
 
-paddr_t fullAddr(unsigned tag, unsigned set, unsigned offset = 0) {
-    tag = tag % 0x8;
-    set = set % 0x80;
-    return (paddr_t)((tag << 13) + (set << 6) + offset);
+
+// for 36-bit address(same as xiangshan)
+paddr_t fullAddr(unsigned tag, unsigned set, unsigned bank, unsigned offset = 0) {
+    tag = tag % 0x10000;
+    set = set % 0x1000;
+    bank = bank % 0x4;
+    return (paddr_t)((tag << 20) + (set << 8) + (bank << 6) + offset);
 }
 
 // TODO: alias
@@ -165,14 +171,16 @@ struct Transaction
             values.push_back(value);
         }
         // timestamp, which L1, channel, opcode, tag, set, param
-        this->timestamp = std::stoull(values[0]);
-        this->sender = std::stoi(values[1]);
-        this->channel = std::stoi(values[2]);
-        this->opcode = std::stoi(values[3]);
-        unsigned tag = std::stoul(values[4]);
-        unsigned set = std::stoul(values[5]);
-        this->address = fullAddr(tag, set);
-        this->param = std::stoi(values[6]);
+        this->timestamp = std::stoull(values[1]);
+        this->sender = std::stoi(values[2]);
+        this->channel = std::stoi(values[3]);
+        this->opcode = std::stoi(values[4]);
+        this->param = std::stoi(values[5]);
+        unsigned tag = std::stoul(values[6]);
+        unsigned set = std::stoul(values[7]);
+        unsigned bank = std::stoul(values[8]);
+        this->address = fullAddr(tag, set, bank);
+
     }
     void parseDB(std::string path) {
     }
@@ -181,62 +189,78 @@ struct Transaction
 
 void Emu::execute(uint64_t nr_cycle) {
     auto max_cycles = nr_cycle;
-
     uint64_t nextTrans = 1000;   // for cache initialization
+    uint8_t trans_i;
     std::string line;
     std::queue<std::string> transactions;
     Transaction t = Transaction();
+    int count = 0;
+    // tl-test may jump several requests because L2 replacement may be different from xs_trace
+    int count_exe = 0; 
+    int count_jump_Acquire = 0;
+    int count_jump_Release = 0;
 
     // ====== read from trace file ======
     if (enable_trace) {
         std::ifstream file(tracefile);
-
         if (!file.is_open()) {
             printf("Unable to open trace file\n"); assert(0);
         }
-
-        std::getline(file, line); // skip the first line
-        while (std::getline(file, line)) {
-            if (line[0] != '#' && line[0] != '\n') transactions.push(line);
+        while (std::getline(file, line) && count < queueSize) {
+            if(line[0] != '\n') transactions.push(line);
+            count++;
         }
         file.close();
-
+        
         // ====== execute transactions ======
         line = transactions.front(); transactions.pop();
         t.parseManual(line);
     }
 
+    // When Cycles < max_cycles, the following functions are performed once per cycle
+    // Cycles will update in update_cycles()
     while (Cycles < max_cycles) {
+        
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
 
-        if (enable_trace) {
+        if(enable_trace){   // traceTest
             if (Cycles == nextTrans) {
                 printf("======= %s\n", line.c_str());
-                printf("Cycles: %ld\n", Cycles + 1000);
-
+                printf("Cycles: %ld\n", Cycles + 1000); //consider time spent on initialization
                 int code = fuzzers[t.sender]->transaction(t.channel, t.opcode, t.address, t.param);
-                if(code) {
+                if(code == 0 || code == 30 || code == 80) {
+                    if(code == 0) count_exe++;
+                    if(code == 30 || code == 80) {
+                        if(t.channel == 4 && t.opcode == 7) count_jump_Release++;
+                        else if(t.channel == 1 && t.opcode == 6) count_jump_Acquire++;
+                    }
+                    if(transactions.empty()){
+                        printf("Finish all transactions\n");
+                        max_cycles = Cycles + 2000;
+                    }  
+                    else {
+                        // parse next
+                        line = transactions.front(); transactions.pop();
+                        t.parseManual(line);
+                        nextTrans = nextTrans + 2; // send a request every two cycles
+                    }  
+                }
+                else if(code == 10 || code == 20 || code == 60 || code == 70) {
+                    // retry
+                    nextTrans = nextTrans + 2; 
+                }
+                else {
                     printf("L1_%d Failed to send transaction: %s, by %d\n", t.sender, line.c_str(), code);
-                    // TODO: should retry when failed
                     assert(0);
                 }
-
-                if (transactions.empty()) {
-                    printf("Finish all transactions\n");
-                    max_cycles = Cycles + 12000;
-                } else { // parse next
-                    line = transactions.front(); transactions.pop();
-                    t.parseManual(line);
-                    nextTrans = t.timestamp + 1000;
-                }
-            }
-        } else { // use Fuzzer
-            for (int i = 0; i < NR_AGENTS; i++) {
-                fuzzers[i]->tick();
-            }
         }
+        } else {    // randomTest
+            for (int i = 0; i < NR_AGENTS; i++) {
+            fuzzers[i]->tick();
+            } 
+        }   
 
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->update_signal();
@@ -259,6 +283,9 @@ void Emu::execute(uint64_t nr_cycle) {
         }
 #endif
     }
+    printf("count_exe = %d\n", count_exe);
+    printf("count_jump_Acquire = %d\n", count_jump_Acquire);
+    printf("count_jump_Release = %d\n", count_jump_Release);
 }
 
 // the following code is to be replaced soon, only for test
@@ -310,6 +337,7 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     return port;
 }
 
+/*
 tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEATSIZE>* Emu::naive_gen_port2() {
     auto port = new tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEATSIZE>();
     port->a.ready = &(dut_ptr->master_port_1_0_a_ready);
@@ -357,3 +385,4 @@ tl_agent::Port<tl_agent::ReqField, tl_agent::RespField, tl_agent::EchoField, BEA
     port->e.sink = &(dut_ptr->master_port_1_0_e_bits_sink);
     return port;
 }
+*/

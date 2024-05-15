@@ -8,14 +8,22 @@
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../Utils/Common.h"
+
+#include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#include <queue>
+
 class Fuzzer {
 protected:
     uint64_t *cycles;
 public:
     Fuzzer() = default;
     ~Fuzzer() = default;
+    // virtual void tick(bool mode, std::string line) = 0;
     virtual void tick() = 0;
-    virtual bool transaction(int channel, int opcode, paddr_t address, int param) = 0;
+    virtual int transaction(int channel, int opcode, paddr_t address, int param) = 0;
     void set_cycles(uint64_t *cycles) {
         this->cycles = cycles;
     }
@@ -29,7 +37,8 @@ public:
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
-    bool transaction(int channel, int opcode, paddr_t address, int param);
+    int transaction(int channel, int opcode, paddr_t address, int param);
+    // void tick(bool mode, std::string line);
     void tick();
 };
 
@@ -40,8 +49,13 @@ public:
     CFuzzer(tl_agent::CAgent *cAgent);
     void randomTest(bool do_alias);
     void caseTest();
-    bool transaction(int channel, int opcode, paddr_t address, int param);
+    // void traceTest(std::string line);
+    int transaction(int channel, int opcode, paddr_t address, int param);
+    // void tick(bool mode, std::string line);
     void tick();
 };
+
+
+
 
 #endif //TLC_TEST_FUZZER_H

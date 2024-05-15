@@ -101,7 +101,7 @@ namespace tl_agent {
             Log("[info] id pool full\n");
             return;
         }
-
+        // printf("addr = %016x\n", *b->address);
         tlc_assert(localBoard->haskey(*b->address), "Probe an non-exist block!");
 
         auto info = localBoard->query(*b->address);
@@ -151,7 +151,7 @@ namespace tl_agent {
                 }
                 req_c->data = all_zero;
             } else {
-                if (*req_c->opcode == ProbeAckData && *req_c->param != BtoN) {
+                if (*req_c->opcode == ProbeAckData && (*req_c->param == TtoN || *req_c->param == TtoB || *req_c->param == TtoT)) {
                     uint8_t *random = new uint8_t[DATASIZE];
                     for (int i = 0; i < DATASIZE; i++) {
                       random[i] = (uint8_t)rand();
@@ -243,6 +243,17 @@ namespace tl_agent {
                 }
                 break;
             }
+            case Release: {
+                std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(*c->address, *c->alias));
+                idMap->update(*c->source, idmap_entry);
+
+                if (localBoard->haskey(*c->address)) {
+                    localBoard->query(*c->address)->update_status(S_SENDING_C, *cycles, *c->alias);
+                } else {
+                    tlc_assert(false, "Localboard key not found!");
+                }
+                break;
+            }
             default:
                 tlc_assert(false, "Unknown opcode for channel C!");
         }
@@ -289,6 +300,7 @@ namespace tl_agent {
             req_b->needdata = new uint8_t((*chnB.alias) & 0x1);
             pendingB.init(req_b, 1);
             Log("[%ld] [Probe] addr: %hx alias: %d\n", *cycles, *chnB.address, (*chnB.alias) >> 1);
+            // printf("Probe, addr = ", req_b->address); 
         }
     }
 
@@ -393,6 +405,7 @@ namespace tl_agent {
                             Dump("%02hhx", pendingD.info->data[i]);
                         }
                         Dump("\n");
+                        // printf("GrantData, addr = %016x\n", addr); 
                         this->globalBoard->verify(addr, pendingD.info->data);
                         // info->update_dirty(*chnD.dirty, alias);
                         break;
@@ -413,7 +426,9 @@ namespace tl_agent {
                             info->update_status(S_SENDING_C, *cycles, alias);
                         }
                         info->unpending_priviledge(*cycles, alias);
-                        this->globalBoard->unpending(addr);
+                        if(this->globalBoard->haskey(addr)) {
+                            this->globalBoard->unpending(addr);  // ReleaseData
+                        } 
                         break;
                     }
                     default:
@@ -424,7 +439,7 @@ namespace tl_agent {
                 if (grant) {
                     tlc_assert(exact_status != S_A_WAITING_D_INTR, "TODO: check this Ridiculous probe!");
                     std::shared_ptr<ChnE> req_e(new ChnE());
-                    req_e->sink = new uint8_t(*chnD.sink);
+                    req_e->sink = new uint16_t(*chnD.sink);
                     req_e->addr = new paddr_t(addr);
                     req_e->alias = new uint8_t(alias);
                     if (pendingE.is_pending()) {
@@ -497,7 +512,7 @@ namespace tl_agent {
                 return 20;
             }
             if (status == S_VALID) {
-                if (privilege == TIP) return 30;
+                // if (privilege == TIP) return 30;
                 // if (privilege == BRANCH && param != BtoT) { param = BtoT; }
                 if (privilege == BRANCH && param != BtoT) return 40;
                 if (privilege == INVALID && param == BtoT) return 50;
@@ -590,8 +605,12 @@ namespace tl_agent {
     }
 
     int CAgent::do_releaseDataAuto(paddr_t address, int alias) {
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
-            return 10;
+        if (pendingC.is_pending() || pendingB.is_pending())
+            return 60;
+        if(idpool.full())
+            return 70;
+        if(!localBoard->haskey(address))
+            return 80;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
@@ -599,7 +618,7 @@ namespace tl_agent {
         int param;
         switch (privilege) {
         case INVALID:
-            return 20;
+            return false;
         case BRANCH:
             param = BtoN;
             break;
@@ -651,6 +670,9 @@ namespace tl_agent {
         Dump("\n");
         return 0;
     }
+
+
+
 
     void CAgent::timeout_check() {
         if (localBoard->get().empty()) {

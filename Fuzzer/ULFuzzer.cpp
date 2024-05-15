@@ -3,7 +3,6 @@
 //
 
 #include "Fuzzer.h"
-
 ULFuzzer::ULFuzzer(tl_agent::ULAgent *ulAgent) {
     this->ulAgent = ulAgent;
 }
@@ -53,12 +52,12 @@ void ULFuzzer::caseTest2() {
   }
 }
 
-bool ULFuzzer::transaction(int channel, int opcode, paddr_t address, int param) {
+// bool ULFuzzer::transaction(int channel, int opcode, paddr_t address, int param) {
+int ULFuzzer::transaction(int channel, int opcode, paddr_t address, int param) {
   printf("ULFuzzer TODO\n");
   assert(0);
 }
 
 void ULFuzzer::tick() {
     this->randomTest(false);
-//    this->caseTest();
 }
