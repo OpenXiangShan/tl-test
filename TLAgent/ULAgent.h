@@ -16,17 +16,17 @@ namespace tl_agent {
     class UL_SBEntry {
     public:
         paddr_t address;
-        int req_type;
+        TLOpcodeA req_type;
         int status;
         uint64_t time_stamp;
         std::array<uint8_t, DATASIZE> data;
-        UL_SBEntry(const TLLocalContext* ctx, int req_type, int status, paddr_t address) {
+        UL_SBEntry(const TLLocalContext* ctx, TLOpcodeA req_type, int status, paddr_t address) {
             this->req_type = req_type;
             this->status = status;
             this->address = address;
             this->time_stamp = ctx->cycle();
         }
-        UL_SBEntry(const TLLocalContext* ctx, int req_type, int status, paddr_t address, std::array<uint8_t, DATASIZE> data) {
+        UL_SBEntry(const TLLocalContext* ctx, TLOpcodeA req_type, int status, paddr_t address, std::array<uint8_t, DATASIZE> data) {
             this->req_type = req_type;
             this->status = status;
             this->address = address;

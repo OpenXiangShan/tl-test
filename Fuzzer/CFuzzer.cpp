@@ -2,7 +2,7 @@
 // Created by wkf on 2021/10/29.
 //
 
-#include "../TLAgent/TLEnum.h"
+#include "../Base/TLEnum.hpp"
 #include "Fuzzer.h"
 
 #include "../Events/TLSystemEvent.hpp"
@@ -60,12 +60,12 @@ void CFuzzer::randomTest(bool do_alias) {
     if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
         if (CAGENT_RAND64(cAgent, "CFuzzer") % 3) {
             if (CAGENT_RAND64(cAgent, "CFuzzer") % 2) {
-                cAgent->do_acquireBlock(addr, tl_agent::NtoT, alias); // AcquireBlock NtoT
+                cAgent->do_acquireBlock(addr, TLParamAcquire::NtoT, alias); // AcquireBlock NtoT
             } else {
-                cAgent->do_acquireBlock(addr, tl_agent::NtoB, alias); // AcquireBlock NtoB
+                cAgent->do_acquireBlock(addr, TLParamAcquire::NtoB, alias); // AcquireBlock NtoB
             }
         } else {
-            cAgent->do_acquirePerm(addr, tl_agent::NtoT, alias); // AcquirePerm
+            cAgent->do_acquirePerm(addr, TLParamAcquire::NtoT, alias); // AcquirePerm
         }
     } else {
         /*
@@ -83,17 +83,17 @@ void CFuzzer::randomTest(bool do_alias) {
 
 void CFuzzer::caseTest() {
     if (*cycles == 100) {
-        this->cAgent->do_acquireBlock(0x1040, tl_agent::NtoT, 0);
+        this->cAgent->do_acquireBlock(0x1040, TLParamAcquire::NtoT, 0);
     }
     if (*cycles == 300) {
         auto putdata = make_shared_tldata<DATASIZE>();
         for (int i = 0; i < DATASIZE; i++) {
             putdata->data[i] = (uint8_t)CAGENT_RAND64(cAgent, "CFuzzer");
         }
-        this->cAgent->do_releaseData(0x1040, tl_agent::TtoN, putdata, 0);
+        this->cAgent->do_releaseData(0x1040, TLParamRelease::TtoN, putdata, 0);
     }
     if (*cycles == 400) {
-      this->cAgent->do_acquireBlock(0x1040, tl_agent::NtoT, 0);
+      this->cAgent->do_acquireBlock(0x1040, TLParamAcquire::NtoT, 0);
     }
 }
 

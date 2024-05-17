@@ -38,24 +38,57 @@
 
 namespace tl_agent {
 
-    int capGenPriv(TLLocalContext* ctx, int param) {
+    TLPermission capGenPrivByProbe(TLLocalContext* ctx, TLParamProbe param) {
         switch (param) {
-            case toT: return TIP;
-            case toB: return BRANCH;
-            case toN: return INVALID;
+            case TLParamProbe::toT:     return TLPermission::TIP;
+            case TLParamProbe::toB:     return TLPermission::BRANCH;
+            case TLParamProbe::toN:     return TLPermission::INVALID;
             default:
                 tlc_assert(false, ctx, "Invalid param!");
         }
     }
 
-    int shrinkGenPriv(TLLocalContext* ctx, int param) {
+    TLPermission capGenPrivByGrant(TLLocalContext* ctx, TLParamGrant param) {
         switch (param) {
-            case TtoT: return TIP;
-            case BtoB:
-            case TtoB: return BRANCH;
-            case TtoN:
-            case BtoN:
-            case NtoN: return INVALID;
+            case TLParamGrant::toT:     return TLPermission::TIP;
+            case TLParamGrant::toB:     return TLPermission::BRANCH;
+            case TLParamGrant::toN:     return TLPermission::INVALID;
+            default:
+                tlc_assert(false, ctx, "Invalid param!");
+        }
+    }
+
+    TLPermission capGenPrivByGrantData(TLLocalContext* ctx, TLParamGrantData param) {
+        switch (param) {
+            case TLParamGrantData::toT: return TLPermission::TIP;
+            case TLParamGrantData::toB: return TLPermission::BRANCH;
+            case TLParamGrantData::toN: return TLPermission::INVALID;
+            default:
+                tlc_assert(false, ctx, "Invalid param!");
+        }
+    }
+
+    TLPermission shrinkGenPrivByProbeAck(TLLocalContext* ctx, TLParamProbeAck param) {
+        switch (param) {
+            case TLParamProbeAck::TtoT: return TLPermission::TIP;
+            case TLParamProbeAck::BtoB:
+            case TLParamProbeAck::TtoB: return TLPermission::BRANCH;
+            case TLParamProbeAck::TtoN:
+            case TLParamProbeAck::BtoN:
+            case TLParamProbeAck::NtoN: return TLPermission::INVALID;
+            default:
+                tlc_assert(false, ctx, "Invalid param!");
+        }
+    }
+
+    TLPermission shrinkGenPrivByRelease(TLLocalContext* ctx, TLParamRelease param) {
+        switch (param) {
+            case TLParamRelease::TtoT:  return TLPermission::TIP;
+            case TLParamRelease::BtoB:
+            case TLParamRelease::TtoB:  return TLPermission::BRANCH;
+            case TLParamRelease::TtoN:
+            case TLParamRelease::BtoN:
+            case TLParamRelease::NtoN:  return TLPermission::INVALID;
             default:
                 tlc_assert(false, ctx, "Invalid param!");
         }
@@ -90,16 +123,16 @@ namespace tl_agent {
         *          is not currently possible.
         */
 
-        switch (a->opcode) {
-            case AcquireBlock: {
+        switch (TLOpcodeA(a->opcode)) {
+            case TLOpcodeA::AcquireBlock: {
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
                 idMap->update(this, a->source, idmap_entry);
 
                 if (localBoard->haskey(a->address)) {
                     localBoard->query(this, a->address)->update_status(this, S_SENDING_A, a->alias);
                 } else {
-                    int statuses[4] = {S_INVALID};
-                    int privileges[4] = {INVALID};
+                    int             statuses[4]   = {S_INVALID};
+                    TLPermission    privileges[4] = {TLPermission::INVALID};
                     for (int i = 0; i < 4; i++) {
                         if (a->alias == i) {
                             statuses[i] = S_SENDING_A;
@@ -115,14 +148,14 @@ namespace tl_agent {
 
                 break;
             }
-            case AcquirePerm: {
+            case TLOpcodeA::AcquirePerm: {
                 auto idmap_entry = std::make_shared<C_IDEntry>(a->address, a->alias);
                 idMap->update(this, a->source, idmap_entry);
                 if (localBoard->haskey(a->address)) {
                     localBoard->query(this, a->address)->update_status(this, S_SENDING_A, a->alias);
                 } else {
-                    int statuses[4] = {S_INVALID};
-                    int privileges[4] = {INVALID};
+                    int             statuses[4]   = {S_INVALID};
+                    TLPermission    privileges[4] = {TLPermission::INVALID};
                     for (int i = 0; i < 4; i++) {
                         if (a->alias == i) {
                           statuses[i] = S_SENDING_A;
@@ -189,8 +222,8 @@ namespace tl_agent {
         // Log("== id == handleB %d\n", *req_c->source);
         Log(this, ShowBase().Hex().Append("Accepting over Probe to ProbeAck: ", uint64_t(b->source), " -> ", uint64_t(req_c->source)).EndLine());
         if (exact_status[b->alias] == S_SENDING_A || exact_status[b->alias] == S_INVALID || exact_status[b->alias] == S_A_WAITING_D) {
-            req_c->opcode   = ProbeAck;
-            req_c->param    = NtoN;
+            req_c->opcode   = uint8_t(TLOpcodeC::ProbeAck);
+            req_c->param    = uint8_t(TLParamProbeAck::NtoN);
             pendingC.init(req_c, 1);
 
             if (glbl.cfg.verbose_agent_debug)
@@ -198,19 +231,19 @@ namespace tl_agent {
                 Debug(this, Append("[CAgent] handle_b(): probed an non-exist block, status: ", StatusToString(exact_status[b->alias])).EndLine());
             }
         } else {
-            int dirty = (exact_privilege == TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
+            int dirty = (exact_privilege == TLPermission::TIP) && (info->dirty[b->alias] || CAGENT_RAND64(this, "CAgent") % 3);
             // When should we probeAck with data? request need_data or dirty itself
-            req_c->opcode = (dirty || b->needdata) ? ProbeAckData : ProbeAck;
-            if (b->param == toB) {
+            req_c->opcode = uint8_t((dirty || b->needdata) ? TLOpcodeC::ProbeAckData : TLOpcodeC::ProbeAck);
+            if (TLEnumEquals(b->param, TLParamProbe::toB)) {
                 switch (exact_privilege) {
-                    case TIP:    req_c->param = TtoB; break;
-                    case BRANCH: req_c->param = BtoB; break;
+                    case TLPermission::TIP:    req_c->param = uint8_t(TLParamProbeAck::TtoB); break;
+                    case TLPermission::BRANCH: req_c->param = uint8_t(TLParamProbeAck::BtoB); break;
                     default: tlc_assert(false, this, "Try to probe toB an invalid block!");
                 }
-            } else if (b->param == toN) {
+            } else if (TLEnumEquals(b->param, TLParamProbe::toN)) {
                 switch (exact_privilege) {
-                    case TIP:    req_c->param = TtoN; break;
-                    case BRANCH: req_c->param = BtoN; break;
+                    case TLPermission::TIP:    req_c->param = uint8_t(TLParamProbeAck::TtoN); break;
+                    case TLPermission::BRANCH: req_c->param = uint8_t(TLParamProbeAck::BtoN); break;
                     default: tlc_assert(false, this, "Try to probe toB an invalid block!");
                 }
             }
@@ -222,7 +255,11 @@ namespace tl_agent {
                 }
                 std::memset((req_c->data = make_shared_tldata<DATASIZE>())->data, 0, DATASIZE);
             } else {
-                if (req_c->opcode == ProbeAckData && (req_c->param == TtoT || req_c->param == TtoB || req_c->param == TtoN)) {
+                if (TLEnumEquals(req_c->opcode, TLOpcodeC::ProbeAckData)
+                 && TLEnumEquals(req_c->param, TLParamProbeAck::TtoT, 
+                                                  TLParamProbeAck::TtoB, 
+                                                  TLParamProbeAck::TtoN))
+                {
                     req_c->data = make_shared_tldata<DATASIZE>();
                     for (int i = 0; i < DATASIZE; i++) {
                       req_c->data->data[i] = (uint8_t)CAGENT_RAND64(this, "CAgent");
@@ -249,26 +286,31 @@ namespace tl_agent {
                     }
                 }
             }
-            if (req_c->opcode == ProbeAckData) {
+            if (TLEnumEquals(req_c->opcode, TLOpcodeC::ProbeAckData)) {
                 pendingC.init(req_c, DATASIZE / BEATSIZE);
             } else {
                 pendingC.init(req_c, 1);
             }
 
-            tlc_assert(req_c->param == TtoN
-                    || req_c->param == TtoB
-                    || req_c->param == NtoN
-                    || req_c->param == BtoN
-                    || req_c->param == BtoB, 
+            tlc_assert(TLEnumEquals(req_c->param,
+                    TLParamProbeAck::TtoN,
+                    TLParamProbeAck::TtoB,
+                    TLParamProbeAck::NtoN,
+                    TLParamProbeAck::BtoN,
+                    TLParamProbeAck::BtoB),
                 this, 
-                Gravity::StringAppender("Not permitted req_c param: ", ProbeAckParamToString(req_c->param)).ToString());
+                Gravity::StringAppender("Not permitted req_c param: ", 
+                    ProbeAckParamToString(TLParamProbeAck(req_c->param))).ToString());
         }
         pendingB.update(this);
     }
 
-    Resp CAgent::send_c(std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>> &c) {
-        switch (c->opcode) {
-            case ReleaseData: {
+    Resp CAgent::send_c(std::shared_ptr<BundleChannelC<ReqField, EchoField, DATASIZE>> &c) 
+    {
+        switch (TLOpcodeC(c->opcode)) 
+        {
+            case TLOpcodeC::ReleaseData:
+            {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
                 idMap->update(this, c->source, idmap_entry);
 
@@ -296,7 +338,9 @@ namespace tl_agent {
 
                 break;
             }
-            case Release: {
+
+            case TLOpcodeC::Release:
+            {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
                 idMap->update(this, c->source, idmap_entry);
 
@@ -307,7 +351,9 @@ namespace tl_agent {
 
                 break;
             }
-            case ProbeAckData: {
+
+            case TLOpcodeC::ProbeAckData:
+            {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
                 idMap->update(this, c->source, idmap_entry);
 
@@ -336,7 +382,9 @@ namespace tl_agent {
 
                 break;
             }
-            case ProbeAck: {
+
+            case TLOpcodeC::ProbeAck:
+            {
                 std::shared_ptr<C_IDEntry> idmap_entry(new C_IDEntry(c->address, c->alias));
                 idMap->update(this, c->source, idmap_entry);
                 // tlc_assert(*c->param == NtoN, "Now probeAck only supports NtoN");
@@ -377,36 +425,39 @@ namespace tl_agent {
         if (this->port->a.fire()) {
             auto& chnA = this->port->a;
 
-            if (chnA.opcode == AcquireBlock)
+            switch (TLOpcodeA(chnA.opcode))
             {
-                if (glbl.cfg.verbose_xact_fired)
-                {
-                    Log(this, Hex().ShowBase()
-                        .Append("[fire A] [AcquireBlock ", AcquireParamToString(chnA.param), "] ")
-                        .Append("source: ",     uint64_t(chnA.source))
-                        .Append(", addr: ",     uint64_t(chnA.address))
-                        .Append(", alias: ",    uint64_t(chnA.alias))
-                        .EndLine());
-                }
-            }
-            else if (chnA.opcode == AcquirePerm)
-            {
-                if (glbl.cfg.verbose_xact_fired)
-                {
-                    Log(this, Hex().ShowBase()
-                        .Append("[fire A] [AcquirePerm ", AcquireParamToString(chnA.param) , "] ")
-                        .Append("source: ",     uint64_t(chnA.source))
-                        .Append(", addr: ",     uint64_t(chnA.address))
-                        .Append(", alias: ",    uint64_t(chnA.alias))
-                        .EndLine());
-                }
-            }
-            else
-            {
-                tlc_assert(false, this, Gravity::StringAppender()
-                    .Hex().ShowBase()
-                    .Append("[fire A] unknown opcode: ", uint64_t(chnA.opcode))
-                    .EndLine().ToString());
+                case TLOpcodeA::AcquireBlock:
+
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire A] [AcquireBlock ", AcquireParamToString(TLParamAcquire(chnA.param)), "] ")
+                            .Append("source: ",     uint64_t(chnA.source))
+                            .Append(", addr: ",     uint64_t(chnA.address))
+                            .Append(", alias: ",    uint64_t(chnA.alias))
+                            .EndLine());
+                    }
+                    break;
+
+                case TLOpcodeA::AcquirePerm:
+
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire A] [AcquirePerm ", AcquireParamToString(TLParamAcquire(chnA.param)) , "] ")
+                            .Append("source: ",     uint64_t(chnA.source))
+                            .Append(", addr: ",     uint64_t(chnA.address))
+                            .Append(", alias: ",    uint64_t(chnA.alias))
+                            .EndLine());
+                    }
+                    break;
+
+                default:
+                    tlc_assert(false, this, Gravity::StringAppender()
+                        .Hex().ShowBase()
+                        .Append("[fire A] unknown opcode: ", uint64_t(chnA.opcode))
+                        .EndLine().ToString());
             }
 
             chnA.valid = false;
@@ -422,38 +473,42 @@ namespace tl_agent {
         if (this->port->b.fire()) {
             auto& chnB = this->port->b;
 
-            if (chnB.opcode == ProbeBlock)
+            switch (TLOpcodeB(chnB.opcode))
             {
-                if (glbl.cfg.verbose_xact_fired)
-                {
-                    Log(this, Hex().ShowBase()
-                        .Append("[fire B] [ProbeBlock ", ProbeParamToString(chnB.param), "] ")
-                        .Append("source: ",     uint64_t(chnB.source))
-                        .Append(", addr: ",     uint64_t(chnB.address))
-                        .Append(", alias: ",    uint64_t((chnB.alias) >> 1))
-                        .EndLine());
-                }
-            }
-            /*
-            else if (chnB.opcode == ProbePerm)
-            {
-                if (glbl.cfg.verbose_xact_fired)
-                {
-                    Log(this, Hex().ShowBase()
-                        .Append("[fire B] [ProbePerm ", ProbeParamToString(chnB.param), "] ")
-                        .Append("source: ",     uint64_t(chnB.source))
-                        .Append(", addr: ",     uint64_t(chnB.address))
-                        .Append(", alias: ",    uint64_t((chnB.alias) >> 1))
-                        .EndLine());
-                }
-            }
-            */
-            else
-            {
-                tlc_assert(false, this, Gravity::StringAppender()
-                    .Hex().ShowBase()
-                    .Append("[fire B] unknown opcode: ", uint64_t(chnB.opcode))
-                    .EndLine().ToString());
+                case TLOpcodeB::ProbeBlock:
+
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire B] [ProbeBlock ", 
+                                ProbeParamToString(TLParamProbe(chnB.param)), "] ")
+                            .Append("source: ",     uint64_t(chnB.source))
+                            .Append(", addr: ",     uint64_t(chnB.address))
+                            .Append(", alias: ",    uint64_t((chnB.alias) >> 1))
+                            .EndLine());
+                    }
+                    break;
+
+                /*
+                case TLOpcodeB::ProbePerm:
+
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire B] [ProbePerm ", ProbeParamToString(chnB.param), "] ")
+                            .Append("source: ",     uint64_t(chnB.source))
+                            .Append(", addr: ",     uint64_t(chnB.address))
+                            .Append(", alias: ",    uint64_t((chnB.alias) >> 1))
+                            .EndLine());
+                    }
+                    break;
+                */
+
+                default:
+                    tlc_assert(false, this, Gravity::StringAppender()
+                        .Hex().ShowBase()
+                        .Append("[fire B] unknown opcode: ", uint64_t(chnB.opcode))
+                        .EndLine().ToString());
             }
 
             auto req_b = std::make_shared<BundleChannelB>();
@@ -472,80 +527,92 @@ namespace tl_agent {
         if (this->port->c.fire()) {
             auto& chnC = this->port->c;
 
-            if (chnC.opcode == Release)
+            switch (TLOpcodeC(chnC.opcode))
             {
-                if (glbl.cfg.verbose_xact_fired)
-                {
-                    Log(this, Hex().ShowBase()
-                        .Append("[fire C] [Release ", ReleaseParamToString(chnC.param), "] ")
-                        .Append("source: ",     uint64_t(chnC.source))
-                        .Append(", addr: ",     uint64_t(chnC.address))
-                        .Append(", alias: ",    uint64_t(chnC.alias))
-                        .EndLine());
-                }
-            }
-            else if (chnC.opcode == ReleaseData)
-            {
-                if (glbl.cfg.verbose_xact_fired)
-                {
-                    Log(this, Hex().ShowBase()
-                        .Append("[fire C] [ReleaseData ", ReleaseParamToString(chnC.param), "] ")
-                        .Append("source: ",     uint64_t(chnC.source))
-                        .Append(", addr: ",     uint64_t(chnC.address))
-                        .Append(", alias: ",    uint64_t(chnC.alias))
-                        .Append(", data: "));
-                    LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
-                    LogEx(std::cout << std::endl);
-                }
-            }
-            else if (chnC.opcode == ProbeAck)
-            {
-                if (glbl.cfg.verbose_xact_fired)
-                {
-                    Log(this, Hex().ShowBase()
-                        .Append("[fire C] [ProbeAck ", ProbeAckParamToString(chnC.param), "] ")
-                        .Append("source: ",     uint64_t(chnC.source))
-                        .Append(", addr: ",     uint64_t(chnC.address))
-                        .Append(", alias: ",    uint64_t(chnC.alias))
-                        .EndLine());
-                }
-            }
-            else if (chnC.opcode == ProbeAckData)
-            {
-                if (glbl.cfg.verbose_xact_fired)
-                {
-                    Log(this, Hex().ShowBase()
-                        .Append("[fire C] [ProbeAckData ", ProbeAckParamToString(chnC.param), "] ")
-                        .Append("source: ",     uint64_t(chnC.source))
-                        .Append(", addr: ",     uint64_t(chnC.address))
-                        .Append(", alias: ",    uint64_t(chnC.alias))
-                        .Append(", data: "));
-                    LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
-                    LogEx(std::cout << std::endl);
-                }
-            }
-            else
-            {
-                tlc_assert(false, this, Gravity::StringAppender()
-                    .Hex().ShowBase()
-                    .Append("[fire C] unknown opcode: ", uint64_t(chnC.opcode))
-                    .EndLine().ToString());
+                case TLOpcodeC::Release:
+
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire C] [Release ", 
+                                ReleaseParamToString(TLParamRelease(chnC.param)), "] ")
+                            .Append("source: ",     uint64_t(chnC.source))
+                            .Append(", addr: ",     uint64_t(chnC.address))
+                            .Append(", alias: ",    uint64_t(chnC.alias))
+                            .EndLine());
+                    }
+                    break;
+
+                case TLOpcodeC::ReleaseData:
+
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire C] [ReleaseData ", 
+                                ReleaseParamToString(TLParamRelease(chnC.param)), "] ")
+                            .Append("source: ",     uint64_t(chnC.source))
+                            .Append(", addr: ",     uint64_t(chnC.address))
+                            .Append(", alias: ",    uint64_t(chnC.alias))
+                            .Append(", data: "));
+                        LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
+                        LogEx(std::cout << std::endl);
+                    }
+                    break;
+
+                case TLOpcodeC::ProbeAck:
+
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire C] [ProbeAck ", 
+                                ProbeAckParamToString(TLParamProbeAck(chnC.param)), "] ")
+                            .Append("source: ",     uint64_t(chnC.source))
+                            .Append(", addr: ",     uint64_t(chnC.address))
+                            .Append(", alias: ",    uint64_t(chnC.alias))
+                            .EndLine());
+                    }
+                    break;
+
+                case TLOpcodeC::ProbeAckData:
+
+                    if (glbl.cfg.verbose_xact_fired)
+                    {
+                        Log(this, Hex().ShowBase()
+                            .Append("[fire C] [ProbeAckData ", 
+                                ProbeAckParamToString(TLParamProbeAck(chnC.param)), "] ")
+                            .Append("source: ",     uint64_t(chnC.source))
+                            .Append(", addr: ",     uint64_t(chnC.address))
+                            .Append(", alias: ",    uint64_t(chnC.alias))
+                            .Append(", data: "));
+                        LogEx(data_dump_embedded<BEATSIZE>(chnC.data->data));
+                        LogEx(std::cout << std::endl);
+                    }
+                    break;
+
+                default:
+                    tlc_assert(false, this, Gravity::StringAppender()
+                        .Hex().ShowBase()
+                        .Append("[fire C] unknown opcode: ", uint64_t(chnC.opcode))
+                        .EndLine().ToString());
             }
 
-            bool releaseHasData = chnC.opcode == ReleaseData;
-            bool needAck = chnC.opcode == ReleaseData || chnC.opcode == Release;
-            bool probeAckDataToB    = chnC.opcode == ProbeAckData   && (chnC.param == TtoB || chnC.param == BtoB);
-            bool probeAckToB        = chnC.opcode == ProbeAck       && (chnC.param == TtoB || chnC.param == BtoB);
+            bool releaseHasData = TLEnumEquals(chnC.opcode, TLOpcodeC::ReleaseData);
+            bool needAck = TLEnumEquals(chnC.opcode, TLOpcodeC::ReleaseData, TLOpcodeC::Release);
+            bool probeAckDataToB = TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAckData) 
+                                && TLEnumEquals(chnC.param, TLParamProbeAck::TtoB, TLParamProbeAck::BtoB);
+            bool probeAckToB     = TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAck)
+                                && TLEnumEquals(chnC.param, TLParamProbeAck::TtoB, TLParamProbeAck::BtoB);
             tlc_assert(pendingC.is_pending(), this, "No pending C but C fired!");
             pendingC.update(this);
             if (!pendingC.is_pending()) { // req C finished
 
                 if (glbl.cfg.verbose_xact_data_complete)
                 {
-                    if (chnC.opcode == ReleaseData)
+                    if (TLEnumEquals(chnC.opcode, TLOpcodeC::ReleaseData))
                     {
                         Log(this, Hex().ShowBase()
-                            .Append("[data complete C] [ReleaseData ", ProbeAckParamToString(chnC.param), "] ")
+                            .Append("[data complete C] [ReleaseData ", 
+                                ProbeAckParamToString(TLParamProbeAck(chnC.param)), "] ")
                             .Append("source: ",     uint64_t(chnC.source))
                             .Append(", addr: ",     uint64_t(chnC.address))
                             .Append(", alias: ",    uint64_t(chnC.alias))
@@ -553,10 +620,11 @@ namespace tl_agent {
                         LogEx(data_dump_embedded<DATASIZE>(pendingC.info->data->data));
                         LogEx(std::cout << std::endl);
                     }
-                    else if (chnC.opcode == ProbeAckData)
+                    else if (TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAckData))
                     {
                         Log(this, Hex().ShowBase()
-                            .Append("[data complete C] [ProbeAckData ", ProbeAckParamToString(chnC.param), "] ")
+                            .Append("[data complete C] [ProbeAckData ", 
+                                ProbeAckParamToString(TLParamProbeAck(chnC.param)), "] ")
                             .Append("source: ",     uint64_t(chnC.source))
                             .Append(", addr: ",     uint64_t(chnC.address))
                             .Append(", alias: ",    uint64_t(chnC.alias))
@@ -597,17 +665,23 @@ namespace tl_agent {
                     global_SBEntry->status = Global_SBEntry::SB_PENDING;
                     this->globalBoard->update(this, pendingC.info->address, global_SBEntry);
                 }
-                if (chnC.opcode == ProbeAckData) {
+                if (TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAckData)) {
                     auto global_SBEntry = std::make_shared<Global_SBEntry>();
                     global_SBEntry->data = pendingC.info->data;
                     global_SBEntry->status = Global_SBEntry::SB_VALID;
                     this->globalBoard->update(this, pendingC.info->address, global_SBEntry);
                 }
-                if (chnC.opcode == ReleaseData || chnC.opcode == Release) {
-                    info->update_pending_priviledge(this, shrinkGenPriv(this, pendingC.info->param), pendingC.info->alias);
+                if (TLEnumEquals(chnC.opcode, TLOpcodeC::ReleaseData, TLOpcodeC::Release)) {
+                    info->update_pending_priviledge(
+                        this, 
+                        shrinkGenPrivByRelease(this, TLParamRelease(pendingC.info->param)), 
+                        pendingC.info->alias);
                 } else {
-                    if (chnC.opcode == ProbeAck || chnC.opcode == ProbeAckData) {
-                      info->update_priviledge(this, shrinkGenPriv(this, pendingC.info->param), pendingC.info->alias);
+                    if (TLEnumEquals(chnC.opcode, TLOpcodeC::ProbeAck, TLOpcodeC::ProbeAckData)) {
+                      info->update_priviledge(
+                        this, 
+                        shrinkGenPrivByProbeAck(this, TLParamProbeAck(pendingC.info->param)), 
+                        pendingC.info->alias);
                     }
                     // Log("== free == fireC %d\n", *chnC.source);
                     this->probeIDpool.freeid(chnC.source);
@@ -624,24 +698,26 @@ namespace tl_agent {
             auto addr = idMap->query(this, chnD.source)->address;
             auto alias = idMap->query(this, chnD.source)->alias;
 
-            if (chnD.opcode == Grant)
+            if (TLEnumEquals(chnD.opcode, TLOpcodeD::Grant))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
                     Log(this, Hex().ShowBase()
-                        .Append("[fire D] [Grant ", GrantParamToString(chnD.param), "] ")
+                        .Append("[fire D] [Grant ", 
+                            GrantParamToString(TLParamGrant(chnD.param)), "] ")
                         .Append("source: ",     uint64_t(chnD.source))
                         .Append(", addr: ",     uint64_t(addr))
                         .Append(", alias: ",    uint64_t(alias))
                         .EndLine());
                 }
             }
-            else if (chnD.opcode == GrantData)
+            else if (TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
                     Log(this, Hex().ShowBase()
-                        .Append("[fire D] [GrantData ", GrantDataParamToString(chnD.param), "] ")
+                        .Append("[fire D] [GrantData ", 
+                            GrantDataParamToString(TLParamGrantData(chnD.param)), "] ")
                         .Append("source: ",     uint64_t(chnD.source))
                         .Append(", addr: ",     uint64_t(addr))
                         .Append(", alias: ",    uint64_t(alias))
@@ -650,7 +726,7 @@ namespace tl_agent {
                     LogEx(std::cout << std::endl);
                 }
             }
-            else if (chnD.opcode == ReleaseAck)
+            else if (TLEnumEquals(chnD.opcode, TLOpcodeD::ReleaseAck))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
@@ -670,8 +746,8 @@ namespace tl_agent {
                     .EndLine().ToString());
             }
 
-            bool hasData = chnD.opcode == GrantData;
-            bool grant = chnD.opcode == GrantData || chnD.opcode == Grant;
+            bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData);
+            bool grant = TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData, TLOpcodeD::Grant);
 
             auto info = localBoard->query(this, addr);
             auto exact_status = info->status[alias];
@@ -694,7 +770,7 @@ namespace tl_agent {
                 resp_d->param   = chnD.param;
                 resp_d->source  = chnD.source;
                 resp_d->data    = grant ? make_shared_tldata<DATASIZE>() : nullptr;
-                int nr_beat = (chnD.opcode == Grant || chnD.opcode == ReleaseAck) ? 0 : 1; // TODO: parameterize it
+                int nr_beat = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant, TLOpcodeD::ReleaseAck) ? 0 : 1; // TODO: parameterize it
                 pendingD.init(resp_d, nr_beat);
             }
             if (hasData) {
@@ -714,12 +790,13 @@ namespace tl_agent {
                 }
             }
             if (!pendingD.is_pending()) {
-                switch (chnD.opcode) {
-                    case GrantData: {
+                switch (TLOpcodeD(chnD.opcode)) {
+                    case TLOpcodeD::GrantData: {
 
                         if (glbl.cfg.verbose_xact_data_complete)
                         {
-                            Log(this, Append("[data complete D] [GrantData ", GrantDataParamToString(chnD.param), "] ")
+                            Log(this, Append("[data complete D] [GrantData ", 
+                                    GrantDataParamToString(TLParamGrantData(chnD.param)), "] ")
                                 .Hex().ShowBase().Append("source: ", uint64_t(chnD.source), ", addr: ", addr, ", alias: ", alias, ", data: "));
                             LogEx(data_dump_embedded<DATASIZE>(pendingD.info->data->data));
                             LogEx(std::cout << std::endl);
@@ -729,12 +806,12 @@ namespace tl_agent {
                         // info->update_dirty(*chnD.dirty, alias);
                         break;
                     }
-                    case Grant: {
+                    case TLOpcodeD::Grant: {
                         // Always set dirty in AcquirePerm toT txns
                         info->update_dirty(this, true, alias);
                         break;
                     }
-                    case ReleaseAck: {
+                    case TLOpcodeD::ReleaseAck: {
                         if (exact_status == S_C_WAITING_D) {
                             info->update_status(this, S_INVALID, alias);
                             info->update_dirty(this, 0, alias);
@@ -767,7 +844,21 @@ namespace tl_agent {
                     }
                     pendingE.init(req_e, 1);
                     info->update_status(this, S_SENDING_E, alias);
-                    info->update_priviledge(this, capGenPriv(this, chnD.param), alias);
+
+                    if (TLEnumEquals(chnD.opcode, TLOpcodeD::Grant))
+                    {
+                        info->update_priviledge(
+                            this,
+                            capGenPrivByGrant(this, TLParamGrant(chnD.param)),
+                            alias);
+                    }
+                    else if (TLEnumEquals(chnD.opcode, TLOpcodeD::GrantData))
+                    {
+                        info->update_priviledge(
+                            this,
+                            capGenPrivByGrantData(this, TLParamGrantData(chnD.param)),
+                            alias);
+                    }
                 }
                 idMap->erase(this, chnD.source);
                 // Log("== free == fireD %d\n", *chnD.source);
@@ -829,7 +920,7 @@ namespace tl_agent {
         probeIDpool.update(this);
     }
 
-    bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
+    bool CAgent::do_acquireBlock(paddr_t address, TLParamAcquire param, int alias) {
         if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
             return false;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
@@ -848,7 +939,7 @@ namespace tl_agent {
             }
 #           endif
 
-            auto privilege = entry->privilege[alias];
+            auto perm = entry->privilege[alias];
             auto status = entry->status[alias];
             
             if (status != S_VALID && status != S_INVALID)
@@ -856,18 +947,18 @@ namespace tl_agent {
 
             if (status == S_VALID)
             {
-                if (privilege == TIP)
+                if (TLEnumEquals(perm, TLPermission::TIP))
                     return false;
-                if (privilege == BRANCH && param != BtoT)
+                if (TLEnumEquals(perm, TLPermission::BRANCH) && !TLEnumEquals(param, TLParamAcquire::BtoT))
                     return false;
-                if (privilege == INVALID && param == BtoT)
+                if (TLEnumEquals(perm, TLPermission::INVALID) && TLEnumEquals(param, TLParamAcquire::BtoT))
                     return false;
             }
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
-        req_a->opcode   = AcquireBlock;
+        req_a->opcode   = uint8_t(TLOpcodeA::AcquireBlock);
         req_a->address  = address;
-        req_a->param    = param;
+        req_a->param    = uint8_t(param);
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = (0xffffffffUL);
         req_a->source   = this->idpool.getid();
@@ -877,14 +968,18 @@ namespace tl_agent {
 
         if (glbl.cfg.verbose_xact_sequenced)
         {
-            Log(this, Append("[sequenced A] [AcquireBlock ", AcquireParamToString(param), "] ")
-                .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
+            Log(this, Hex().ShowBase()
+                .Append("[sequenced A] [AcquireBlock ", 
+                    AcquireParamToString(TLParamAcquire(param)), "] ")
+                .Append("source: ",     uint64_t(req_a->source))
+                .Append(", addr: ",     uint64_t(address))
+                .Append(", alias: ",    uint64_t(alias)).EndLine());
         }
 
         return true;
     }
 
-    bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
+    bool CAgent::do_acquirePerm(paddr_t address, TLParamAcquire param, int alias) {
         /*
         * *NOTICE: Only AcquirePerm NtoT & BtoT were possible to be issued,
         *          currently NtoB not utilized in L1.
@@ -908,7 +1003,7 @@ namespace tl_agent {
             }
 #           endif
 
-            auto privilege = entry->privilege[alias];
+            auto perm = entry->privilege[alias];
             auto status = entry->status[alias];
 
             if (status != S_VALID && status != S_INVALID)
@@ -916,18 +1011,18 @@ namespace tl_agent {
 
             if (status == S_VALID)
             {
-                if (privilege == TIP) 
+                if (TLEnumEquals(perm, TLPermission::TIP))
                     return false;
-                if (privilege == BRANCH && param != BtoT) 
-                    param = BtoT;
-                if (privilege == INVALID && param == BtoT)
+                if (TLEnumEquals(perm, TLPermission::BRANCH) && !TLEnumEquals(param, TLParamAcquire::BtoT))
+                    param = TLParamAcquire::BtoT;
+                if (TLEnumEquals(perm, TLPermission::INVALID) && TLEnumEquals(param, TLParamAcquire::BtoT))
                     return false;
             }
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
-        req_a->opcode   = AcquirePerm;
+        req_a->opcode   = uint8_t(TLOpcodeA::AcquirePerm);
         req_a->address  = address;
-        req_a->param    = param;
+        req_a->param    = uint8_t(param);
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = (0xffffffffUL);
         req_a->source   = this->idpool.getid();
@@ -937,33 +1032,39 @@ namespace tl_agent {
 
         if (glbl.cfg.verbose_xact_sequenced)
         {
-            Log(this, Append("[sequenced A] [AcquirePerm ", AcquireParamToString(param) , "] ")
-                .Hex().ShowBase().Append("source: ", uint64_t(req_a->source), ", addr: ", address, ", alias: ", alias).EndLine());
+            Log(this, Hex().ShowBase()
+                .Append("[sequenced A] [AcquirePerm ", 
+                    AcquireParamToString(TLParamAcquire(param)) , "] ")
+                .Append("source: ",     uint64_t(req_a->source))
+                .Append(", addr: ",     uint64_t(address))
+                .Append(", alias: ",    uint64_t(alias))
+                .EndLine());
         }
         
         return true;
     }
 
-    bool CAgent::do_releaseData(paddr_t address, int param, shared_tldata_t<DATASIZE> data, int alias) {
+    bool CAgent::do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias) {
         if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
             return false;
         // ** DEPRECATED **
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(this, address);
-        auto privilege = entry->privilege[alias];
+        auto perm = entry->privilege[alias];
         auto status = entry->status[alias];
         if (status != S_VALID) {
             return false;
         }
-        if (privilege == INVALID) return false;
-        if (privilege == BRANCH && param != BtoN) return false;
-        if (privilege == TIP && param == BtoN) return false;
+
+        if (TLEnumEquals(perm, TLPermission::INVALID)) return false;
+        if (TLEnumEquals(perm, TLPermission::BRANCH) && !TLEnumEquals(param, TLParamRelease::BtoN)) return false;
+        if (TLEnumEquals(perm, TLPermission::TIP) && TLEnumEquals(perm, TLParamRelease::BtoN)) return false;
 
         auto req_c = std::make_shared<BundleChannelC<ReqField, EchoField, DATASIZE>>();
-        req_c->opcode   = ReleaseData;
+        req_c->opcode   = uint8_t(TLOpcodeC::ReleaseData);
         req_c->address  = address;
-        req_c->param    = param;
+        req_c->param    = uint8_t(param);
         req_c->size     = ceil(log2((double)DATASIZE));
         req_c->source   = this->idpool.getid();
         req_c->dirty    = 1;
@@ -974,8 +1075,13 @@ namespace tl_agent {
 
         if (glbl.cfg.verbose_xact_sequenced)
         {
-            Log(this, Append("[sequenced C] [ReleaseData ", ReleaseParamToString(param), "] ")
-                .Hex().ShowBase().Append("source: ", uint64_t(req_c->source), ", addr: ", address, ", alias: ", alias, ", data: "));
+            Log(this, Hex().ShowBase()
+                .Append("[sequenced C] [ReleaseData ", 
+                    ReleaseParamToString(TLParamRelease(param)), "] ")
+                .Append("source: ",     uint64_t(req_c->source))
+                .Append(", addr: ",     uint64_t(address))
+                .Append(", alias: ",    uint64_t(alias))
+                .Append(", data: "));
             LogEx(data_dump_embedded<DATASIZE>(data->data));
             LogEx(std::cout << std::endl);
         }
@@ -1003,20 +1109,24 @@ namespace tl_agent {
             return false;
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(this, address);
-        auto privilege = entry->privilege[alias];
+        auto perm = entry->privilege[alias];
 
-        int param;
-        switch (privilege) {
-        case INVALID:
-            return false;
-        case BRANCH:
-            param = BtoN;
-            break;
-        case TIP:
-            param = TtoN;
-            break;
-        default:
-            tlc_assert(false, this, "Invalid priviledge detected!");
+        TLPermDemotion param;
+        switch (perm) 
+        {
+            case TLPermission::INVALID:
+                return false;
+
+            case TLPermission::BRANCH:
+                param = TLPermDemotion::BtoN;
+                break;
+
+            case TLPermission::TIP:
+                param = TLPermDemotion::TtoN;
+                break;
+
+            default:
+                tlc_assert(false, this, "Invalid priviledge detected!");
         }
 
         auto status = entry->status;
@@ -1033,10 +1143,9 @@ namespace tl_agent {
         }
 
         auto req_c = std::make_shared<BundleChannelC<ReqField, EchoField, DATASIZE>>();
-        if (param == BtoN)
+        if (TLEnumEquals(param, TLPermDemotion::BtoN))
         {
             req_c->address  = address;
-            req_c->param    = param;
             req_c->size     = ceil(log2((double)DATASIZE));
             req_c->source   = this->idpool.getid();
             req_c->dirty    = 0;
@@ -1044,7 +1153,8 @@ namespace tl_agent {
 
 #           if CAGENT_INCLUSIVE_SYSTEM == 1
             {
-                req_c->opcode   = Release;
+                req_c->opcode   = uint8_t(TLOpcodeC::Release);
+                req_c->param    = uint8_t(TLParamRelease(param));
                 req_c->data     = make_shared_tldata_zero<DATASIZE>();
 
                 if (glbl.cfg.verbose_agent_debug)
@@ -1063,6 +1173,7 @@ namespace tl_agent {
 #           else
             {
                 req_c->opcode   = ReleaseData;
+                req_c->param    = uint8_t(TLParamRelease(param));
 
                 if (globalBoard->haskey(address))
                     req_c->data = globalBoard->query(this, address)->data;
@@ -1090,10 +1201,9 @@ namespace tl_agent {
         }
         else
         {
-            tlc_assert(param == TtoN, this, "Wrong execution path!");
+            tlc_assert(TLEnumEquals(param, TLPermDemotion::TtoN), this, "Wrong execution path!");
 
             req_c->address  = address;
-            req_c->param    = param;
             req_c->size     = ceil(log2((double)DATASIZE));
             req_c->source   = this->idpool.getid();
             req_c->alias    = alias;
@@ -1107,7 +1217,8 @@ namespace tl_agent {
                 /*
                 * *NOTICE: always dirty with previous AcquirePerm
                 */
-                req_c->opcode   = ReleaseData;
+                req_c->opcode   = uint8_t(TLOpcodeC::ReleaseData);
+                req_c->param    = uint8_t(TLParamRelease(param));
                 req_c->dirty    = 1;
 
                 req_c->data = make_shared_tldata<DATASIZE>();
@@ -1136,7 +1247,8 @@ namespace tl_agent {
             {
 #               if CAGENT_INCLUSIVE_SYSTEM == 1
                 {
-                    req_c->opcode   = Release;
+                    req_c->opcode   = uint8_t(TLOpcodeC::Release);
+                    req_c->param    = uint8_t(TLParamRelease(param));
                     req_c->dirty    = 0;
                     req_c->data     = make_shared_tldata_zero<DATASIZE>();
 
@@ -1155,7 +1267,8 @@ namespace tl_agent {
                 }
 #               else
                 {
-                    req_c->opcode   = ReleaseData;
+                    req_c->opcode   = uint8_t(TLOpcodeC::ReleaseData);
+                    req_c->param    = uint8_t(TLParamRelease(param));
                     req_c->dirty    = 0;
                     
                     if (globalBoard->haskey(address))

@@ -28,17 +28,22 @@ namespace tl_agent {
         return *this->cycles;
     }
 
-    Resp ULAgent::send_a(std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>> &a) {
-        switch (a->opcode) {
-            case Get: {
+    Resp ULAgent::send_a(std::shared_ptr<BundleChannelA<ReqField, EchoField, DATASIZE>> &a) 
+    {
+        switch (TLOpcodeA(a->opcode)) 
+        {
+            case TLOpcodeA::Get: 
+            {
                 auto entry 
-                    = std::make_shared<UL_SBEntry>(this, Get, S_SENDING_A, a->address);
+                    = std::make_shared<UL_SBEntry>(this, TLOpcodeA::Get, S_SENDING_A, a->address);
                 localBoard->update(this, a->source, entry);
                 break;
             }
-            case PutFullData: {
+
+            case TLOpcodeA::PutFullData: 
+            {
                 auto entry
-                    = std::make_shared<UL_SBEntry>(this, PutFullData, S_SENDING_A, a->address);
+                    = std::make_shared<UL_SBEntry>(this, TLOpcodeA::PutFullData, S_SENDING_A, a->address);
                 localBoard->update(this, a->source, entry);
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 /*
@@ -49,9 +54,11 @@ namespace tl_agent {
                 std::memcpy(this->port->a.data->data, (uint8_t*)(a->data->data) + BEATSIZE * beat_num, BEATSIZE);
                 break;
             }
-            case PutPartialData: {
+            
+            case TLOpcodeA::PutPartialData: 
+            {
                 auto entry 
-                    = std::make_shared<UL_SBEntry>(this, PutPartialData, S_SENDING_A, a->address);
+                    = std::make_shared<UL_SBEntry>(this, TLOpcodeA::PutPartialData, S_SENDING_A, a->address);
                 localBoard->update(this, a->source, entry);
                 int beat_num = pendingA.nr_beat - pendingA.beat_cnt;
                 /*
@@ -82,7 +89,7 @@ namespace tl_agent {
         if (this->port->a.fire()) {
             auto& chnA = this->port->a;
 
-            if (chnA.opcode == Get)
+            if (TLEnumEquals(chnA.opcode, TLOpcodeA::Get))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
@@ -93,7 +100,7 @@ namespace tl_agent {
                         .EndLine());
                 }
             }
-            else if (chnA.opcode == PutFullData)
+            else if (TLEnumEquals(chnA.opcode, TLOpcodeA::PutFullData))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
@@ -105,7 +112,7 @@ namespace tl_agent {
                     LogEx(std::cout << std::endl);
                 }
             }
-            else if (chnA.opcode == PutPartialData)
+            else if (TLEnumEquals(chnA.opcode, TLOpcodeA::PutPartialData))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
@@ -129,7 +136,7 @@ namespace tl_agent {
                     .EndLine().ToString());
             }
 
-            bool hasData = chnA.opcode == PutFullData || chnA.opcode == PutPartialData;
+            bool hasData = TLEnumEquals(chnA.opcode, TLOpcodeA::PutFullData, TLOpcodeA::PutPartialData);
             chnA.valid = false;
             tlc_assert(pendingA.is_pending(), this, "No pending A but A fired!");
             pendingA.update(this);
@@ -138,7 +145,7 @@ namespace tl_agent {
 
                 if (glbl.cfg.verbose_xact_data_complete)
                 {
-                    if (chnA.opcode == PutFullData)
+                    if (TLEnumEquals(chnA.opcode, TLOpcodeA::PutFullData))
                     {
                         Log(this, Hex().ShowBase()
                             .Append("[data complete A] [PutFullData] ")
@@ -147,7 +154,7 @@ namespace tl_agent {
                         LogEx(data_dump_embedded<DATASIZE>(pendingA.info->data->data));
                         LogEx(std::cout << std::endl);
                     }
-                    else if (chnA.opcode == PutPartialData)
+                    else if (TLEnumEquals(chnA.opcode, TLOpcodeA::PutPartialData))
                     {
                         // TODO: better data verbosity for PutPartialData
 
@@ -191,7 +198,7 @@ namespace tl_agent {
             auto& chnD = this->port->d;
             auto info = localBoard->query(this, chnD.source);
 
-            if (chnD.opcode == AccessAck)
+            if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
@@ -201,7 +208,7 @@ namespace tl_agent {
                         .EndLine());
                 }
             }
-            else if (chnD.opcode == AccessAckData)
+            else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData))
             {
                 if (glbl.cfg.verbose_xact_fired)
                 {
@@ -220,7 +227,7 @@ namespace tl_agent {
                     .EndLine().ToString());
             }
 
-            bool hasData = chnD.opcode == AccessAckData;
+            bool hasData = TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData);
             tlc_assert(info->status == S_A_WAITING_D, this, "Status error!");
             if (pendingD.is_pending()) { // following beats
                 // TODO: wrap the following assertions into a function
@@ -234,7 +241,7 @@ namespace tl_agent {
                 resp_d->param   = chnD.param;
                 resp_d->source  = chnD.source;
                 resp_d->data    = hasData ? make_shared_tldata<DATASIZE>() : nullptr;
-                int nr_beat     = (chnD.opcode == Grant || chnD.opcode == AccessAck) ? 0 :
+                int nr_beat     = TLEnumEquals(chnD.opcode, TLOpcodeD::Grant, TLOpcodeD::AccessAck) ? 0 :
                                   (chnD.size <= 5) ? 0 :
                                   (chnD.size == 6) ? 1 :
                                   (chnD.size == 7) ? 2 : 0;
@@ -251,12 +258,12 @@ namespace tl_agent {
                 std::memcpy((uint8_t*)(pendingD.info->data->data) + BEATSIZE * beat_num, chnD.data->data, BEATSIZE);
             }
 
-            if (!pendingD.is_pending()) {
+            if (!pendingD.is_pending()) 
+            {
                 // ULAgent needn't care about endurance
-
                 if (glbl.cfg.verbose_xact_data_complete)
                 {
-                    if (chnD.opcode == AccessAckData)
+                    if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAckData))
                     {
                         Log(this, Hex().ShowBase()
                             .Append("[data complete D] [AccessAckData] ")
@@ -268,7 +275,9 @@ namespace tl_agent {
 
                 if (hasData) {
                     this->globalBoard->verify(this, info->address, pendingD.info->data);
-                } else if (chnD.opcode == AccessAck) { // finish pending status in GlobalBoard
+                } else if (TLEnumEquals(chnD.opcode, TLOpcodeD::AccessAck)) 
+                { 
+                    // finish pending status in GlobalBoard
                     this->globalBoard->unpending(this, info->address);
                 }
                 localBoard->erase(this, chnD.source);
@@ -303,11 +312,12 @@ namespace tl_agent {
         idpool.update(this);
     }
     
-    bool ULAgent::do_getAuto(paddr_t address) {
+    bool ULAgent::do_getAuto(paddr_t address)
+    {
         if (pendingA.is_pending() || idpool.full())
             return false;
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
-        req_a->opcode   = Get;
+        req_a->opcode   = uint8_t(TLOpcodeA::Get);
         req_a->address  = address;
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = 0xffffffffUL;
@@ -326,11 +336,12 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
+    bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask)
+    {
         if (pendingA.is_pending() || idpool.full())
             return false;
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
-        req_a->opcode   = Get;
+        req_a->opcode   = uint8_t(TLOpcodeA::Get);
         req_a->address  = address;
         req_a->size     = size;
         req_a->mask     = mask;
@@ -349,14 +360,15 @@ namespace tl_agent {
         return true;
     }
     
-    bool ULAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data) {
+    bool ULAgent::do_putfulldata(paddr_t address, shared_tldata_t<DATASIZE> data)
+    {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING) {
             return false;
         }
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
-        req_a->opcode   = PutFullData;
+        req_a->opcode   = uint8_t(TLOpcodeA::PutFullData);
         req_a->address  = address;
         req_a->size     = ceil(log2((double)DATASIZE));
         req_a->mask     = 0xffffffffUL;
@@ -377,13 +389,14 @@ namespace tl_agent {
         return true;
     }
 
-    bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data) {
+    bool ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, shared_tldata_t<DATASIZE> data)
+    {
         if (pendingA.is_pending() || idpool.full())
             return false;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(this, address)->status == Global_SBEntry::SB_PENDING)
             return false;
         auto req_a = std::make_shared<BundleChannelA<ReqField, EchoField, DATASIZE>>();
-        req_a->opcode   = PutPartialData;
+        req_a->opcode   = uint8_t(TLOpcodeA::PutPartialData);
         req_a->address  = address;
         req_a->size     = size;
         req_a->mask     = mask;

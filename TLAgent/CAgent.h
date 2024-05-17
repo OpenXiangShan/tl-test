@@ -18,13 +18,13 @@ namespace tl_agent {
 
     class C_SBEntry {
     public:
-        uint64_t time_stamp;
-        int status[4];
-        int privilege[4];
-        int pending_privilege[4];
-        int dirty[4];
+        uint64_t        time_stamp;
+        int             status[4];
+        TLPermission    privilege[4];
+        TLPermission    pending_privilege[4];
+        int             dirty[4];
 
-        inline C_SBEntry(const TLLocalContext* ctx, const int status[], const int privilege[])
+        inline C_SBEntry(const TLLocalContext* ctx, const int status[], const TLPermission privilege[])
         {
             this->time_stamp = ctx->cycle();
             for(int i = 0; i<4; i++){
@@ -47,7 +47,7 @@ namespace tl_agent {
 #           endif
         }
 
-        inline void update_priviledge(const TLLocalContext* ctx, int priv, int alias)
+        inline void update_priviledge(const TLLocalContext* ctx, TLPermission priv, int alias)
         {
             this->privilege[alias] = priv;
             this->time_stamp = ctx->cycle();
@@ -61,7 +61,7 @@ namespace tl_agent {
 #           endif
         }
 
-        inline void update_pending_priviledge(const TLLocalContext* ctx, int priv, int alias)
+        inline void update_pending_priviledge(const TLLocalContext* ctx, TLPermission priv, int alias)
         {
             this->pending_privilege[alias] = priv;
             this->time_stamp = ctx->cycle();
@@ -78,7 +78,7 @@ namespace tl_agent {
         inline void unpending_priviledge(const TLLocalContext* ctx, int alias)
         {
             this->privilege[alias] = this->pending_privilege[alias];
-            this->pending_privilege[alias] = -1;
+            this->pending_privilege[alias] = TLPermission::NIL;
             this->time_stamp = ctx->cycle();
 
 #           if SB_DEBUG == 1
@@ -247,9 +247,9 @@ namespace tl_agent {
         void handle_channel() override;
         void update_signal() override;
 
-        bool do_acquireBlock(paddr_t address, int param, int alias);
-        bool do_acquirePerm(paddr_t address, int param, int alias);
-        bool do_releaseData(paddr_t address, int param, shared_tldata_t<DATASIZE> data, int alias);
+        bool do_acquireBlock(paddr_t address, TLParamAcquire param, int alias);
+        bool do_acquirePerm(paddr_t address, TLParamAcquire param, int alias);
+        bool do_releaseData(paddr_t address, TLParamRelease param, shared_tldata_t<DATASIZE> data, int alias);
         bool do_releaseDataAuto(paddr_t address, int alias, bool dirty, bool forced);
     };
 
