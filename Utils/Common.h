@@ -90,12 +90,4 @@ typedef uint16_t paddr_t;
         } \
     } while(0)
 
-/*
-#define Log(...) \
-    do {} while(0)
-
-#define Dump(...) \
-    do {} while(0)
-*/
-
 #endif //TLC_TEST_COMMON_H
