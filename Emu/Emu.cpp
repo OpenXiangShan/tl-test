@@ -92,7 +92,9 @@ Emu::Emu(int argc, char **argv) {
 #endif
 
 #ifdef ENABLE_CHISEL_DB
-    init_db(dump_db, false, NULL);
+    // Here we can select DBs to dump
+    //* init_db(enable, use_selected_db, selected DBs)
+    init_db(dump_db, true, "TLLog L2MP");
 #endif
 
 }
