@@ -48,8 +48,10 @@ endif ()
 
 #
 SET(CMAKE_CXX_STANDARD 17)
-SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -fPIC -O0 -Wall -g2 -ggdb")
-SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -fPIC -O3 -Wall")
+SET(CMAKE_CXX_FLAGS_DEBUG "$ENV{CXXFLAGS} -O0 -Wall -g2 -ggdb")
+SET(CMAKE_CXX_FLAGS_RELEASE "$ENV{CXXFLAGS} -O3 -Wall")
+
+ADD_COMPILE_OPTIONS(-fPIC)
 
 #
 ADD_SUBDIRECTORY(Base)
@@ -68,8 +70,8 @@ if (BUILD_DPI)
 
     ADD_SUBDIRECTORY(DPI)
 
-    ADD_LIBRARY(tltest_new_dpi SHARED Base Sequencer TLAgent Fuzzer Events System Plugins DPI)
-    TARGET_LINK_LIBRARIES(tltest_new_dpi PUBLIC
+    ADD_LIBRARY(tltest_dpi SHARED Base Sequencer TLAgent Fuzzer Events System Plugins DPI)
+    TARGET_LINK_LIBRARIES(tltest_dpi PUBLIC
         Base DPI Sequencer TLAgent Fuzzer Events System Plugins sqlite3)
 endif ()
 
@@ -77,15 +79,16 @@ endif ()
 if (BUILD_V3)
 
     INCLUDE_DIRECTORIES(${VERILATOR_INCLUDE}) # change to your verilator root include on error
+    INCLUDE_DIRECTORIES(${VERILATOR_INCLUDE}/vltstd)
 
     ADD_SUBDIRECTORY(V3)
     ADD_SUBDIRECTORY(PortGen)
 
-    ADD_EXECUTABLE(tltest_new_vlt Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3)
-    TARGET_LINK_LIBRARIES(tltest_new_vlt 
+    ADD_EXECUTABLE(tltest_v3lt Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3)
+    TARGET_LINK_LIBRARIES(tltest_v3lt 
         Base Sequencer TLAgent Fuzzer Events System Plugins PortGen V3 sqlite3 pthread
         "-Wl,--whole-archive"
-        ${VERILATED_PATH}/libcoupledL2.a
+        ${VERILATED_PATH}/libvltdut.a
         "-Wl,--no-whole-archive"
         "-rdynamic"
         ${CMAKE_DL_LIBS})
@@ -100,7 +103,7 @@ if (BUILD_V3)
             TARGET portgen
             POST_BUILD
             COMMAND portgen
-            COMMAND ${CMAKE_CXX_COMPILER} portgen.cpp -fPIC -shared -o tltest_portgen.so -I${CMAKE_CURRENT_SOURCE_DIR} -I${VERILATED_PATH} -I${VERILATOR_INCLUDE}
+            COMMAND ${CMAKE_CXX_COMPILER} portgen.cpp -fPIC -shared -o tltest_portgen.so -I${CMAKE_CURRENT_SOURCE_DIR} -I${VERILATED_PATH} -I${VERILATOR_INCLUDE} -I${VERILATOR_INCLUDE}/vltstd
             VERBATIM)
         
         SET_PROPERTY(
