@@ -72,20 +72,20 @@ void TLInitialize(TLSequencer** tltest, PluginManager** plugins, std::function<v
         } \
     } \
 
-    INI_OVERRIDE_INT("tltest.config", "core",                       tlcfg.coreCount);
-    INI_OVERRIDE_INT("tltest.config", "core.tl_c",                  tlcfg.masterCountPerCoreTLC);
-    INI_OVERRIDE_INT("tltest.config", "core.tl_ul",                 tlcfg.masterCountPerCoreTLUL)
-
-    INI_OVERRIDE_INT("tltest.fuzzer", "seed",                       tlcfg.seed);
-    INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.ariInterval);
-    INI_OVERRIDE_INT("tltest.fuzzer", "ari.target",                 tlcfg.ariTarget);
-
     INI_OVERRIDE_INT("tltest.logger", "verbose",                    glbl.cfg.verbose);
     INI_OVERRIDE_INT("tltest.logger", "verbose.xact_fired",         glbl.cfg.verbose_xact_fired);
     INI_OVERRIDE_INT("tltest.logger", "verbose.xact_sequenced",     glbl.cfg.verbose_xact_sequenced);
     INI_OVERRIDE_INT("tltest.logger", "verbose.xact_data_complete", glbl.cfg.verbose_xact_data_complete);
     INI_OVERRIDE_INT("tltest.logger", "verbose.data_full",          glbl.cfg.verbose_data_full);
     INI_OVERRIDE_INT("tltest.logger", "verbose.agent_debug",        glbl.cfg.verbose_agent_debug);
+
+    INI_OVERRIDE_INT("tltest.config", "core",                       tlcfg.coreCount);
+    INI_OVERRIDE_INT("tltest.config", "core.tl_c",                  tlcfg.masterCountPerCoreTLC);
+    INI_OVERRIDE_INT("tltest.config", "core.tl_ul",                 tlcfg.masterCountPerCoreTLUL);
+
+    INI_OVERRIDE_INT("tltest.fuzzer", "seed",                       tlcfg.seed);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.interval",               tlcfg.ariInterval);
+    INI_OVERRIDE_INT("tltest.fuzzer", "ari.target",                 tlcfg.ariTarget);
 
 #   undef INI_OVERRIDE_INT
 
