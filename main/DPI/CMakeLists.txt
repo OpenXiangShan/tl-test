@@ -1,3 +1,3 @@
 FILE(GLOB_RECURSE sources *.cpp *h *.hpp)
 
-ADD_LIBRARY(Events ${sources})
+ADD_LIBRARY(DPI OBJECT ${sources})

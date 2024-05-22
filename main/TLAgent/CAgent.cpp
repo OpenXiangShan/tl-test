@@ -410,6 +410,7 @@ namespace tl_agent {
         this->port->c.address  = c->address;
         this->port->c.size     = c->size;
         this->port->c.source   = c->source;
+        this->port->c.alias    = 0;
         // this->port->c.dirty = c->dirty;
         this->port->c.valid    = true;
         return OK;
@@ -1312,10 +1313,10 @@ namespace tl_agent {
                 if (*this->cycles - value->time_stamp > TIMEOUT_INTERVAL) {
 
                     std::cout << Gravity::StringAppender().ShowBase()
-                        .Hex().Append("Address:     ", addr)
-                        .Dec().Append("Now time:    ", *this->cycles)
-                        .Dec().Append("Last stamp:  ", value->time_stamp)
-                        .Dec().Append("Status[0]:   ", StatusToString(value->status[0]))
+                        .Hex().Append("Address:     ", addr).EndLine()
+                        .Dec().Append("Now time:    ", *this->cycles).EndLine()
+                        .Dec().Append("Last stamp:  ", value->time_stamp).EndLine()
+                        .Dec().Append("Status[0]:   ", StatusToString(value->status[0])).EndLine()
                     .ToString();
 
                     tlc_assert(false, this, "Transaction time out");

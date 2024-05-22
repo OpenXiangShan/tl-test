@@ -19,6 +19,7 @@
 #include "../Base/TLGlobal.hpp"
 #include "../Base/TLLocal.hpp"
 
+#include "TLDefault.h"
 #include "gravity_utility.hpp"
 #include "assert.hpp"
 
@@ -126,7 +127,7 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
 
 #define LogInfo(time, str_app) \
     do { \
-        { \
+        if (glbl.cfg.verbose) { \
             std::cout << "[" << time << "] [tl-test-new-INFO] "; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
@@ -136,7 +137,7 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
 
 #define LogFinal(time, str_app) \
     do { \
-        { \
+        if (glbl.cfg.verbose) { \
             std::cout << "[" << time << "] [tl-test-new-FINAL] "; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \
@@ -146,7 +147,7 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
 
 #define LogError(time, str_app) \
     do { \
-        { \
+        if (glbl.cfg.verbose) { \
             std::cout << "[" << time << "]\033[31m [tl-test-new-ERROR] \033[1;31m"; \
             std::cout << (Gravity::StringAppender().str_app.Append("\033[0m").ToString()); \
             fflush(stdout); \
@@ -156,7 +157,7 @@ inline std::string GetDeviceName(const TLLocalContext* ctx)
 
 #define LogFatal(time, str_app) \
     do { \
-        { \
+        if (glbl.cfg.verbose) { \
             std::cout << "[" << time << "]\033[31m [tl-test-new-FATAL] \033[0m"; \
             std::cout << (Gravity::StringAppender().str_app.ToString()); \
             fflush(stdout); \

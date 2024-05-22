@@ -1,3 +1,3 @@
 FILE(GLOB_RECURSE sources *.cpp *h *.hpp)
 
-ADD_LIBRARY(TLAgent ${sources})
+ADD_LIBRARY(Sequencer OBJECT ${sources})

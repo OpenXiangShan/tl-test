@@ -425,34 +425,3 @@ TLSequencer::IOPort& TLSequencer::IO(int deviceId) noexcept
 {
     return *(io[deviceId]);
 }
-
-void TLSequencer::FireChannelA() noexcept
-{ }
-
-void TLSequencer::FireChannelB() noexcept
-{ }
-
-void TLSequencer::FireChannelC() noexcept
-{ }
-
-void TLSequencer::FireChannelD() noexcept
-{ }
-
-void TLSequencer::FireChannelE() noexcept
-{ }
-
-void TLSequencer::UpdateChannelA() noexcept
-{ }
-
-void TLSequencer::UpdateChannelB() noexcept
-{ }
-
-void TLSequencer::UpdateChannelC() noexcept
-{ }
-
-void TLSequencer::UpdateChannelD() noexcept
-{ }
-
-void TLSequencer::UpdateChannelE() noexcept
-{ }
-

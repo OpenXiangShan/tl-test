@@ -1,3 +1,3 @@
 FILE(GLOB_RECURSE sources *.cpp *h *.hpp)
 
-ADD_LIBRARY(Fuzzer ${sources})
+ADD_LIBRARY(Plugins OBJECT ${sources})

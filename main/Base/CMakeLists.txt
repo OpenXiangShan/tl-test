@@ -1,3 +1,3 @@
 FILE(GLOB_RECURSE sources *.cpp *h *.hpp)
 
-ADD_LIBRARY(DPI ${sources})
+ADD_LIBRARY(Base OBJECT ${sources})

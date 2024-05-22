@@ -86,18 +86,6 @@ public:
 
     IOPort*     IO() noexcept;
     IOPort&     IO(int deviceId) noexcept;
-
-    void        FireChannelA() noexcept;
-    void        FireChannelB() noexcept;
-    void        FireChannelC() noexcept;
-    void        FireChannelD() noexcept;
-    void        FireChannelE() noexcept;
-
-    void        UpdateChannelA() noexcept;
-    void        UpdateChannelB() noexcept;
-    void        UpdateChannelC() noexcept;
-    void        UpdateChannelD() noexcept;
-    void        UpdateChannelE() noexcept;
 };
 
 
