@@ -29,7 +29,6 @@
 
 ### 2. Memory sub-system testing for XiangShan  
 * Accurate **memory consistency check** using scoreboard  
-* Support both **inclusive** and **non-inclusive** L1 to L2 behaviour  
 * Specially constrained TileLink transaction sequence for L2 (**CoupledL2** for now) private design  
 * Cache line alias control for L2 (**CoupledL2** for now) private design  
 * Easy post-compile TileLink agent and port configuration (for core count, TL-C port count for L1D, TL-UL port count for L1I & PTW ...)   
@@ -58,7 +57,7 @@
 ## Project tree
 ```
 .
-├── README.md               
+├── README.md
 └── main            <- TL-Test-New main project root
     ├── Base                <- Basic components
     ├── CMakeLists.txt      <- CMake makefile
@@ -79,13 +78,16 @@
 #### 1.1 Before you build
 &emsp;&emsp;Make sure that you are currently under the **main folder** of TL-Test-New ```cd main```.  
 &emsp;&emsp;For first time build:
-```shell 
+```bash 
 mkdir build && cd build
 cmake ..
 ```
+> **NOTICE**: Building under other directories is also allowed, then change the cmake command on your demand
+>
+
 #### 1.2 Verilating
 > This step could be **skipped** if you chose **NOT TO BUILD Verilator Host Mode** components by: 
-> ```shell
+> ```bash
 > cmake .. -DBUILD_V3=0
 > ```   
 > For more information, see chatper [**Build Configuration**](#build-configuration).
@@ -96,7 +98,7 @@ cmake ..
 *  Use ```--lib-create vltdut``` parameter to specify the output library to **```libvltdut.a```**   
 
 &emsp;&emsp;Verilator build script for reference:  
-```shell
+```bash
 verilator --trace --cc --build --lib-create vltdut --Mdir ./verilated ./coupledL2/build/*.v -Wno-fatal --top TestTop
 ```
 > **INFO:**  
@@ -116,7 +118,7 @@ verilator --trace --cc --build --lib-create vltdut --Mdir ./verilated ./coupledL
 > 
 
 #### 1.3 Building
-```shell
+```bash
 make -j `nproc`
 ```  
 > **NOTICE:** 
@@ -152,28 +154,28 @@ make -j `nproc`
 ```
 
 ### 2. Clean
-```shell
+```bash
 make clean
 ```
 
 ## Build Configuration
 ### 1. Paths and executables  
 #### 1.1 ```CMAKE_CXX_COMPILER```  
-&emsp;&emsp;Specify the user-defined C++ compiler for build-time and run-time procedures on demand.  
+&emsp;&emsp;Specify the **user-defined C++ compiler** for build-time and run-time procedures on demand.  
 * Configuring: 
     * ```cmake .. -DCMAKE_CXX_COMPILER=<compiler>```   
 * Passing to compiler:
     * ```-DCXX_COMPILER="${CMAKE_CXX_COMPILER}"``` as global macro ```CXX_COMPILER```
 
 #### 1.2 ```CMAKE_CURRENT_SOURCE_DIR```  
-&emsp;&emsp;Specify the user-defined current source directory on demand.  
+&emsp;&emsp;Specify the **user-defined current source directory** on demand.  
 * Configuring:
     * ```cmake .. -DCMAKE_CURRENT_SOURCE_DIR=<dir>```  
 * Passing to compiler:  
     * ```-DCURRENT_PATH="${CMAKE_CURRENT_SOURCE_DIR}"``` as global macro ```CURRENT_PATH```  
 
 #### 1.3 ```VERILATED_PATH```  
-&emsp;&emsp;Specify the verilator output path of DUT.  
+&emsp;&emsp;Specify the **verilator output path** of DUT.  
 * Configuring:  
     * ```cmake .. -DVERILATED_PATH=<dir>```  
 * Passing to compiler:  
@@ -181,7 +183,7 @@ make clean
     * ```-DVERILATED_PATH_TOKEN=${VERILATED_PATH}``` as global macro ```VERILATED_PATH_TOKEN```  
 
 #### 1.4 ```VERILATOR_INCLUDE```  
-&emsp;&emsp;Specify the verilator include path.
+&emsp;&emsp;Specify the **verilator include path**.
 * Configuring:  
     * ```cmake .. -DVERILATOR_INCLUDE=<dir>```  
 * Passing to compiler:  
@@ -215,12 +217,110 @@ make clean
 &emsp;&emsp;**By default**, the PortGen is under **static mode** as ```TLTEST_PORTGEN_DYNAMIC=0``` without specifying the parameter.
 
 ### 3. Build selection 
+#### 3.1 ```BUILD_DPI```
+&emsp;&emsp;Build components of **DPI Guest Mode** or not.  
+* Configuring: 
+    * ```cmake .. -DBUILD_DPI=<ON/OFF>```   
+
+&emsp;&emsp;By default, ```BUILD_DPI=ON```.
+&emsp;&emsp;When this was turned off, components and outputs of **DPI Guest Mode** would not be built.
+
+#### 3.2 ```BUILD_V3```
+&emsp;&emsp;Build components for **Verilator Host Mode** or not.  
+* Configuring: 
+    * ```cmake .. -DBUILD_V3=<ON/OFF>```  
+
+&emsp;&emsp;By default, ```BUILD_V3=ON```.  
+&emsp;&emsp;When this was turned off, components and outputs of **Verilator Host Mode** would not be built.  
 
 ## Run as **Verilator Host**
+&emsp;&emsp;Run executable **```tltest_v3lt```** to start the verilator test.   
+&emsp;&emsp;In build directory: 
+```bash
+./tltest_v3lt
+```  
+&emsp;&emsp;You could copy the binary **```tltest_v3lt```** with **```tltest_portgen.so```** (when compiled with **Static PortGen**) together to other directories or delivery to execute on demand.  
+&emsp;&emsp;When compiled with **Dynamic PortGen**, the binaries must be delivered with source code of TL-Test-New and verilator output.  
 
 ## Load as **DPI Guest**
+&emsp;&emsp;Load DPI-C library **```libtltest_dpi.so```** on simulation run.  
+> **EXAMPLE** (on VCS):  
+> * Add parameter ```-sv_liblist bootstrap_lib_files``` on VCS run.  
+> * Create a file naming **```bootstrap_lib_files```**, and edit it with the following contents:  
+> ```
+> #!SV_LIBRARIES
+> tl-test/main/build/libtltest_dpi
+> ```  
+>
 
-## Runtime Configuration
+## Post-build Configuration
+&emsp;&emsp;On the start-up procedure of TL-Test-New, the file **```tltest.ini```** in the working directory would be read if exists to override the pre-build defined configurations.  
+&emsp;&emsp;The example and template of **```tltest.ini```** is as follwing:  
+```ini
+[tltest.config]
+core                        = 4
+core.tl_c                   = 1
+core.tl_ul                  = 2
+
+[tltest.fuzzer]
+seed                        = 1001
+ari.interval                = 1000000
+ari.target                  = 1
+
+[tltest.logger]
+verbose                     = 1
+verbose.xact_fired          = 1
+verbose.xact_sequenced      = 0
+verbose.xact_data_complete  = 1
+verbose.data_full           = 0
+verbose.agent_debug         = 0
+```  
+&emsp;&emsp;***NOTICE**: Not all key-values above were required to be present, and the absent configuration key-values would be set as it was on build.  
+
+### 1. Essential configurations (```tltest.config```)  
+#### 1.1 ```core```  
+&emsp;&emsp;Specify the **core count** of DUT.  
+
+#### 1.2 ```core.tl_c```
+&emsp;&emsp;Specify the **TileLink-C port count per core** of DUT.  
+&emsp;&emsp;The acceptable value is ``1``.  
+
+#### 1.3 ```core.tl_ul```  
+&emsp;&emsp;Specify the **TileLink-UL port count per core** of DUT.  
+&emsp;&emsp;The acceptable values are ``0`` and ``2``.  
+
+### 2. Fuzzer & ARI configurations (```tltest.fuzzer```)  
+#### 2.1 ```seed```  
+&emsp;&emsp;Specify the **randomization seed** of this run.  
+
+#### 2.2 ```ari.interval```  
+&emsp;&emsp;Specify the **simulation time of each iteration element of ARI** of this run.
+
+#### 2.3 ```ari.target```  
+&emsp;&emsp;Specify the **total count of iteration cycle of ARI** of this run.  
+&emsp;&emsp;The total simulation time to finish is calculated by: ```total_time = ARI::element_count * ari.interval * ari.target```.  
+&emsp;&emsp;***NOTICE:** The ```ARI::element_count``` is specified on build currently.  
+
+### 3. Verbose logging configurations (```tltest.logger```)  
+#### 3.1 ```verbose```  
+&emsp;&emsp;Specify the enablement of **verbose information mode**.  
+
+#### 3.2 ```verbose.xact_fired```  
+&emsp;&emsp;Specify the enablement of verbose information on every message fired.  
+
+#### 3.3 ```verbose.xact_sequenced```  
+&emsp;&emsp;Specify the enablement of verbose information on every message sequenced by the sequencer and the fuzzer.  
+
+#### 3.4 ```verbose.xact_data_complete```  
+&emsp;&emsp;Specify the enablement of verbose information on every transaction carrying data is completed (useful for multi-beat data transactions).  
+
+#### 3.5 ```verbose.data_full```  
+&emsp;&emsp;Specify the enablement of verbose information of full data bytes on every transaction carrying data.  
+&emsp;&emsp;Recommended to disable by default for a normally relatively more readable log.  
+
+#### 3.6 ```verbose.agent_debug```  
+&emsp;&emsp;Specify the enablement of verbose information of agent debug.  
+&emsp;&emsp;Recommended to disable by default, mostly used for TileLink Agent tweaking.     
 
 
 ## Applications
