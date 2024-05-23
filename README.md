@@ -17,7 +17,11 @@
 > ```  
 > &emsp;
 
+
+
 ## Features
+<img src="assets/README.overall.png" width = "220" alt="TL-Test-New overall" align=right />
+
 ### 1. Simulator compatibility
 * Full simulation compatiblity support for both **Verilator Host Mode** and **DPI Guest Mode**  
     * **Verilator Host Mode**: Run under **verilator** simulator as test host
@@ -28,7 +32,7 @@
 * Support both **inclusive** and **non-inclusive** L1 to L2 behaviour  
 * Specially constrained TileLink transaction sequence for L2 (**CoupledL2** for now) private design  
 * Cache line alias control for L2 (**CoupledL2** for now) private design  
-* Easy post-compile TileLink agent configuration (for core count, TL-C port count for L1D, TL-UL port count for L1I & PTW ...)   
+* Easy post-compile TileLink agent and port configuration (for core count, TL-C port count for L1D, TL-UL port count for L1I & PTW ...)   
 
 ### 3. Extensibility and legacy debugging support 
 * [BullsEye Gravity](https://github.com/arch-simulator-sig/BullsEye/tree/master) **EventBus utility** for event-driven extensive controls  
@@ -153,11 +157,62 @@ make clean
 ```
 
 ## Build Configuration
-### 1. Paths  
+### 1. Paths and executables  
+#### 1.1 ```CMAKE_CXX_COMPILER```  
+&emsp;&emsp;Specify the user-defined C++ compiler for build-time and run-time procedures on demand.  
+* Configuring: 
+    * ```cmake .. -DCMAKE_CXX_COMPILER=<compiler>```   
+* Passing to compiler:
+    * ```-DCXX_COMPILER="${CMAKE_CXX_COMPILER}"``` as global macro ```CXX_COMPILER```
 
+#### 1.2 ```CMAKE_CURRENT_SOURCE_DIR```  
+&emsp;&emsp;Specify the user-defined current source directory on demand.  
+* Configuring:
+    * ```cmake .. -DCMAKE_CURRENT_SOURCE_DIR=<dir>```  
+* Passing to compiler:  
+    * ```-DCURRENT_PATH="${CMAKE_CURRENT_SOURCE_DIR}"``` as global macro ```CURRENT_PATH```  
+
+#### 1.3 ```VERILATED_PATH```  
+&emsp;&emsp;Specify the verilator output path of DUT.  
+* Configuring:  
+    * ```cmake .. -DVERILATED_PATH=<dir>```  
+* Passing to compiler:  
+    * ```-DVERILATED_PATH="${VERILATED_PATH}"``` as global macro ```VERILATED_PATH```  
+    * ```-DVERILATED_PATH_TOKEN=${VERILATED_PATH}``` as global macro ```VERILATED_PATH_TOKEN```  
+
+#### 1.4 ```VERILATOR_INCLUDE```  
+&emsp;&emsp;Specify the verilator include path.
+* Configuring:  
+    * ```cmake .. -DVERILATOR_INCLUDE=<dir>```  
+* Passing to compiler:  
+    * ```-DVERILATOR_INCLUDE="${VERILATOR_INCLUDE}"``` as global macro ```VERILATOR_INCLUDE```  
 
 ### 2. PortGen  
 
+#### 2.1 Dynamic PortGen (Experimental)
+<img src="assets/README.portgen.dynamic.png" height=200 alt="TL-Test-New overall" align=right />
+
+&emsp;&emsp;Choose to generate PortGen connection library on run-time (experimental function).  
+* Configuring:
+    * ```cmake .. -DTLTEST_PORTGEN_DYNAMIC=1```  
+
+&emsp;&emsp;Dynamic PortGen mode is available only when the TL-Test Subsystem is delivered with all source code (including the verilator output of DUT), and is **disabled by default**.    
+&emsp;&emsp;Dynamic PortGen enables you to change the TileLink port configuration at run-time through ```tltest.ini``` for **Verilator Host Mode**, without any extra coding.  
+&emsp;&emsp;Dynamic PortGen requires accessible ```/tmp``` directory and working C++ compilers (support at least C++17) on verilator running environment.  
+&emsp;  
+&emsp;&emsp;***NOTICE**: When using Dynamic PortGen, the source code directory and verilator output directory on build must not be moved or removed.   
+
+#### 2.2 Static PortGen
+<img src="assets/README.portgen.static.png" height=200 alt="TL-Test-New overall" align=right />
+
+&emsp;&emsp;Choose to generate PortGen connection library on build-time.
+* Configuring:
+    * ```cmake .. [-DTLTEST_PORTGEN_DYNAMIC=0]```  
+
+&emsp;&emsp;Static PortGen enables you to change the TileLink port configuration at build-time through ```tltest.ini``` or ```portgen``` executable with parameters for **Verilator Host Mode**, without any extra coding.    
+&emsp;&emsp;```VERILATED_PATH``` and ```VERILATOR_INCLUDE``` parameters above are required to be configured correctly.   
+
+&emsp;&emsp;**By default**, the PortGen is under **static mode** as ```TLTEST_PORTGEN_DYNAMIC=0``` without specifying the parameter.
 
 ### 3. Build selection 
 
