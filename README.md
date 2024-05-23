@@ -222,7 +222,7 @@ make clean
 * Configuring: 
     * ```cmake .. -DBUILD_DPI=<ON/OFF>```   
 
-&emsp;&emsp;By default, ```BUILD_DPI=ON```.
+&emsp;&emsp;By default, ```BUILD_DPI=ON```.  
 &emsp;&emsp;When this was turned off, components and outputs of **DPI Guest Mode** would not be built.
 
 #### 3.2 ```BUILD_V3```
