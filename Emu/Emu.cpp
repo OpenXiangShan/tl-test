@@ -18,6 +18,7 @@ void Emu::parse_args(int argc, char **argv) {
         { "wave-begin", 1, NULL, 'b' },
         { "wave-end",   1, NULL, 'e' },
         { "cycles",     1, NULL, 'c' },
+        { "trace",      1, NULL, 't' },
         { "wave-full",  0, NULL, 'f' },
         { "verbose",    0, NULL, 'v' },
         { "dump-db",    0, NULL, 'd' },
@@ -26,7 +27,7 @@ void Emu::parse_args(int argc, char **argv) {
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:f:vd", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:t:f:vd", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
@@ -40,6 +41,9 @@ void Emu::parse_args(int argc, char **argv) {
 #else
                 printf("[WARN] chisel db is not enabled at compile time, ignore --dump-db\n"); break;
 #endif
+            case 't':
+                this->enable_trace = true;
+                this->trace_file = std::ifstream(optarg); break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -113,7 +117,9 @@ Emu::~Emu() {
         save_db(logdb_filename(now));
     }
 #endif
-
+    if(enable_trace) {
+        trace_file.close();
+    }
 }
 
 void abortHandler(int signal) {
@@ -129,7 +135,37 @@ void abortHandler(int signal) {
 }
 
 void Emu::execute(uint64_t nr_cycle) {
+    bool trace_end = false;
+    int end_timer = 20000;
+
     while (Cycles < nr_cycle) {
+        if (trace_end) { // finished all transactions in tracefile
+            if (end_timer-- == 0) {
+                printf("[INFO] simulation complete\n");
+                break;
+            }
+        } else if (transactions.empty()) { // read new transactions
+            printf("[INFO] loading %d transactions from tracefile\n", READ_ONCE);
+            std::string line;
+            for (int i = 0; i < READ_ONCE; i++) {
+                if (std::getline(trace_file, line)) {
+                    transactions.push(Transaction(line));
+                    // printf("[DEBUG] %s\n", Transaction(line).to_string().c_str());
+                } else {
+                    trace_end = true; break;
+                }
+            }
+            if (trace_end) {
+                printf("[INFO] finish reading all trace, ");
+                printf("let simulation run another %d cycles\n", end_timer);
+                break;
+            }
+        } else {
+            // send transactions to fuzzers
+
+
+        }
+
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
