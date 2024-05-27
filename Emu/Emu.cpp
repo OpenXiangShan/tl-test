@@ -139,15 +139,16 @@ void Emu::execute(uint64_t nr_cycle) {
     int end_timer = 20000;
 
     while (Cycles < nr_cycle) {
+        // ====== Read Transactions from Tracefile ======
         if (trace_end) { // finished all transactions in tracefile
             if (end_timer-- == 0) {
                 printf("[INFO] simulation complete\n");
                 break;
             }
         } else if (transactions.empty()) { // read new transactions
-            printf("[INFO] loading %d transactions from tracefile\n", READ_ONCE);
             std::string line;
-            for (int i = 0; i < READ_ONCE; i++) {
+            int i = 0;
+            for (; i < READ_ONCE; i++) {
                 if (std::getline(trace_file, line)) {
                     transactions.push(Transaction(line));
                     // printf("[DEBUG] %s\n", Transaction(line).to_string().c_str());
@@ -155,17 +156,22 @@ void Emu::execute(uint64_t nr_cycle) {
                     trace_end = true; break;
                 }
             }
+            printf("[INFO] loading %d transactions from tracefile\n", i);
             if (trace_end) {
                 printf("[INFO] finish reading all trace, ");
                 printf("let simulation run another %d cycles\n", end_timer);
                 break;
             }
         } else {
-            // send transactions to fuzzers
-
-
+            // check the timestamp of the first transaction in queue
+            // if Now >= its time, pop it and send to corresponding agent
+            Transaction t = transactions.front();
+            if (t.timestamp <= Cycles) {
+                transactions.pop();
+                fuzzers[t.agentId]->enqueue_transaction(t);
+            }
         }
-
+        // ====== Actions for Agents per cycle ======
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
@@ -179,6 +185,7 @@ void Emu::execute(uint64_t nr_cycle) {
             agents[i]->update_signal();
         }
 
+        // ====== Verilator Actions ======
         this->neg_edge();
 #if VM_TRACE == 1
         if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {

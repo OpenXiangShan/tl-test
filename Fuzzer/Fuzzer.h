@@ -20,6 +20,9 @@ public:
     void set_cycles(uint64_t *cycles) {
         this->cycles = cycles;
     }
+    void enqueue_transaction(Transaction &transaction) {
+        this->transactions.push(transaction);
+    }
 };
 
 class ULFuzzer: public Fuzzer {
