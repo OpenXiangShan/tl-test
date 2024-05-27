@@ -80,8 +80,9 @@ void CFuzzer::traceTest() {
         break;
     }
 
-    // if succeeded in sending t, remove it from queue
-    if (send_status == 0) {
+    // if succeeded in sending it, remove it from queue
+    // TODO: whether still to send for PASS transations (whose permission is already satisfied)
+    if (send_status == tl_agent::SUCCESS || send_status == tl_agent::PASS) {
         this->transactions.pop();
     }
     // otherwise try it next cycle
