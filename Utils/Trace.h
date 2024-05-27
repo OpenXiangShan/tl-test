@@ -9,6 +9,7 @@
 
 #define READ_ONCE 5000
 
+// TODO: consider alias and other user fields
 class Transaction {
 public:
     uint32_t timestamp;

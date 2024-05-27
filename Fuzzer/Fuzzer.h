@@ -11,10 +11,12 @@
 class Fuzzer {
 protected:
     uint64_t *cycles;
+    std::queue<Transaction> transactions;
 public:
     Fuzzer() = default;
     ~Fuzzer() = default;
     virtual void tick() = 0;
+    virtual void traceTest() = 0;
     void set_cycles(uint64_t *cycles) {
         this->cycles = cycles;
     }
@@ -28,6 +30,7 @@ public:
     void randomTest(bool put);
     void caseTest();
     void caseTest2();
+    void traceTest();
     void tick();
 };
 
@@ -38,6 +41,7 @@ public:
     CFuzzer(tl_agent::CAgent *cAgent);
     void randomTest(bool do_alias);
     void caseTest();
+    void traceTest();
     void tick();
 };
 

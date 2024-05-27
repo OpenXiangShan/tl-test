@@ -49,6 +49,44 @@ void CFuzzer::caseTest() {
     }
 }
 
+inline uint16_t connect(uint8_t a, uint8_t b) {
+    return (uint16_t)((a << 8) | b);
+}
+
+void CFuzzer::traceTest() {
+    if (this->transactions.empty()) {
+        return;
+    }
+    Transaction transaction = this->transactions.front();
+    paddr_t addr = transaction.addr;
+    uint8_t channel = transaction.channel;
+    uint8_t opcode = transaction.opcode;
+    uint8_t param = transaction.param;
+    int send_status;
+
+    switch (connect(channel, opcode))
+    {
+    case (1 << 8) | tl_agent::AcquireBlock:
+        send_status = this->cAgent->do_acquireBlock(addr, param, 0);    break;
+    case (1 << 8) | tl_agent::AcquirePerm:
+        send_status = this->cAgent->do_acquirePerm(addr, param, 0);     break;
+    // even if transaction has param, we still use releaseDataAuto here
+    // in fear of releaseData may have unknown bugs untested
+    case (4 << 8) | tl_agent::ReleaseData:
+    case (4 << 8) | tl_agent::Release:
+        send_status = this->cAgent->do_releaseDataAuto(addr, param);    break;
+    default:
+        std::cerr << "Error: Invalid Transaction " << channel << " Opcode " << opcode << std::endl;
+        break;
+    }
+
+    // if succeeded in sending t, remove it from queue
+    if (send_status == 0) {
+        this->transactions.pop();
+    }
+    // otherwise try it next cycle
+}
+
 void CFuzzer::tick() {
     this->randomTest(true);
 //    this->caseTest();

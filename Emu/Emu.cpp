@@ -171,7 +171,8 @@ void Emu::execute(uint64_t nr_cycle) {
         }
 
         for (int i = 0; i < NR_AGENTS; i++) {
-            fuzzers[i]->tick();
+            if (enable_trace) fuzzers[i]->traceTest();
+            else fuzzers[i]->tick(); // random-test
         }
 
         for (int i = 0; i < NR_AGENTS; i++) {

@@ -8,6 +8,7 @@
 #include "BaseAgent.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
+#include "../Utils/Trace.h"
 
 namespace tl_agent {
 
