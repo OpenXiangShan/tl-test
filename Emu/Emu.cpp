@@ -43,7 +43,9 @@ void Emu::parse_args(int argc, char **argv) {
 #endif
             case 't':
                 this->enable_trace = true;
-                this->trace_file = std::ifstream(optarg); break;
+                this->trace_file = std::ifstream(optarg);
+                printf("Trace format: 'timestamp, which L1, channel, opcode, address, param'\n");
+                break;
             default:
                 tlc_assert(false, "Unknown args!");
         }

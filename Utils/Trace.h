@@ -44,7 +44,7 @@ public:
         this->agentId = std::stoi(tokens[1]);
         this->channel = std::stoi(tokens[2]);
         this->opcode = std::stoi(tokens[3]);
-        this->addr = std::stoul(tokens[4], nullptr, 16); // assume addr in hex base
+        this->addr = std::stoul(tokens[4]);
     }
 
     std::string to_string() {
