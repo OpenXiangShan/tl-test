@@ -8,6 +8,7 @@
 #include <queue>
 
 #define READ_ONCE 5000
+#define END_TIMER 20000 // cycles to run after trace all sent
 
 // TODO: consider alias and other user fields
 class Transaction {

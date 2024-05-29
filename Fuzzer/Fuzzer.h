@@ -23,6 +23,9 @@ public:
     void enqueue_transaction(Transaction &transaction) {
         this->transactions.push(transaction);
     }
+    int get_queue_size() {
+        return this->transactions.size();
+    }
 };
 
 class ULFuzzer: public Fuzzer {

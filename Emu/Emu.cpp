@@ -135,42 +135,83 @@ void abortHandler(int signal) {
 }
 
 void Emu::execute(uint64_t nr_cycle) {
-    bool trace_end = false;
-    int end_timer = 20000;
+    bool trace_end = false; // read tracefile complete
+    bool transactions_end = false; // all transactions in queues have been sent
+    int end_timer = END_TIMER;
 
     while (Cycles < nr_cycle) {
-        // ====== Read Transactions from Tracefile ======
-        if (trace_end) { // finished all transactions in tracefile
-            if (end_timer-- == 0) {
-                printf("[INFO] simulation complete\n");
-                break;
-            }
-        } else if (transactions.empty()) { // read new transactions
-            std::string line;
-            int i = 0;
-            for (; i < READ_ONCE; i++) {
-                if (std::getline(trace_file, line)) {
-                    transactions.push(Transaction(line));
-                    // printf("[DEBUG] %s\n", Transaction(line).to_string().c_str());
-                } else {
-                    trace_end = true; break;
+        if (enable_trace) {
+            // ====== Read Transactions from Tracefile ======
+            // 1. continue to read tracefile
+            if (!trace_end) {
+                // if some agent queue empty and no agent queue oversized
+                bool queue_empty = false;
+                bool queue_oversize = false;
+                for (int f = 0; f < NR_AGENTS; f++) {
+                    // printf\("\[DEBUG\] CHECKING AGENT %d\n", f);
+                    if (fuzzers[f]->get_queue_size() > READ_ONCE) {
+                        queue_oversize = true;
+                        // printf\("\[DEBUG\] Agent %d queue oversized\n", f);
+                        break;
+                    }
+                    if (fuzzers[f]->get_queue_size() == 0) {
+                        queue_empty = true;
+                        // printf\("\[DEBUG\] Agent %d queue empty\n", f);
+                        break;
+                    }
+                }
+                // read new transactions from tracefile and push to queue
+                if (queue_empty && !queue_oversize) {
+                    std::string line;
+                    int i = 0;
+                    for (; i < READ_ONCE; i++) {
+                        if (std::getline(trace_file, line)) {
+                            transactions.push(Transaction(line));
+                            // printf\("\[DEBUG\] Read Trans %s\n", Transaction(line).to_string().c_str());
+                        } else {
+                            trace_end = true;
+                            printf("[INFO] read trace complete\n");
+                            break;
+                        }
+                    }
+                    printf("[INFO] loading %d transactions from tracefile\n", i);
                 }
             }
-            printf("[INFO] loading %d transactions from tracefile\n", i);
-            if (trace_end) {
-                printf("[INFO] finish reading all trace, ");
-                printf("let simulation run another %d cycles\n", end_timer);
-                break;
-            }
-        } else {
-            // check the timestamp of the first transaction in queue
+            // 2. check the timestamp of the first transaction in queue
             // if Now >= its time, pop it and send to corresponding agent
-            Transaction t = transactions.front();
-            if (t.timestamp <= Cycles) {
-                transactions.pop();
-                fuzzers[t.agentId]->enqueue_transaction(t);
+            if (!transactions.empty()) {
+                Transaction t = transactions.front();
+                if (t.timestamp <= Cycles) {
+                    transactions.pop();
+                    tlc_assert(t.agentId < NR_AGENTS, ("Invalid agentId for " + t.to_string() + "\n").c_str());
+                    fuzzers[t.agentId]->enqueue_transaction(t);
+                    // printf\("\[DEBUG\] Push Trans %s\n", t.to_string().c_str());
+                }
+            }
+            // 3. if all trace read and all transactions in queue sent, 
+            // let simulation run another 20000 cycles and $finish
+            if (trace_end && transactions.empty() && !transactions_end) {
+                // check if all fuzzers' queue size equals 0
+                bool all_empty = true;
+                for (int f = 0; f < NR_AGENTS; f++) {
+                    if (fuzzers[f]->get_queue_size() != 0) {
+                        all_empty = false;
+                        break;
+                    }
+                }
+                if (all_empty) {
+                    transactions_end = true;
+                    printf("[INFO] all transactions have been sent, ");
+                    printf("let simulation run another %d cycles\n", end_timer);
+                }
+            }
+            if (trace_end && transactions_end) {
+                if (end_timer-- == 0) {
+                    break;
+                }
             }
         }
+
         // ====== Actions for Agents per cycle ======
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
