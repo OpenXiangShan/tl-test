@@ -138,7 +138,7 @@ void Emu::execute(uint64_t nr_cycle) {
     bool trace_end = false; // read tracefile complete
     bool transactions_end = false; // all transactions in queues have been sent
     int end_timer = END_TIMER;
-
+    int trans_count = 0;
     while (Cycles < nr_cycle) {
         if (enable_trace) {
             // ====== Read Transactions from Tracefile ======
@@ -148,33 +148,31 @@ void Emu::execute(uint64_t nr_cycle) {
                 bool queue_empty = false;
                 bool queue_oversize = false;
                 for (int f = 0; f < NR_AGENTS; f++) {
-                    // printf\("\[DEBUG\] CHECKING AGENT %d\n", f);
                     if (fuzzers[f]->get_queue_size() > READ_ONCE) {
                         queue_oversize = true;
-                        // printf\("\[DEBUG\] Agent %d queue oversized\n", f);
                         break;
                     }
                     if (fuzzers[f]->get_queue_size() == 0) {
                         queue_empty = true;
-                        // printf\("\[DEBUG\] Agent %d queue empty\n", f);
                         break;
                     }
                 }
                 // read new transactions from tracefile and push to queue
-                if (queue_empty && !queue_oversize) {
+                if (queue_empty && !queue_oversize && transactions.size() < READ_ONCE) {
                     std::string line;
                     int i = 0;
                     for (; i < READ_ONCE; i++) {
                         if (std::getline(trace_file, line)) {
                             transactions.push(Transaction(line));
-                            // printf\("\[DEBUG\] Read Trans %s\n", Transaction(line).to_string().c_str());
+                            // printf("[DEBUG] Read Trans %s\n", Transaction(line).to_string().c_str());
                         } else {
                             trace_end = true;
                             printf("[INFO] read trace complete\n");
                             break;
                         }
                     }
-                    printf("[INFO] loading %d transactions from tracefile\n", i);
+                    trans_count += i;
+                    printf("[INFO] loading %d transactions from tracefile\n", trans_count);
                 }
             }
             // 2. check the timestamp of the first transaction in queue
@@ -185,7 +183,7 @@ void Emu::execute(uint64_t nr_cycle) {
                     transactions.pop();
                     tlc_assert(t.agentId < NR_AGENTS, ("Invalid agentId for " + t.to_string() + "\n").c_str());
                     fuzzers[t.agentId]->enqueue_transaction(t);
-                    // printf\("\[DEBUG\] Push Trans %s\n", t.to_string().c_str());
+                    // printf("[DEBUG] Push Trans %s\n", t.to_string().c_str());
                 }
             }
             // 3. if all trace read and all transactions in queue sent, 

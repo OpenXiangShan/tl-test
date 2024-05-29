@@ -596,8 +596,10 @@ namespace tl_agent {
     }
 
     TransResp CAgent::do_releaseData(paddr_t address, int param, uint8_t data[], int alias) {
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
+        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full())
             return PENDING;
+        if (!localBoard->haskey(address))
+            return PASS;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
@@ -630,8 +632,10 @@ namespace tl_agent {
     }
 
     TransResp CAgent::do_releaseDataAuto(paddr_t address, int alias) {
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
+        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full())
             return PENDING;
+        if (!localBoard->haskey(address))
+            return PASS;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);

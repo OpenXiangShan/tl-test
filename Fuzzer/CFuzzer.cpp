@@ -57,11 +57,11 @@ void CFuzzer::traceTest() {
     if (this->transactions.empty()) {
         return;
     }
-    Transaction transaction = this->transactions.front();
-    paddr_t addr = transaction.addr;
-    uint8_t channel = transaction.channel;
-    uint8_t opcode = transaction.opcode;
-    uint8_t param = transaction.param;
+    Transaction t = this->transactions.front();
+    paddr_t addr = t.addr;
+    uint8_t channel = t.channel;
+    uint8_t opcode = t.opcode;
+    uint8_t param = t.param;
     int send_status;
 
     switch (connect(channel, opcode))
@@ -74,15 +74,15 @@ void CFuzzer::traceTest() {
     // in fear of releaseData may have unknown bugs untested
     case (4 << 8) | tl_agent::ReleaseData:
     case (4 << 8) | tl_agent::Release:
-        send_status = this->cAgent->do_releaseDataAuto(addr, param);    break;
+        send_status = this->cAgent->do_releaseDataAuto(addr, 0);    break;
     default:
         std::cerr << "Error: Invalid Transaction " << channel << " Opcode " << opcode << std::endl;
         break;
     }
-
-    // if succeeded in sending it, remove it from queue
+    // printf("[DEBUG] tring to send %s\n", t.to_string().c_str());
+    // if succeeded/fail/pass to send, remove it from queue
     // TODO: whether still to send for PASS transations (whose permission is already satisfied)
-    if (send_status == tl_agent::SUCCESS || send_status == tl_agent::PASS) {
+    if (send_status != tl_agent::PENDING) {
         this->transactions.pop();
     }
     // otherwise try it next cycle
