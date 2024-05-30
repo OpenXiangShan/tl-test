@@ -65,7 +65,7 @@ namespace tl_agent {
         TransResp do_getAuto(paddr_t address);
         TransResp do_get(paddr_t address, uint8_t size, uint32_t mask);
         TransResp do_putfulldata(paddr_t address, uint8_t data[]);
-        TransResp do_putpartialdata(uint16_t address, uint8_t size, uint32_t mask, uint8_t data[]);
+        TransResp do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, uint8_t data[]);
     };
 
 }
