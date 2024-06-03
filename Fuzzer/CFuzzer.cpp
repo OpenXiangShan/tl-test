@@ -3,7 +3,7 @@
 //
 
 #include "Fuzzer.h"
-
+extern int trans_count;
 CFuzzer::CFuzzer(tl_agent::CAgent *cAgent) {
     this->cAgent = cAgent;
 }
@@ -85,6 +85,7 @@ void CFuzzer::traceTest() {
     if (send_status != tl_agent::PENDING) {
         this->transactions.pop();
     }
+    if (send_status == tl_agent::SUCCESS) trans_count++;
     // otherwise try it next cycle
 }
 

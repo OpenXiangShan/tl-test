@@ -2,6 +2,7 @@
 #include <csignal>
 #include "Emu/Emu.h"
 
+extern int trans_count;
 int main(int argc, char **argv) {
     std::signal(SIGABRT, abortHandler);
 
@@ -9,5 +10,6 @@ int main(int argc, char **argv) {
     emu.reset(10);
     emu.execute(emu.exe_cycles);
     std::cout << std::endl << "Finished" << std::endl;
+    std::cout << "Transcations: " << trans_count << std::endl;
     return 0;
 }

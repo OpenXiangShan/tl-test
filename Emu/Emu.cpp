@@ -10,6 +10,7 @@ uint64_t Cycles;
 bool Verbose = false;
 bool dump_db = false;
 
+int trans_count = 0;
 double sc_time_stamp() { return 0; }
 
 void Emu::parse_args(int argc, char **argv) {
