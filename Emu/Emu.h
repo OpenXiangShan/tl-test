@@ -13,6 +13,7 @@
 #endif
 #include "../Utils/ScoreBoard.h"
 #include "../Utils/Common.h"
+#include "../Utils/Trace.h"
 #include "../TLAgent/ULAgent.h"
 #include "../TLAgent/CAgent.h"
 #include "../Fuzzer/Fuzzer.h"
@@ -31,6 +32,9 @@ private:
     Fuzzer ** const fuzzers = new Fuzzer*[NR_AGENTS];
     uint64_t seed = 0, wave_begin = 0, wave_end = 0;
     bool enable_wave = true;
+    bool enable_trace = false;
+    std::ifstream trace_file;
+    std::queue<Transaction> transactions;
     bool wave_full = false;
     inline char* cycle_wavefile(uint64_t cycles, time_t t);
     void parse_args(int argc, char **argv);

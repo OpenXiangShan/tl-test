@@ -506,9 +506,9 @@ namespace tl_agent {
         probeIDpool.update();
     }
 
-    bool CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
+    TransResp CAgent::do_acquireBlock(paddr_t address, int param, int alias) {
         if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
-            return false;
+            return PENDING;
         if (localBoard->haskey(address)) { // check whether this transaction is legal
             auto entry = localBoard->query(address);
             auto privilege = entry->privilege[alias];
@@ -518,18 +518,18 @@ namespace tl_agent {
                 status[i] = entry->status[i];
             }
             if (status[alias] != S_VALID && status[alias] != S_INVALID) {
-                return false;
+                return PENDING; // in the process of other transaction
             }
             if (status[alias] == S_VALID) {
-                if (privilege == TIP) return false;
+                if (privilege == TIP) return PASS;
                 // if (privilege == BRANCH && param != BtoT) { param = BtoT; }
-                if (privilege == BRANCH && param != BtoT) return false;
-                if (privilege == INVALID && param == BtoT) return false;
+                if (privilege == BRANCH && param != BtoT) return PASS;
+                if (privilege == INVALID && param == BtoT) return FAILURE;
             }
             for(int i = 0; i < 4; i++) {
-                // do not send Release when there is an Acquire with the same address waiting for Grant
+                // do not send Release when there is an Acquire with the same physical address waiting for Grant
                 if(status[i] == S_A_WAITING_D || status[i] == S_A_WAITING_D_INTR) {
-                    return false;   
+                    return PENDING;
                 }
             }
         }
@@ -552,12 +552,12 @@ namespace tl_agent {
             break;
         }
 
-        return true;
+        return SUCCESS;
     }
 
-    bool CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
+    TransResp CAgent::do_acquirePerm(paddr_t address, int param, int alias) {
         if (pendingA.is_pending() || pendingB.is_pending() || idpool.full())
-            return false;
+            return PENDING;
         if (localBoard->haskey(address)) {
             auto entry = localBoard->query(address);
             auto privilege = entry->privilege[alias];
@@ -567,17 +567,17 @@ namespace tl_agent {
                 status[i] = entry->status[i];
             }
             if (status[alias] != S_VALID && status[alias] != S_INVALID) {
-                return false;
+                return PENDING;
             }
             if (status[alias] == S_VALID) {
-                if (privilege == TIP) return false;
+                if (privilege == TIP) return PASS;
                 if (privilege == BRANCH && param != BtoT) { param = BtoT; }
-                if (privilege == INVALID && param == BtoT) return false;
+                if (privilege == INVALID && param == BtoT) return FAILURE;
             }
             for(int i = 0; i < 4; i++) {
-                // do not send AcquirePerm when there is an Acquire with the same address waiting for Grant
+                // do not send AcquirePerm when there is an Acquire with the same physical address waiting for Grant
                 if(status[i] == S_A_WAITING_D || status[i] == S_A_WAITING_D_INTR) {
-                    return false;   
+                    return PENDING;
                 }
             }
         }
@@ -592,23 +592,25 @@ namespace tl_agent {
         // Log("== id == acquire %d\n", *req_a->source);
         pendingA.init(req_a, 1);
         Log("[%ld] [AcquirePerm] addr: %x alias: %d\n", *cycles, address, alias);
-        return true;
+        return SUCCESS;
     }
 
-    bool CAgent::do_releaseData(paddr_t address, int param, uint8_t data[], int alias) {
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
-            return false;
+    TransResp CAgent::do_releaseData(paddr_t address, int param, uint8_t data[], int alias) {
+        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full())
+            return PENDING;
+        if (!localBoard->haskey(address))
+            return PASS;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
         auto privilege = entry->privilege[alias];
         auto status = entry->status[alias];
         if (status != S_VALID) {
-            return false;
+            return FAILURE;
         }
-        if (privilege == INVALID) return false;
-        if (privilege == BRANCH && param != BtoN) return false;
-        if (privilege == TIP && param == BtoN) return false;
+        if (privilege == INVALID) return FAILURE;
+        if (privilege == BRANCH && param != BtoN) return FAILURE;
+        if (privilege == TIP && param == BtoN) return FAILURE;
 
         std::shared_ptr<ChnC<ReqField, EchoField, DATASIZE>> req_c(new ChnC<ReqField, EchoField, DATASIZE>());
         req_c->opcode = new uint8_t(ReleaseData);
@@ -626,12 +628,14 @@ namespace tl_agent {
             Dump("%02hhx", data[i]);
         }
         Dump("\n");
-        return true;
+        return SUCCESS;
     }
 
-    bool CAgent::do_releaseDataAuto(paddr_t address, int alias) {
-        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full() || !localBoard->haskey(address))
-            return false;
+    TransResp CAgent::do_releaseDataAuto(paddr_t address, int alias) {
+        if (pendingC.is_pending() || pendingB.is_pending() || idpool.full())
+            return PENDING;
+        if (!localBoard->haskey(address))
+            return PASS;
         // TODO: checkout pendingA
         // TODO: checkout pendingB - give way?
         auto entry = localBoard->query(address);
@@ -639,7 +643,7 @@ namespace tl_agent {
         int param;
         switch (privilege) {
         case INVALID:
-            return false;
+            return FAILURE;
         case BRANCH:
             param = BtoN;
             break;
@@ -655,12 +659,12 @@ namespace tl_agent {
             status[i] = entry->status[i];
         }
         if (status[alias] != S_VALID) {
-            return false;
+            return FAILURE;
         }
         for(int i = 0; i < 4; i++) {
-         // do not send Release when there is an Acquire with the same address waiting for Grant
+         // do not send Release when there is an Acquire with the same physical address waiting for Grant
             if(status[i] == S_A_WAITING_D || status[i] == S_A_WAITING_D_INTR) {
-                return false;   
+                return PENDING;
             }
         }
 
@@ -725,7 +729,7 @@ namespace tl_agent {
             Dump("\n");
         }
 
-        return true;
+        return SUCCESS;
     }
 
     void CAgent::timeout_check() {

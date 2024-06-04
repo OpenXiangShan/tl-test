@@ -10,6 +10,7 @@ uint64_t Cycles;
 bool Verbose = false;
 bool dump_db = false;
 
+int trans_count = 0;
 double sc_time_stamp() { return 0; }
 
 void Emu::parse_args(int argc, char **argv) {
@@ -18,6 +19,7 @@ void Emu::parse_args(int argc, char **argv) {
         { "wave-begin", 1, NULL, 'b' },
         { "wave-end",   1, NULL, 'e' },
         { "cycles",     1, NULL, 'c' },
+        { "trace",      1, NULL, 't' },
         { "wave-full",  0, NULL, 'f' },
         { "verbose",    0, NULL, 'v' },
         { "dump-db",    0, NULL, 'd' },
@@ -26,7 +28,7 @@ void Emu::parse_args(int argc, char **argv) {
     int o;
     int long_index = 0;
     while ( (o = getopt_long(argc, const_cast<char *const*>(argv),
-                             "-s:b:e:c:f:vd", long_options, &long_index)) != -1) {
+                             "-s:b:e:c:t:f:vd", long_options, &long_index)) != -1) {
         switch (o) {
             case 's': this->seed = atoll(optarg);       break;
             case 'b': this->wave_begin = atoll(optarg); break;
@@ -40,6 +42,11 @@ void Emu::parse_args(int argc, char **argv) {
 #else
                 printf("[WARN] chisel db is not enabled at compile time, ignore --dump-db\n"); break;
 #endif
+            case 't':
+                this->enable_trace = true;
+                this->trace_file = std::ifstream(optarg);
+                printf("Trace format: 'timestamp, which L1, channel, opcode, address, param'\n");
+                break;
             default:
                 tlc_assert(false, "Unknown args!");
         }
@@ -113,7 +120,9 @@ Emu::~Emu() {
         save_db(logdb_filename(now));
     }
 #endif
-
+    if(enable_trace) {
+        trace_file.close();
+    }
 }
 
 void abortHandler(int signal) {
@@ -129,19 +138,96 @@ void abortHandler(int signal) {
 }
 
 void Emu::execute(uint64_t nr_cycle) {
+    bool trace_end = false; // read tracefile complete
+    bool transactions_end = false; // all transactions in queues have been sent
+    int end_timer = END_TIMER;
+    int trans_count = 0;
     while (Cycles < nr_cycle) {
+        if (enable_trace) {
+            // ====== Read Transactions from Tracefile ======
+            // 1. continue to read tracefile
+            if (!trace_end) {
+                // if some agent queue empty and no agent queue oversized
+                bool queue_empty = false;
+                bool queue_oversize = false;
+                for (int f = 0; f < NR_AGENTS; f++) {
+                    if (fuzzers[f]->get_queue_size() > READ_ONCE) {
+                        queue_oversize = true;
+                        break;
+                    }
+                    if (fuzzers[f]->get_queue_size() == 0) {
+                        queue_empty = true;
+                        break;
+                    }
+                }
+                // read new transactions from tracefile and push to queue
+                if (queue_empty && !queue_oversize && transactions.size() < READ_ONCE) {
+                    std::string line;
+                    int i = 0;
+                    for (; i < READ_ONCE; i++) {
+                        if (std::getline(trace_file, line)) {
+                            transactions.push(Transaction(line));
+                            // printf("[DEBUG] Read Trans %s\n", Transaction(line).to_string().c_str());
+                        } else {
+                            trace_end = true;
+                            printf("[INFO] read trace complete\n");
+                            break;
+                        }
+                    }
+                    trans_count += i;
+                    printf("[INFO] loading %d transactions from tracefile\n", trans_count);
+                }
+            }
+            // 2. check the timestamp of the first transaction in queue
+            // if Now >= its time, pop it and send to corresponding agent
+            if (!transactions.empty()) {
+                Transaction t = transactions.front();
+                if (t.timestamp <= Cycles) {
+                    transactions.pop();
+                    tlc_assert(t.agentId < NR_AGENTS, ("Invalid agentId for " + t.to_string() + "\n").c_str());
+                    fuzzers[t.agentId]->enqueue_transaction(t);
+                    // printf("[DEBUG] Push Trans %s\n", t.to_string().c_str());
+                }
+            }
+            // 3. if all trace read and all transactions in queue sent, 
+            // let simulation run another 20000 cycles and $finish
+            if (trace_end && transactions.empty() && !transactions_end) {
+                // check if all fuzzers' queue size equals 0
+                bool all_empty = true;
+                for (int f = 0; f < NR_AGENTS; f++) {
+                    if (fuzzers[f]->get_queue_size() != 0) {
+                        all_empty = false;
+                        break;
+                    }
+                }
+                if (all_empty) {
+                    transactions_end = true;
+                    printf("[INFO] all transactions have been sent, ");
+                    printf("let simulation run another %d cycles\n", end_timer);
+                }
+            }
+            if (trace_end && transactions_end) {
+                if (end_timer-- == 0) {
+                    break;
+                }
+            }
+        }
+
+        // ====== Actions for Agents per cycle ======
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->handle_channel();
         }
 
         for (int i = 0; i < NR_AGENTS; i++) {
-            fuzzers[i]->tick();
+            if (enable_trace) fuzzers[i]->traceTest();
+            else fuzzers[i]->tick(); // random-test
         }
 
         for (int i = 0; i < NR_AGENTS; i++) {
             agents[i]->update_signal();
         }
 
+        // ====== Verilator Actions ======
         this->neg_edge();
 #if VM_TRACE == 1
         if (this->enable_wave && Cycles >= this->wave_begin && Cycles <= this->wave_end) {

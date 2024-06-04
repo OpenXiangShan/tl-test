@@ -161,9 +161,9 @@ namespace tl_agent {
         idpool.update();
     }
     
-    bool ULAgent::do_getAuto(paddr_t address) {
+    TransResp ULAgent::do_getAuto(paddr_t address) {
         if (pendingA.is_pending() || idpool.full())
-            return false;
+            return PENDING;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(Get);
         req_a->address = new paddr_t(address);
@@ -172,12 +172,12 @@ namespace tl_agent {
         req_a->source = new uint8_t(this->idpool.getid());
         pendingA.init(req_a, 1);
         Log("[%ld] [Get] addr: %x\n", *cycles, address);
-        return true;
+        return SUCCESS;
     }
 
-    bool ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
+    TransResp ULAgent::do_get(paddr_t address, uint8_t size, uint32_t mask) {
         if (pendingA.is_pending() || idpool.full())
-            return false;
+            return PENDING;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(Get);
         req_a->address = new paddr_t(address);
@@ -186,14 +186,14 @@ namespace tl_agent {
         req_a->source = new uint8_t(this->idpool.getid());
         pendingA.init(req_a, 1);
         Log("[%ld] [Get] addr: %x size: %x\n", *cycles, address, size);
-        return true;
+        return SUCCESS;
     }
     
-    bool ULAgent::do_putfulldata(uint16_t address, uint8_t data[]) {
+    TransResp ULAgent::do_putfulldata(paddr_t address, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
-            return false;
+            return PENDING;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING) {
-            return false;
+            return PENDING;
         }
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(PutFullData);
@@ -208,14 +208,14 @@ namespace tl_agent {
             Dump("%02hhx", data[i]);
         }
         Dump("\n");
-        return true;
+        return SUCCESS;
     }
 
-    bool ULAgent::do_putpartialdata(uint16_t address, uint8_t size, uint32_t mask, uint8_t data[]) {
+    TransResp ULAgent::do_putpartialdata(paddr_t address, uint8_t size, uint32_t mask, uint8_t data[]) {
         if (pendingA.is_pending() || idpool.full())
-            return false;
+            return PENDING;
         if (this->globalBoard->haskey(address) && this->globalBoard->query(address)->status == Global_SBEntry::SB_PENDING)
-            return false;
+            return PENDING;
         std::shared_ptr<ChnA<ReqField, EchoField, DATASIZE>> req_a(new ChnA<ReqField, EchoField, DATASIZE>());
         req_a->opcode = new uint8_t(PutPartialData);
         req_a->address = new paddr_t(address);
@@ -230,7 +230,7 @@ namespace tl_agent {
             Dump("%02hhx", data[i]);
         }
         Dump("\n");
-        return true;
+        return SUCCESS;
     }
     
     void ULAgent::timeout_check() {

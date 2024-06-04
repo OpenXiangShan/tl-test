@@ -57,3 +57,8 @@ void ULFuzzer::tick() {
     this->randomTest(false);
 //    this->caseTest();
 }
+
+void ULFuzzer::traceTest() {
+  printf("[ERROR] TraceTest for ULFuzzer Not Implemented!\n");
+  exit(1);
+}

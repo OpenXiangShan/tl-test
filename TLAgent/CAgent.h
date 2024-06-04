@@ -8,6 +8,7 @@
 #include "BaseAgent.h"
 #include "../Utils/Common.h"
 #include "../Utils/ScoreBoard.h"
+#include "../Utils/Trace.h"
 
 namespace tl_agent {
 
@@ -89,10 +90,10 @@ namespace tl_agent {
         void handle_channel();
         void update_signal();
 
-        bool do_acquireBlock(paddr_t address, int param, int alias);
-        bool do_acquirePerm(paddr_t address, int param, int alias);
-        bool do_releaseData(paddr_t address, int param, uint8_t data[], int alias);
-        bool do_releaseDataAuto(paddr_t address, int alias);
+        TransResp do_acquireBlock(paddr_t address, int param, int alias);
+        TransResp do_acquirePerm(paddr_t address, int param, int alias);
+        TransResp do_releaseData(paddr_t address, int param, uint8_t data[], int alias);
+        TransResp do_releaseDataAuto(paddr_t address, int alias);
     };
 
 }

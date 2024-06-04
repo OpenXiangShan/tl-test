@@ -14,6 +14,13 @@ namespace tl_agent {
 
     enum Resp {OK, FAIL};
 
+    // return value for `do_acquireBlock`
+    // 0 for successful sending
+    // 1 for unable to send now (congestion)
+    // 2 for failure due to action not allowed
+    // 3 for permission already satisfied (no need to send Acquire)
+    enum TransResp {SUCCESS, PENDING, FAILURE, PASS};
+
     enum {
         S_INVALID = 0,
         S_VALID,
